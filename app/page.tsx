@@ -410,7 +410,7 @@ export default function Home() {
                 <input
                   id="upload-audio-input"
                   accept="audio/*"
-                  disabled={status === "processing" || status === "recording"}
+                  disabled={status === "processing"}
                   type="file"
                   onChange={(e) => handleUpload(e.target.files?.[0] ?? null)}
                 />
