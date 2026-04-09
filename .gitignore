@@ -26,6 +26,9 @@ tsconfig.tsbuildinfo
 *.swo
 .opencode/
 opencode.jsonc
+# Private / local planning docs
+docs/TODO.md
+docs/plan.md
 
 # Build artifacts
 dist/
