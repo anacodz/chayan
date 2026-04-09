@@ -29,6 +29,8 @@ opencode.jsonc
 # Private / local planning docs
 docs/TODO.md
 docs/plan.md
+docs/ROADMAP.md
+docs/Git_Rules.md
 
 # Build artifacts
 dist/
