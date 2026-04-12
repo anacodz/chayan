@@ -26,16 +26,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async session({ session, user, token }) {
       if (session.user) {
-        // @ts-ignore
+        // @ts-expect-error -- session user type extension
         session.user.id = user?.id || token?.sub;
-        // @ts-ignore
+        // @ts-expect-error -- session user type extension
         session.user.role = user?.role || token?.role || "RECRUITER";
       }
       return session;
     },
     async jwt({ token, user }) {
       if (user) {
-        // @ts-ignore
+        // @ts-expect-error -- session user type extension
         token.role = user.role;
       }
       return token;

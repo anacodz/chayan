@@ -37,8 +37,9 @@
 
 ### P2 - Operational Maturity
 - **[BACKLOG-009] Structured Logging and Monitoring**
-  - Integrated `pino` for structured, JSON-based logging.
-  - Added logging to background jobs for better observability.
+  - Integrated `pino` for structured, JSON-based logging across all API routes and background jobs.
+  - Implemented request tracking with unique correlation IDs for better traceability.
+  - Added comprehensive error logging with metadata for faster production debugging.
 - **[BACKLOG-010] Question Set Manager (Admin Dashboard)**
   - Implemented "Invite Candidate" modal and API on the recruiter dashboard.
   - Connected recruiter dashboard metrics to real database counts.
