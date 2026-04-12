@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { SarvamAIClient } from "sarvamai";
+import { uploadAudio } from "@/lib/storage";
+import { v4 as uuidv4 } from "uuid";
+import { env } from "@/lib/env";
+import { withRetry } from "@/lib/retry";
 
 export const runtime = "nodejs";
 
@@ -13,13 +17,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    const transcript = await transcribeAudio(audio);
+    // 1. Upload audio to object storage
+    const filename = `${uuidv4()}.${audio.name.split(".").pop() || "webm"}`;
+    const audioUrl = await uploadAudio(audio, filename);
+
+    // 2. Transcribe audio
+    const transcript = await withRetry(() => transcribeAudio(audio));
 
     if (!transcript.trim()) {
       return NextResponse.json({ error: "The transcript was empty. Try recording again." }, { status: 422 });
     }
 
-    return NextResponse.json({ transcript });
+    return NextResponse.json({ transcript, audioUrl });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Transcription failed." },
@@ -29,10 +38,10 @@ export async function POST(request: Request) {
 }
 
 async function transcribeAudio(audio: File): Promise<string> {
-  if (process.env.SARVAM_API_KEY) {
+  if (env.SARVAM_API_KEY) {
     try {
       const client = new SarvamAIClient({
-        apiSubscriptionKey: process.env.SARVAM_API_KEY
+        apiSubscriptionKey: env.SARVAM_API_KEY
       });
       const response = await client.speechToText.transcribe({
         file: audio,
@@ -49,8 +58,8 @@ async function transcribeAudio(audio: File): Promise<string> {
     }
   }
 
-  if (process.env.OPENAI_API_KEY) {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  if (env.OPENAI_API_KEY) {
+    const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
     const response = await openai.audio.transcriptions.create({
       file: audio,
       model: "whisper-1"

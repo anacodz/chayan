@@ -28,7 +28,7 @@ export type AnswerEvaluation = {
   /** 0–1 confidence in the evaluation */
   confidence: number;
   /** Optional targeted follow-up question when answer is incomplete */
-  followUpQuestion?: string;
+  followUpQuestion?: string | null;
   /** Set to true when the transcript is too short or unclear to evaluate reliably */
   requiresHumanReview?: boolean;
 };
