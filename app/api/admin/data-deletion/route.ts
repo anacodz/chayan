@@ -3,18 +3,20 @@ import prisma from "@/lib/prisma";
 import { deleteAudio } from "@/lib/storage";
 import { logger } from "@/lib/logger";
 import { v4 as uuidv4 } from "uuid";
-import { auth } from "@/lib/auth";
 
 /**
  * POST /api/admin/data-deletion
  * Deletes all data associated with a candidate (PII, audio, transcripts).
- * Restricted to ADMIN role.
+ * Restricted via ADMIN_API_TOKEN when configured.
  */
-export const POST = auth(async (req) => {
+export async function POST(req: Request) {
   const requestId = uuidv4();
-  
-  // Check authorization
-  if (!req.auth || (req.auth.user as any).role !== "ADMIN") {
+
+  const requiredAdminToken = process.env.ADMIN_API_TOKEN;
+  const providedAdminToken = req.headers.get("x-admin-token");
+
+  // Enforce auth only when ADMIN_API_TOKEN is configured.
+  if (requiredAdminToken && providedAdminToken !== requiredAdminToken) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -70,4 +72,4 @@ export const POST = auth(async (req) => {
     logger.error({ requestId, error: error instanceof Error ? error.message : "Unknown error" }, "Data deletion failed");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-});
+}
