@@ -28,7 +28,7 @@ export default function SignIn() {
       } else {
         router.push("/recruiter");
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred");
     } finally {
       setLoading(false);

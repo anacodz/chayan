@@ -124,15 +124,15 @@ export default function Home() {
               setQuestions(qData.questions);
             } else {
               const fallback = await import("@/lib/questions");
-              setQuestions(fallback.questions as any[]);
+              setQuestions(fallback.questions as unknown as Question[]);
             }
           } else {
             const fallback = await import("@/lib/questions");
-            setQuestions(fallback.questions as any[]);
+            setQuestions(fallback.questions as unknown as Question[]);
           }
         } catch {
           const fallback = await import("@/lib/questions");
-          setQuestions(fallback.questions as any[]);
+          setQuestions(fallback.questions as unknown as Question[]);
         }
         setPhase("consent");
         return;
@@ -154,11 +154,11 @@ export default function Home() {
             setQuestions(qData.questions);
           } else {
             const fallback = await import("@/lib/questions");
-            setQuestions(fallback.questions as any[]);
+            setQuestions(fallback.questions as unknown as Question[]);
           }
         } else {
           const fallback = await import("@/lib/questions");
-          setQuestions(fallback.questions as any[]);
+          setQuestions(fallback.questions as unknown as Question[]);
         }
 
         setPhase("consent");

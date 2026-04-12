@@ -159,9 +159,9 @@ export default function RecruiterReportDetail() {
         </div>
 
         {/* ── Bento grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Score */}
-          <div className="lg:col-span-4 bg-surface-container-lowest p-8 rounded-2xl shadow-sm border border-outline-variant/5 flex flex-col justify-between items-center text-center">
+          <div className="lg:col-span-4 bg-surface-container-lowest p-8 rounded-xl shadow-[0_4px_20px_rgba(73,95,132,0.04)] flex flex-col justify-between items-center text-center">
             <div className="mb-6 w-full">
               <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant block mb-8">Overall Match Score</span>
               <div className="relative w-48 h-48 flex items-center justify-center mx-auto">
@@ -187,7 +187,7 @@ export default function RecruiterReportDetail() {
           </div>
 
           {/* Strengths & Risks */}
-          <div className="lg:col-span-8 bg-surface-container-lowest p-6 md:p-8 rounded-2xl shadow-sm border border-outline-variant/5">
+          <div className="lg:col-span-8 bg-surface-container-lowest p-6 md:p-8 rounded-xl shadow-[0_4px_20px_rgba(73,95,132,0.04)]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
               <div>
                 <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-on-secondary-fixed">
@@ -195,7 +195,7 @@ export default function RecruiterReportDetail() {
                 </h3>
                 <ul className="space-y-4">
                   {session.finalReport?.strengths.map((s: string, i: number) => (
-                    <li key={i} className="p-4 bg-tertiary/5 rounded-xl border-l-4 border-tertiary">
+                    <li key={i} className="p-4 bg-tertiary/5 rounded-lg border-l-4 border-tertiary">
                       <p className="text-xs text-on-surface-variant font-medium leading-relaxed">{s}</p>
                     </li>
                   )) || <li className="text-xs text-on-surface-variant italic">No specific strengths highlighted.</li>}
@@ -207,7 +207,7 @@ export default function RecruiterReportDetail() {
                 </h3>
                 <ul className="space-y-4">
                   {session.finalReport?.risks.map((r: string, i: number) => (
-                    <li key={i} className="p-4 bg-error/5 rounded-xl border-l-4 border-error">
+                    <li key={i} className="p-4 bg-error/5 rounded-lg border-l-4 border-error">
                       <p className="text-xs text-on-surface-variant font-medium leading-relaxed">{r}</p>
                     </li>
                   )) || <li className="text-xs text-on-surface-variant italic">No major risks identified.</li>}
@@ -217,7 +217,7 @@ export default function RecruiterReportDetail() {
           </div>
 
           {/* Question History */}
-          <div className="lg:col-span-9 bg-surface-container-lowest p-6 md:p-8 rounded-2xl shadow-sm border border-outline-variant/5 space-y-8">
+          <div className="lg:col-span-9 bg-surface-container-lowest p-6 md:p-8 rounded-xl shadow-[0_4px_20px_rgba(73,95,132,0.04)] space-y-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <h3 className="text-2xl font-black text-on-secondary-fixed">Interview Evidence</h3>
               <div className="flex gap-2 flex-wrap no-print">
@@ -236,7 +236,7 @@ export default function RecruiterReportDetail() {
                     </div>
                     <div className="flex-1">
                       <p className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-tight">Question {idx + 1}</p>
-                      <p className="text-on-surface leading-relaxed font-bold italic">&quot;{answer.question?.prompt || questions[idx]?.prompt}&quot;</p>
+                      <p className="text-on-surface leading-relaxed font-bold italic">&quot;{answer.question?.prompt || answer.question || `Question ${idx + 1}`}&quot;</p>
                     </div>
                   </div>
                   
@@ -278,7 +278,7 @@ export default function RecruiterReportDetail() {
           {/* Decision Panel sidebar */}
           <div className="lg:col-span-3 space-y-6 no-print">
             <div className="lg:sticky lg:top-24 space-y-6">
-              <div className="bg-on-secondary-fixed p-6 md:p-8 rounded-2xl text-white shadow-xl">
+              <div className="bg-on-secondary-fixed p-6 md:p-8 rounded-xl text-white shadow-xl">
                 <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary-container">fact_check</span>Decision Panel
                 </h3>
@@ -313,7 +313,7 @@ export default function RecruiterReportDetail() {
                 </button>
               </div>
 
-              <div className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/10">
+              <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10">
                 <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-4">Competency Radar</p>
                 <div className="space-y-3">
                   {competencyRadar.map((d) => (
@@ -326,7 +326,7 @@ export default function RecruiterReportDetail() {
                 </div>
               </div>
 
-              <div className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/10">
+              <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10">
                 <div className="flex items-center gap-3 mb-5">
                   <span className="material-symbols-outlined text-on-secondary-fixed text-[20px]">info</span>
                   <h4 className="font-bold text-on-secondary-fixed text-sm">Assessment Info</h4>

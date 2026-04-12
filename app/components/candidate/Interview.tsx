@@ -5,7 +5,7 @@ import { Question } from "@/lib/questions";
 interface InterviewProps {
   questionIndex: number;
   totalQuestions: number;
-  currentQuestion: Question | { id: string; prompt: string; guidance: string };
+  currentQuestion: Question | { id: string; prompt: string; guidance?: string; competencyTags?: string[] };
   status: "idle" | "recording" | "processing" | "error";
   elapsed: number;
   maxSeconds: number;
@@ -45,7 +45,7 @@ export default function Interview({
 }: InterviewProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <div className="absolute inset-y-0 right-0 w-[35%] bg-[#f6f2e8]/70 pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-[35%] bg-[#f6f2e8]/70 pointer-events-none hidden lg:block" />
       <header className="glass-header sticky top-0 z-50 shadow-[0_4px_20px_rgba(73,95,132,0.04)]">
         <div className="flex justify-between items-center w-full px-6 md:px-8 py-4 max-w-[1920px] mx-auto">
           <div className="flex items-center gap-6">
@@ -63,16 +63,16 @@ export default function Interview({
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-start px-4 md:px-8 pt-8 md:pt-16 pb-28 relative z-10">
+  <main className="flex-1 flex flex-col items-center justify-start px-4 md:px-8 pt-8 md:pt-16 pb-28 md:pb-20 relative z-10">
         <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-8">
           Question {questionIndex + 1} of {totalQuestions}
         </p>
         
-        <div className="w-full max-w-[1120px] grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+  <div className="w-full max-w-[1120px] grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8">
           <div className="lg:col-span-7">
-            <div className="bg-surface-container-lowest rounded-2xl p-8 md:p-10 shadow-sm min-h-[240px] flex flex-col justify-center">
+            <div className="bg-surface-container-lowest rounded-2xl p-6 sm:p-8 md:p-10 shadow-sm min-h-[220px] md:min-h-[240px] flex flex-col justify-center">
               <div className="flex justify-between items-start mb-4">
-                <h2 className="text-2xl md:text-3xl font-bold text-on-surface leading-snug">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-on-surface leading-snug">
                   &ldquo;{currentQuestion.prompt}&rdquo;
                 </h2>
                 <button 
@@ -89,7 +89,7 @@ export default function Interview({
                 </button>
               </div>
               {currentQuestion.guidance && (
-                <p className="text-sm text-on-surface-variant leading-relaxed flex items-center gap-2">
+                <p className="text-sm text-on-surface-variant leading-relaxed flex items-start gap-2">
                   <span className="material-symbols-outlined text-primary text-[18px]">lightbulb</span>
                   {currentQuestion.guidance}
                 </p>
@@ -98,7 +98,7 @@ export default function Interview({
           </div>
 
           <div className="lg:col-span-5 space-y-4">
-            <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-sm flex flex-col items-center">
+            <div className="bg-surface-container-lowest rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col items-center">
               {status === "recording" ? (
                 <>
                   <div className="flex items-center gap-2 mb-4">
@@ -137,18 +137,18 @@ export default function Interview({
               )}
             </div>
 
-            <div className="mt-8 flex justify-center">
+            <div className="mt-6 sm:mt-8 flex justify-center">
               {status === "recording" ? (
                 <button 
                   onClick={onStopRecording} 
-                  className="px-12 py-5 premium-gradient rounded-2xl text-white font-bold text-lg shadow-xl flex items-center gap-3 active:scale-95 transition-all"
+                  className="w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-5 premium-gradient rounded-2xl text-white font-bold text-base sm:text-lg shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all"
                 >
                   <span className="material-symbols-outlined">stop</span> Stop Recording
                 </button>
               ) : status === "idle" ? (
                 <button 
                   onClick={onStartRecording} 
-                  className="px-12 py-5 premium-gradient rounded-2xl text-white font-bold text-lg shadow-xl flex items-center gap-3 active:scale-95 transition-all"
+                  className="w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-5 premium-gradient rounded-2xl text-white font-bold text-base sm:text-lg shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all"
                 >
                   <span className="material-symbols-outlined">mic</span> Start Recording
                 </button>
