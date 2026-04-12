@@ -4,10 +4,11 @@ import { auth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { v4 as uuidv4 } from "uuid";
 
-export const GET = auth(async (req) => {
+export async function GET(req: Request) {
   const requestId = uuidv4();
+  const session = await auth();
   
-  if (!req.auth || (req.auth.user as any).role !== "ADMIN") {
+  if (!session?.user || (session.user as { role?: string }).role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -24,12 +25,13 @@ export const GET = auth(async (req) => {
     logger.error({ requestId, error }, "Failed to fetch questions");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-});
+}
 
-export const POST = auth(async (req) => {
+export async function POST(req: Request) {
   const requestId = uuidv4();
+  const session = await auth();
 
-  if (!req.auth || (req.auth.user as any).role !== "ADMIN") {
+  if (!session?.user || (session.user as { role?: string }).role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -68,4 +70,4 @@ export const POST = auth(async (req) => {
     logger.error({ requestId, error }, "Failed to create question");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-});
+}

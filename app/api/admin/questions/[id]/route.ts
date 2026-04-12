@@ -4,17 +4,15 @@ import { auth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { v4 as uuidv4 } from "uuid";
 
-export const PUT = auth(async (req, { params }) => {
+export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
   const requestId = uuidv4();
+  const session = await auth();
   
-  if (!req.auth || (req.auth.user as any).role !== "ADMIN") {
+  if (!session?.user || (session.user as { role?: string }).role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  // Next.js route handlers with NextAuth pass params as the second argument,
-  // but due to the auth wrapper, we might need to cast or access it carefully.
-  // @ts-ignore
-  const id = params?.id;
+  const { id } = await context.params;
 
   if (!id) {
     return NextResponse.json({ error: "Question ID is required" }, { status: 400 });
@@ -41,17 +39,17 @@ export const PUT = auth(async (req, { params }) => {
     logger.error({ requestId, error }, "Failed to update question");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-});
+}
 
-export const DELETE = auth(async (req, { params }) => {
+export async function DELETE(_req: Request, context: { params: Promise<{ id: string }> }) {
   const requestId = uuidv4();
+  const session = await auth();
   
-  if (!req.auth || (req.auth.user as any).role !== "ADMIN") {
+  if (!session?.user || (session.user as { role?: string }).role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  // @ts-ignore
-  const id = params?.id;
+  const { id } = await context.params;
 
   if (!id) {
     return NextResponse.json({ error: "Question ID is required" }, { status: 400 });
@@ -72,4 +70,4 @@ export const DELETE = auth(async (req, { params }) => {
     logger.error({ requestId, error }, "Failed to delete question");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-});
+}
