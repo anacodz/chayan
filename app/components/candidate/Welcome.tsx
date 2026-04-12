@@ -12,13 +12,14 @@ export default function Welcome({ onAccept, onDecline }: WelcomeProps) {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden bg-background">
+      <div className="absolute inset-y-0 right-0 w-[38%] bg-[#f6f2e8]/70 pointer-events-none" />
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary-fixed/20 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary-fixed/30 rounded-full blur-3xl"></div>
       </div>
       
-      <div className="w-full max-w-5xl z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <div className="w-full max-w-[1180px] z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           <div className="lg:col-span-7 flex flex-col gap-8">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 premium-gradient rounded-xl flex items-center justify-center text-white shadow-lg">
@@ -29,7 +30,7 @@ export default function Welcome({ onAccept, onDecline }: WelcomeProps) {
             
             <div className="space-y-6">
               <p className="text-sm font-bold tracking-[0.1em] text-primary uppercase">Academic Atelier</p>
-              <h2 className="text-5xl md:text-6xl font-bold text-on-surface tracking-tight leading-[1.1]">
+              <h2 className="text-5xl md:text-[60px] font-bold text-on-surface tracking-tight leading-[1.08]">
                 Begin your <br/>
                 <span className="text-primary italic">educational journey.</span>
               </h2>
@@ -60,8 +61,8 @@ export default function Welcome({ onAccept, onDecline }: WelcomeProps) {
             </div>
           </div>
           
-          <div className="lg:col-span-5">
-            <div className="glass-panel p-8 md:p-10 rounded-2xl shadow-[0_12px_40px_rgba(73,95,132,0.08)] flex flex-col gap-8">
+          <div className="lg:col-span-5 lg:pl-2">
+            <div className="glass-panel p-8 md:p-10 rounded-2xl shadow-[0_12px_40px_rgba(73,95,132,0.08)] flex flex-col gap-8 max-w-[430px] ml-auto">
               <div className="space-y-2">
                 <h3 className="text-2xl font-bold text-on-surface">Candidate Consent</h3>
                 <p className="text-sm text-on-surface-variant">Please review our transparency guidelines before we begin.</p>

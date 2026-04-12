@@ -1,15 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { Question } from "@/lib/questions";
 
 interface InterviewProps {
   questionIndex: number;
   totalQuestions: number;
-  currentQuestion: {
-    id: string;
-    prompt: string;
-    guidance?: string;
-  };
+  currentQuestion: Question | { id: string; prompt: string; guidance: string };
   status: "idle" | "recording" | "processing" | "error";
   elapsed: number;
   maxSeconds: number;
@@ -20,7 +16,11 @@ interface InterviewProps {
   onStopRecording: () => void;
   formatTime: (s: number) => string;
   progress: number;
-  session?: any;
+  session?: {
+    candidate: {
+      name: string;
+    };
+  };
   onPlayTts: () => void;
   isTtsLoading: boolean;
 }
