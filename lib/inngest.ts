@@ -2,6 +2,7 @@ import { Inngest } from "inngest";
 import { transcribeAudioService, evaluateAnswerService } from "./services/ai";
 import prisma from "./prisma";
 import { logger } from "./logger";
+import { createHash } from "node:crypto";
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "chayan" });
@@ -11,8 +12,10 @@ export const inngest = new Inngest({ id: "chayan" });
  * Triggers on 'answer/uploaded' event.
  */
 export const transcribeAndEvaluateAnswer = inngest.createFunction(
-  { id: "transcribe-and-evaluate-answer" },
-  { event: "answer/uploaded" },
+  {
+    id: "transcribe-and-evaluate-answer",
+    triggers: [{ event: "answer/uploaded" }],
+  },
   async ({ event, step }) => {
     const { answerId, sessionId, questionId, audioUrl, question, competencyTags } = event.data;
     
@@ -27,11 +30,51 @@ export const transcribeAndEvaluateAnswer = inngest.createFunction(
       return await transcribeAudioService(audioBlob);
     });
 
-    // 2. Save transcript to database
-    await step.run("save-transcript", async () => {
-      logger.info({ answerId }, "Saving transcript");
-...
+    // 2. Save transcript to database and handle quality
+    const shouldEvaluate = await step.run("save-transcript-and-check-quality", async () => {
+      logger.info({ answerId, quality: transcriptionResult.quality }, "Saving transcript");
+      
+      await prisma.transcript.upsert({
+        where: { answerId },
+        create: {
+          answerId,
+          provider: transcriptionResult.provider as any,
+          model: transcriptionResult.model,
+          text: transcriptionResult.text,
+          latencyMs: 0,
+        },
+        update: {
+          provider: transcriptionResult.provider as any,
+          model: transcriptionResult.model,
+          text: transcriptionResult.text,
+          latencyMs: 0,
+        }
+      });
+
+      if (transcriptionResult.quality !== "OK") {
+        await prisma.answer.update({
+          where: { id: answerId },
+          data: { status: "NEEDS_RETRY" }
+        });
+        
+        await prisma.interviewSession.update({
+          where: { id: sessionId },
+          data: { status: "NEEDS_CANDIDATE_RETRY" }
+        });
+        
+        return false;
+      }
+
+      await prisma.answer.update({
+        where: { id: answerId },
+        data: { status: "TRANSCRIBED" }
+      });
+      return true;
     });
+
+    if (!shouldEvaluate) {
+      return { answerId, status: "needs_retry", quality: transcriptionResult.quality };
+    }
 
     // 3. Evaluate transcript
     const evaluation = await step.run("evaluate-answer", async () => {
@@ -42,7 +85,65 @@ export const transcribeAndEvaluateAnswer = inngest.createFunction(
     // 4. Save evaluation and update answer status
     await step.run("save-evaluation", async () => {
       logger.info({ answerId }, "Saving evaluation");
-...
+      const transcriptHash = createHash("sha256")
+        .update(transcriptionResult.text)
+        .digest("hex");
+
+      await prisma.answerEvaluation.upsert({
+        where: { answerId },
+        create: {
+          answerId,
+          modelProvider: "google",
+          model: "gemini-2.0-flash",
+          promptVersion: "v1",
+          schemaVersion: "v1",
+          transcriptHash,
+          communicationClarity: Math.round(evaluation.dimensionScores.communicationClarity),
+          conceptExplanation: Math.round(evaluation.dimensionScores.conceptExplanation),
+          empathyAndPatience: Math.round(evaluation.dimensionScores.empathyAndPatience),
+          adaptability: Math.round(evaluation.dimensionScores.adaptability),
+          professionalism: Math.round(evaluation.dimensionScores.professionalism),
+          englishFluency: Math.round(evaluation.dimensionScores.englishFluency),
+          confidence: evaluation.confidence,
+          evidence: evaluation.signals,
+          concerns: evaluation.redFlags,
+          followUpQuestion: evaluation.followUpQuestion ?? null,
+          requiresHumanReview: false,
+        },
+        update: {
+          modelProvider: "google",
+          model: "gemini-2.0-flash",
+          promptVersion: "v1",
+          schemaVersion: "v1",
+          transcriptHash,
+          communicationClarity: Math.round(evaluation.dimensionScores.communicationClarity),
+          conceptExplanation: Math.round(evaluation.dimensionScores.conceptExplanation),
+          empathyAndPatience: Math.round(evaluation.dimensionScores.empathyAndPatience),
+          adaptability: Math.round(evaluation.dimensionScores.adaptability),
+          professionalism: Math.round(evaluation.dimensionScores.professionalism),
+          englishFluency: Math.round(evaluation.dimensionScores.englishFluency),
+          confidence: evaluation.confidence,
+          evidence: evaluation.signals,
+          concerns: evaluation.redFlags,
+          followUpQuestion: evaluation.followUpQuestion ?? null,
+          requiresHumanReview: false,
+        },
+      });
+
+      await prisma.answer.update({
+        where: { id: answerId },
+        data: { status: "EVALUATED" },
+      });
+
+      await prisma.interviewSession.update({
+        where: { id: sessionId },
+        data: {
+          status: evaluation.followUpQuestion
+            ? "NEEDS_CANDIDATE_RETRY"
+            : "READY_FOR_NEXT_QUESTION",
+        },
+      });
+    });
 
     return { answerId, status: "completed" };
   }
@@ -53,8 +154,10 @@ export const transcribeAndEvaluateAnswer = inngest.createFunction(
  * Runs daily at midnight.
  */
 export const cleanupOldData = inngest.createFunction(
-  { id: "cleanup-old-data" },
-  { cron: "0 0 * * *" },
+  {
+    id: "cleanup-old-data",
+    triggers: [{ cron: "0 0 * * *" }],
+  },
   async ({ step }) => {
     // 1. Delete audio older than 90 days
     const audioRetentionLimit = new Date();
