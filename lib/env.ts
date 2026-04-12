@@ -14,7 +14,7 @@ const envSchema = z.object({
 
   // Auth
   NEXTAUTH_SECRET: z.string().optional(),
-  NEXTAUTH_URL: z.string().url().optional(),
+  NEXTAUTH_URL: z.string().url().optional().default("http://localhost:3000"),
 
   // App
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
