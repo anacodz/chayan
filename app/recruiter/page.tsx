@@ -29,7 +29,7 @@ export default function RecruiterDashboard() {
 
         <nav className="flex flex-col gap-1 flex-1">
           {NAV_ITEMS.map((item) => (
-            <Link
+            <a
               key={item.label}
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:translate-x-1 ${
@@ -42,7 +42,7 @@ export default function RecruiterDashboard() {
                 {item.icon}
               </span>
               <span className="font-medium text-sm">{item.label}</span>
-            </Link>
+            </a>
           ))}
         </nav>
 
