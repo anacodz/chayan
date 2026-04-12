@@ -11,16 +11,14 @@ type Answer = {
   evaluation: AnswerEvaluation;
 };
 
-type Phase = "loading" | "invalid" | "consent" | "interview" | "complete";
+type Phase = "consent" | "interview" | "complete";
 type RecordStatus = "idle" | "recording" | "processing" | "error";
 
 export default function Home() {
-  const [phase, setPhase] = useState<Phase>("loading");
-  const [session, setSession] = useState<any>(null);
+  const [phase, setPhase] = useState<Phase>("consent");
   const [consented, setConsented] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [status, setStatus] = useState<RecordStatus>("idle");
-  const [processingStep, setProcessingStep] = useState<string>("");
   const [error, setError] = useState("");
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [report, setReport] = useState<FinalReport | null>(null);
@@ -38,49 +36,11 @@ export default function Home() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
 
-  const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(null);
-  const [hasAskedFollowUp, setHasAskedFollowUp] = useState(false);
-
-  const currentQuestion = useMemo(() => {
-    if (followUpQuestion) {
-      return { id: `follow-up-${questions[questionIndex].id}`, prompt: followUpQuestion, competencyTags: questions[questionIndex].competencyTags };
-    }
-    return questions[questionIndex];
-  }, [questionIndex, followUpQuestion]);
-
+  const currentQuestion = questions[questionIndex];
   const progress = useMemo(
     () => Math.round(((questionIndex) / questions.length) * 100),
     [questionIndex]
   );
-
-  /* Validate Invite on Mount */
-  useEffect(() => {
-    async function validate() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get("invite");
-
-      if (!token) {
-        // For development/demo purposes, allow access if no token is provided
-        // but mark it as a "demo" session.
-        setPhase("consent");
-        return;
-      }
-
-      try {
-        const res = await fetch(`/api/invites/${token}`);
-        if (!res.ok) {
-          setPhase("invalid");
-          return;
-        }
-        const data = await res.json();
-        setSession(data.session);
-        setPhase("consent");
-      } catch {
-        setPhase("invalid");
-      }
-    }
-    validate();
-  }, []);
 
   const formatTime = useCallback((s: number) => {
     const m = Math.floor(s / 60);
@@ -169,7 +129,6 @@ export default function Home() {
   }
 
   async function handleReRecord() {
-    /* Stop current recording without submitting */
     const recorder = mediaRecorder.current;
     if (recorder && recorder.state !== "inactive") {
       await new Promise<void>((resolve) => {
@@ -192,7 +151,6 @@ export default function Home() {
   async function processAudio(audio: Blob) {
     if (!currentQuestion) return;
     setStatus("processing");
-    setProcessingStep("Transcribing your answer...");
     setTranscriptDraft("");
     try {
       const form = new FormData();
@@ -202,58 +160,23 @@ export default function Home() {
       const tPayload = await tRes.json();
       if (!tRes.ok) throw new Error(tPayload.error || "Transcription failed.");
       const transcript = tPayload.transcript as string;
-      const audioUrl = tPayload.audioUrl as string;
       setTranscriptDraft(transcript);
 
-      setProcessingStep("Evaluating your answer...");
       const eRes = await fetch("/api/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: currentQuestion.prompt,
-          competencyTags: currentQuestion.competencyTags,
-          transcript,
-          sessionId: session?.id,
-          questionId: currentQuestion.id,
-          audioUrl
-        }),
+        body: JSON.stringify({ question: currentQuestion.prompt, competencyTags: currentQuestion.competencyTags, transcript }),
       });
       const ePayload = await eRes.json();
       if (!eRes.ok) throw new Error(ePayload.error || "Evaluation failed.");
 
-      const evaluation = ePayload.evaluation as AnswerEvaluation;
-
       const nextAnswers: Answer[] = [
         ...answers,
-        { questionId: currentQuestion.id, question: currentQuestion.prompt, transcript, evaluation },
+        { questionId: currentQuestion.id, question: currentQuestion.prompt, transcript, evaluation: ePayload.evaluation as AnswerEvaluation },
       ];
       setAnswers(nextAnswers);
 
-      // Handle follow-up logic
-      // 1. Explicit word count nudge if transcript is too short (< 20 words)
-      const wordCount = transcript.trim().split(/\s+/).length;
-      if (wordCount < 20 && !hasAskedFollowUp) {
-        setFollowUpQuestion("That's a bit brief. Could you please expand on that or provide an example to help us better understand your approach?");
-        setHasAskedFollowUp(true);
-        setStatus("idle");
-        setTranscriptDraft(transcript);
-        return;
-      }
-
-      // 2. AI-generated follow-up logic
-      if (evaluation.followUpQuestion && !hasAskedFollowUp) {
-        setFollowUpQuestion(evaluation.followUpQuestion);
-        setHasAskedFollowUp(true);
-        setStatus("idle");
-        setTranscriptDraft("");
-        return;
-      }
-
-      // Reset follow-up state for the next base question
-      setFollowUpQuestion(null);
-      setHasAskedFollowUp(false);
-
-      if (questionIndex === questions.length - 1) {
+      if (nextAnswers.length === questions.length) {
         await buildReport(nextAnswers);
         return;
       }
@@ -270,10 +193,7 @@ export default function Home() {
     const res = await fetch("/api/summarize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        answers: done,
-        sessionId: session?.id
-      }),
+      body: JSON.stringify({ answers: done }),
     });
     const payload = await res.json();
     if (!res.ok) throw new Error(payload.error || "Report generation failed.");
@@ -281,45 +201,10 @@ export default function Home() {
     setPhase("complete");
   }
 
-  /* ── Screen 0: Loading ────────────────────────────────────── */
-  if (phase === "loading") {
-    return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
-        <svg className="animate-spin w-10 h-10 text-primary mb-4" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-        </svg>
-        <p className="text-on-surface-variant font-medium">Validating your invitation...</p>
-      </main>
-    );
-  }
-
-  /* ── Screen 0.1: Invalid ──────────────────────────────────── */
-  if (phase === "invalid") {
-    return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-6 bg-background text-center">
-        <div className="w-20 h-20 rounded-full bg-error-container flex items-center justify-center mb-6">
-          <span className="material-symbols-outlined text-4xl text-on-error-container">error</span>
-        </div>
-        <h1 className="text-3xl font-black text-on-surface mb-2">Invitation Invalid</h1>
-        <p className="text-on-surface-variant max-w-md mb-8">
-          This invitation link is invalid or has expired. Please contact your recruiter for a new link.
-        </p>
-        <button
-          onClick={() => window.location.href = "/"}
-          className="px-8 py-3 bg-primary text-white font-bold rounded-xl shadow-lg"
-        >
-          Return Home
-        </button>
-      </main>
-    );
-  }
-
   /* ── Screen 1: Consent ────────────────────────────────────── */
   if (phase === "consent") {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden bg-background">
-        {/* Ambient blobs */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary-fixed/20 rounded-full blur-3xl" />
           <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary-fixed/30 rounded-full blur-3xl" />
@@ -327,10 +212,7 @@ export default function Home() {
 
         <div className="w-full max-w-5xl z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-
-            {/* Left — info */}
             <div className="lg:col-span-7 flex flex-col gap-8">
-              {/* Logo */}
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 premium-gradient rounded-xl flex items-center justify-center text-white shadow-lg">
                   <span className="material-symbols-outlined text-2xl">psychology</span>
@@ -338,7 +220,6 @@ export default function Home() {
                 <span className="text-2xl font-black tracking-tighter text-on-secondary-fixed">Chayan</span>
               </div>
 
-              {/* Headline */}
               <div className="space-y-4">
                 <p className="text-sm font-bold tracking-[0.1em] text-primary uppercase">Academic Atelier</p>
                 <h1 className="text-5xl md:text-6xl font-bold text-on-surface tracking-tight leading-[1.1]">
@@ -350,7 +231,6 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Feature cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-6 rounded-2xl bg-surface-container-lowest shadow-[0_4px_20px_rgba(73,95,132,0.04)] flex flex-col gap-4">
                   <div className="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-fixed">
@@ -358,9 +238,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-bold text-on-surface">Voice-First Experience</h3>
-                    <p className="text-sm text-on-surface-variant mt-1">
-                      Natural dialogue processing for real-time pedagogical assessment.
-                    </p>
+                    <p className="text-sm text-on-surface-variant mt-1">Natural dialogue processing for real-time pedagogical assessment.</p>
                   </div>
                 </div>
                 <div className="p-6 rounded-2xl bg-surface-container-lowest shadow-[0_4px_20px_rgba(73,95,132,0.04)] flex flex-col gap-4">
@@ -369,15 +247,12 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-bold text-on-surface">15-Minute Duration</h3>
-                    <p className="text-sm text-on-surface-variant mt-1">
-                      A focused session designed to value your time and expertise.
-                    </p>
+                    <p className="text-sm text-on-surface-variant mt-1">A focused session designed to value your time and expertise.</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Right — consent panel */}
             <div className="lg:col-span-5">
               <div className="glass-panel p-8 md:p-10 rounded-2xl shadow-[0_12px_40px_rgba(73,95,132,0.08)] flex flex-col gap-8">
                 <div className="space-y-2">
@@ -390,18 +265,14 @@ export default function Home() {
                     <span className="material-symbols-outlined text-primary mt-0.5">verified_user</span>
                     <div>
                       <h4 className="text-sm font-bold text-on-surface">Data Privacy &amp; Security</h4>
-                      <p className="text-xs text-on-surface-variant leading-relaxed mt-1">
-                        Your voice responses are encrypted and used solely for candidate evaluation purposes by Chayan AI.
-                      </p>
+                      <p className="text-xs text-on-surface-variant leading-relaxed mt-1">Your voice responses are encrypted and used solely for candidate evaluation purposes by Chayan AI.</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
                     <span className="material-symbols-outlined text-primary mt-0.5">gavel</span>
                     <div>
                       <h4 className="text-sm font-bold text-on-surface">Ethical AI Framework</h4>
-                      <p className="text-xs text-on-surface-variant leading-relaxed mt-1">
-                        Our scoring models are audited for bias to ensure an equitable assessment for every educator.
-                      </p>
+                      <p className="text-xs text-on-surface-variant leading-relaxed mt-1">Our scoring models are audited for bias to ensure an equitable assessment for every educator.</p>
                     </div>
                   </div>
 
@@ -448,11 +319,9 @@ export default function Home() {
                 </div>
               </div>
             </div>
-
           </div>
         </div>
 
-        {/* Social proof footer */}
         <div className="absolute bottom-12 left-12 hidden lg:flex items-center gap-4 z-10">
           <div className="flex -space-x-3">
             <div className="w-10 h-10 rounded-full border-2 border-background bg-secondary/20 flex items-center justify-center text-secondary text-xs font-bold">AS</div>
@@ -465,21 +334,17 @@ export default function Home() {
     );
   }
 
-  /* ── Screen 3: Complete (thank you) ───────────────────────── */
+  /* ── Screen 3: Complete ───────────────────────────────────── */
   if (phase === "complete") {
     return (
       <main className="min-h-screen flex items-center justify-center p-6 bg-background">
         <div className="w-full max-w-lg text-center flex flex-col items-center gap-8">
           <div className="w-20 h-20 rounded-full bg-tertiary-container flex items-center justify-center">
-            <span className="material-symbols-outlined text-4xl text-on-tertiary-container" style={{ fontVariationSettings: "'FILL' 1" }}>
-              task_alt
-            </span>
+            <span className="material-symbols-outlined text-4xl text-on-tertiary-container" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
           </div>
           <div className="space-y-3">
             <h1 className="text-4xl font-black text-on-secondary-fixed">Screening Complete</h1>
-            <p className="text-on-surface-variant text-lg">
-              Thank you for completing your Cuemath tutor screening.
-            </p>
+            <p className="text-on-surface-variant text-lg">Thank you for completing your Cuemath tutor screening.</p>
           </div>
           <div className="bg-surface-container-lowest rounded-2xl p-6 w-full text-left space-y-4 shadow-sm">
             <h3 className="font-bold text-on-secondary-fixed flex items-center gap-2">
@@ -487,21 +352,11 @@ export default function Home() {
               What happens next
             </h3>
             <ul className="space-y-3 text-sm text-on-surface-variant">
-              <li className="flex gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                Our AI has analysed your {answers.length} responses across 6 competency dimensions.
-              </li>
-              <li className="flex gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                A recruiter from Cuemath will review your screening report.
-              </li>
-              <li className="flex gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                Expect to hear back within 2–3 business days.
-              </li>
+              <li className="flex gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />Our AI has analysed your {answers.length} responses across 6 competency dimensions.</li>
+              <li className="flex gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />A recruiter from Cuemath will review your screening report.</li>
+              <li className="flex gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />Expect to hear back within 2–3 business days.</li>
             </ul>
           </div>
-          {/* Dev-only: show report for demo */}
           {report && (
             <div className="w-full bg-surface-container-low rounded-2xl p-5 text-left text-xs text-on-surface-variant space-y-2 border border-outline-variant/20">
               <p className="font-bold text-on-secondary-fixed text-sm">AI Report Preview (recruiter view — demo only)</p>
@@ -513,19 +368,15 @@ export default function Home() {
           <button
             onClick={() => { setPhase("consent"); setQuestionIndex(0); setAnswers([]); setReport(null); setStatus("idle"); setError(""); setTranscriptDraft(""); setConsented(false); }}
             className="text-sm font-medium text-primary hover:underline"
-          >
-            ← Start over (demo)
-          </button>
+          >← Start over (demo)</button>
         </div>
       </main>
     );
   }
 
-  /* ── Screen 2: Interview (two-column Figma layout) ─────────── */
+  /* ── Screen 2: Interview ──────────────────────────────────── */
   return (
     <div className="min-h-screen bg-background flex flex-col">
-
-      {/* ── Top navigation bar ── */}
       <header className="glass-header sticky top-0 z-50 shadow-[0_4px_20px_rgba(73,95,132,0.04)]">
         <div className="flex justify-between items-center w-full px-6 md:px-8 py-4">
           <div className="flex items-center gap-6">
@@ -542,30 +393,17 @@ export default function Home() {
             <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-white text-xs font-bold">CH</div>
           </div>
         </div>
-        {/* Progress bar */}
         <div className="w-full h-1 bg-surface-container-high">
-          <div
-            className="h-full bg-primary-container transition-all duration-500"
-            style={{ width: `${progress}%` }}
-            role="progressbar"
-            aria-valuenow={progress}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          />
+          <div className="h-full bg-primary-container transition-all duration-500" style={{ width: `${progress}%` }} role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} />
         </div>
       </header>
 
-      {/* ── Main content ── */}
       <main className="flex-1 flex flex-col items-center justify-start px-4 md:px-8 pt-8 md:pt-16 pb-28">
-        {/* Question counter */}
         <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-8">
           Question {questionIndex + 1} of {questions.length}
         </p>
 
-        {/* Two-column layout */}
         <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-
-          {/* Left column — Question */}
           <div className="lg:col-span-7">
             <div className="bg-surface-container-lowest rounded-2xl p-8 md:p-10 shadow-[0_4px_20px_rgba(73,95,132,0.04)] min-h-[240px] flex flex-col justify-center">
               <h2 className="text-2xl md:text-3xl font-bold text-on-surface leading-snug mb-4">
@@ -578,21 +416,15 @@ export default function Home() {
                 </p>
               )}
             </div>
-
-            {/* Transcript preview (below question card on mobile) */}
             {transcriptDraft && (
               <div className="mt-4 bg-surface-container-lowest rounded-2xl p-6 shadow-sm space-y-2">
                 <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Transcript Preview</p>
-                <div className="bg-surface-container-low rounded-xl px-4 py-3 text-sm text-on-surface leading-relaxed italic">
-                  &ldquo;{transcriptDraft}&rdquo;
-                </div>
+                <div className="bg-surface-container-low rounded-xl px-4 py-3 text-sm text-on-surface leading-relaxed italic">&ldquo;{transcriptDraft}&rdquo;</div>
               </div>
             )}
           </div>
 
-          {/* Right column — Recording panel */}
           <div className="lg:col-span-5 space-y-4">
-            {/* Timer & waveform card */}
             <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-[0_4px_20px_rgba(73,95,132,0.04)] flex flex-col items-center">
               {status === "recording" ? (
                 <>
@@ -604,25 +436,20 @@ export default function Home() {
                     <span className="text-5xl font-black text-on-surface tabular-nums">{formatTime(elapsed)}</span>
                     <span className="text-xl text-on-surface-variant font-medium">/ {formatTime(MAX_SECONDS)}</span>
                   </div>
-                  {/* Waveform */}
                   <div className="flex items-end gap-[3px] h-10 mb-3">
                     {waveform.map((h, i) => (
-                      <div
-                        key={i}
-                        className="w-1.5 bg-primary-container rounded-full transition-all duration-75"
-                        style={{ height: `${h}px` }}
-                      />
+                      <div key={i} className="w-1.5 bg-primary-container rounded-full transition-all duration-75" style={{ height: `${h}px` }} />
                     ))}
                   </div>
                   <p className="text-xs text-on-surface-variant">Voice activity detected</p>
                 </>
               ) : status === "processing" ? (
-                <div className="flex flex-col items-center gap-4 py-4 text-center">
+                <div className="flex flex-col items-center gap-4 py-4">
                   <svg className="animate-spin w-10 h-10 text-primary" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                   </svg>
-                  <p className="text-sm font-bold text-on-surface">{processingStep}</p>
+                  <p className="text-sm font-bold text-on-surface">Processing your answer…</p>
                   <p className="text-xs text-on-surface-variant">Transcribing and evaluating</p>
                 </div>
               ) : (
@@ -636,78 +463,43 @@ export default function Home() {
               )}
             </div>
 
-            {/* Action buttons */}
             {status === "recording" && (
               <div className="space-y-3">
-                <button
-                  onClick={handleReRecord}
-                  className="w-full py-4 bg-surface-container-high text-on-surface-variant font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-colors active:scale-[0.98]"
-                >
-                  <span className="material-symbols-outlined text-[20px]">replay</span>
-                  Re-record
+                <button onClick={handleReRecord} className="w-full py-4 bg-surface-container-high text-on-surface-variant font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-colors active:scale-[0.98]">
+                  <span className="material-symbols-outlined text-[20px]">replay</span>Re-record
                 </button>
-                <button
-                  id="stop-submit-btn"
-                  onClick={stopAndSubmit}
-                  className="w-full py-4 bg-surface-container-high text-on-surface-variant font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-colors active:scale-[0.98]"
-                >
-                  <span className="material-symbols-outlined text-[20px]">check_circle</span>
-                  Submit Answer
+                <button id="stop-submit-btn" onClick={stopAndSubmit} className="w-full py-4 bg-surface-container-high text-on-surface-variant font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-colors active:scale-[0.98]">
+                  <span className="material-symbols-outlined text-[20px]">check_circle</span>Submit Answer
                 </button>
               </div>
             )}
 
             {status === "idle" && (
-              <label
-                id="upload-audio-label"
-                className="w-full py-4 bg-surface-container-high text-on-surface-variant font-bold rounded-2xl flex items-center justify-center gap-2 cursor-pointer hover:bg-surface-container-highest transition-colors"
-              >
-                <span className="material-symbols-outlined text-[20px]">upload</span>
-                Upload Audio File
-                <input
-                  id="upload-audio-input"
-                  type="file"
-                  accept="audio/*"
-                  className="hidden"
-                  disabled={status !== "idle"}
-                  onChange={(e) => handleUpload(e.target.files?.[0] ?? null)}
-                />
+              <label id="upload-audio-label" className="w-full py-4 bg-surface-container-high text-on-surface-variant font-bold rounded-2xl flex items-center justify-center gap-2 cursor-pointer hover:bg-surface-container-highest transition-colors">
+                <span className="material-symbols-outlined text-[20px]">upload</span>Upload Audio File
+                <input id="upload-audio-input" type="file" accept="audio/*" className="hidden" disabled={status !== "idle"} onChange={(e) => handleUpload(e.target.files?.[0] ?? null)} />
               </label>
             )}
           </div>
         </div>
 
-        {/* Center CTA button */}
         <div className="mt-8 md:mt-12">
           {status === "recording" ? (
-            <button
-              onClick={stopAndSubmit}
-              className="px-12 py-5 premium-gradient rounded-2xl text-white font-bold text-lg shadow-xl flex items-center gap-3 active:scale-95 transition-all"
-            >
-              <span className="material-symbols-outlined text-[24px]">stop</span>
-              Stop Recording
+            <button onClick={stopAndSubmit} className="px-12 py-5 premium-gradient rounded-2xl text-white font-bold text-lg shadow-xl flex items-center gap-3 active:scale-95 transition-all">
+              <span className="material-symbols-outlined text-[24px]">stop</span>Stop Recording
             </button>
           ) : status === "idle" ? (
-            <button
-              id="record-answer-btn"
-              onClick={startRecording}
-              className="px-12 py-5 premium-gradient rounded-2xl text-white font-bold text-lg shadow-xl flex items-center gap-3 active:scale-95 transition-all"
-            >
-              <span className="material-symbols-outlined text-[24px]">mic</span>
-              Start Recording
+            <button id="record-answer-btn" onClick={startRecording} className="px-12 py-5 premium-gradient rounded-2xl text-white font-bold text-lg shadow-xl flex items-center gap-3 active:scale-95 transition-all">
+              <span className="material-symbols-outlined text-[24px]">mic</span>Start Recording
             </button>
           ) : null}
         </div>
 
-        {/* Error */}
         {error && (
-          <div id="error-message" role="alert" className="mt-6 max-w-md bg-error-container text-on-error-container text-sm rounded-xl px-4 py-3">
-            {error}
-          </div>
+          <div id="error-message" role="alert" className="mt-6 max-w-md bg-error-container text-on-error-container text-sm rounded-xl px-4 py-3">{error}</div>
         )}
       </main>
 
-      {/* ── Bottom status bar ── */}
       <footer className="fixed bottom-0 left-0 right-0 bg-on-secondary-fixed/95 backdrop-blur-md text-white py-3 px-6 flex items-center justify-between z-40">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
