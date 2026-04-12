@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./styles.css";
+import { Providers } from "./components/providers";
 
 export const metadata: Metadata = {
   title: "Chayan — Cuemath Tutor Screener",
@@ -19,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="light">
       <body className="bg-background text-on-surface antialiased">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
