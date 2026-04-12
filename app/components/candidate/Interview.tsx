@@ -1,6 +1,7 @@
 "use client";
 
 import { Question } from "@/lib/questions";
+import CuemathLogo from "../CuemathLogo";
 
 interface InterviewProps {
   questionIndex: number;
@@ -45,30 +46,36 @@ export default function Interview({
 }: InterviewProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <div className="absolute inset-y-0 right-0 w-[35%] bg-[#f6f2e8]/70 pointer-events-none hidden lg:block" />
-      <header className="glass-header sticky top-0 z-50 shadow-[0_4px_20px_rgba(73,95,132,0.04)]">
+      <div className="absolute inset-y-0 right-0 w-[35%] bg-[#f0f4f8]/70 pointer-events-none hidden lg:block" />
+      <header className="glass-header sticky top-0 z-50 shadow-[0_4px_20px_rgba(0,46,110,0.04)] border-b border-outline-variant/10">
         <div className="flex justify-between items-center w-full px-6 md:px-8 py-4 max-w-[1920px] mx-auto">
-          <div className="flex items-center gap-6">
-            <span className="text-xl font-black tracking-tighter text-on-secondary-fixed uppercase">Cuemath</span>
-            {session && <span className="text-sm text-on-surface-variant font-medium hidden sm:inline">Candidate: {session.candidate.name}</span>}
+          <div className="flex items-center gap-4">
+            <CuemathLogo className="w-8 h-8" />
+            <span className="text-xl font-black tracking-tight text-primary leading-none">Cuemath</span>
+            <div className="w-px h-4 bg-outline-variant/30 hidden sm:block mx-2" />
+            {session && <span className="text-xs text-on-surface-variant font-bold uppercase tracking-widest hidden sm:inline">Certified Assessment</span>}
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-white text-xs font-bold">
+            <div className="px-3 py-1.5 rounded-full bg-secondary/10 border border-secondary/20 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
+              <span className="text-[10px] font-bold text-secondary uppercase tracking-tighter">Live Session</span>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shadow-sm">
               {session?.candidate.name[0] || "C"}
             </div>
           </div>
         </div>
         <div className="w-full h-1 bg-surface-container-high">
-          <div className="h-full bg-primary-container transition-all duration-500" style={{ width: `${progress}%` }} />
+          <div className="h-full bg-primary transition-all duration-500 shadow-[0_0_8px_rgba(0,112,255,0.4)]" style={{ width: `${progress}%` }} />
         </div>
       </header>
 
-  <main className="flex-1 flex flex-col items-center justify-start px-4 md:px-8 pt-8 md:pt-16 pb-28 md:pb-20 relative z-10">
+      <main className="flex-1 flex flex-col items-center justify-start px-4 md:px-8 pt-8 md:pt-16 pb-28 md:pb-20 relative z-10">
         <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-8">
           Question {questionIndex + 1} of {totalQuestions}
         </p>
         
-  <div className="w-full max-w-[1120px] grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8">
+        <div className="w-full max-w-[1120px] grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8">
           <div className="lg:col-span-7">
             <div className="bg-surface-container-lowest rounded-2xl p-6 sm:p-8 md:p-10 shadow-sm min-h-[220px] md:min-h-[240px] flex flex-col justify-center">
               <div className="flex justify-between items-start mb-4">
