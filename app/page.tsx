@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { questions } from "@/lib/questions";
 import type { AnswerEvaluation, FinalReport } from "@/lib/types";
 
@@ -26,11 +26,66 @@ export default function Home() {
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
 
+  /* Timer state */
+  const [elapsed, setElapsed] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const MAX_SECONDS = 180; // 3 minutes
+
+  /* Waveform bars */
+  const [waveform, setWaveform] = useState<number[]>(Array(20).fill(4));
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+
   const currentQuestion = questions[questionIndex];
   const progress = useMemo(
-    () => Math.round((answers.length / questions.length) * 100),
-    [answers.length]
+    () => Math.round(((questionIndex) / questions.length) * 100),
+    [questionIndex]
   );
+
+  const formatTime = useCallback((s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  }, []);
+
+  /* Start / stop timer */
+  useEffect(() => {
+    if (status === "recording") {
+      setElapsed(0);
+      timerRef.current = setInterval(() => setElapsed((p) => p + 1), 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [status]);
+
+  /* Waveform animation */
+  useEffect(() => {
+    if (status === "recording" && analyserRef.current) {
+      const analyser = analyserRef.current;
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteFrequencyData(dataArray);
+        const bars: number[] = [];
+        const sliceWidth = Math.floor(dataArray.length / 20);
+        for (let i = 0; i < 20; i++) {
+          let sum = 0;
+          for (let j = 0; j < sliceWidth; j++) {
+            sum += dataArray[i * sliceWidth + j];
+          }
+          const avg = sum / sliceWidth;
+          bars.push(Math.max(4, (avg / 255) * 40));
+        }
+        setWaveform(bars);
+        animFrameRef.current = requestAnimationFrame(tick);
+      };
+      tick();
+    } else {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (status !== "recording") setWaveform(Array(20).fill(4));
+    }
+    return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current); };
+  }, [status]);
 
   /* ── Recording logic ──────────────────────────────────────── */
   async function startRecording() {
@@ -42,6 +97,15 @@ export default function Home() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunks.current = [];
+
+      /* Set up Web Audio analyser for waveform */
+      const audioCtx = new AudioContext();
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
       const recorder = new MediaRecorder(stream);
       mediaRecorder.current = recorder;
       recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.current.push(e.data); };
@@ -62,6 +126,21 @@ export default function Home() {
     });
     const audio = new Blob(audioChunks.current, { type: recorder.mimeType || "audio/webm" });
     await processAudio(audio);
+  }
+
+  async function handleReRecord() {
+    /* Stop current recording without submitting */
+    const recorder = mediaRecorder.current;
+    if (recorder && recorder.state !== "inactive") {
+      await new Promise<void>((resolve) => {
+        recorder.addEventListener("stop", () => resolve(), { once: true });
+        recorder.stop();
+      });
+    }
+    audioChunks.current = [];
+    setStatus("idle");
+    setElapsed(0);
+    setTranscriptDraft("");
   }
 
   async function handleUpload(file: File | null) {
@@ -148,37 +227,37 @@ export default function Home() {
 
               {/* Headline */}
               <div className="space-y-4">
-                <p className="text-sm font-bold tracking-[0.1em] text-primary uppercase">Cuemath Tutor Screening</p>
+                <p className="text-sm font-bold tracking-[0.1em] text-primary uppercase">Academic Atelier</p>
                 <h1 className="text-5xl md:text-6xl font-bold text-on-surface tracking-tight leading-[1.1]">
-                  Let&apos;s hear<br />
-                  <span className="text-primary italic">how you teach.</span>
+                  Begin your<br />
+                  <span className="text-primary italic">educational journey.</span>
                 </h1>
                 <p className="text-lg text-on-surface-variant max-w-md leading-relaxed">
-                  You&apos;ll answer {questions.length} short questions about teaching. Record your answers in the browser — no app needed. This takes about 10–15 minutes.
+                  Welcome to the Chayan expert screening. We&apos;ve curated a space for you to demonstrate your mastery through a voice-first interactive session.
                 </p>
               </div>
 
               {/* Feature cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-6 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-4">
+                <div className="p-6 rounded-2xl bg-surface-container-lowest shadow-[0_4px_20px_rgba(73,95,132,0.04)] flex flex-col gap-4">
                   <div className="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-fixed">
                     <span className="material-symbols-outlined">record_voice_over</span>
                   </div>
                   <div>
-                    <h3 className="font-bold text-on-surface">Voice–First</h3>
+                    <h3 className="font-bold text-on-surface">Voice-First Experience</h3>
                     <p className="text-sm text-on-surface-variant mt-1">
-                      Answer using your microphone. Upload an audio file if recording isn&apos;t available.
+                      Natural dialogue processing for real-time pedagogical assessment.
                     </p>
                   </div>
                 </div>
-                <div className="p-6 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-4">
+                <div className="p-6 rounded-2xl bg-surface-container-lowest shadow-[0_4px_20px_rgba(73,95,132,0.04)] flex flex-col gap-4">
                   <div className="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-container">
                     <span className="material-symbols-outlined">timer</span>
                   </div>
                   <div>
-                    <h3 className="font-bold text-on-surface">~15 Minutes</h3>
+                    <h3 className="font-bold text-on-surface">15-Minute Duration</h3>
                     <p className="text-sm text-on-surface-variant mt-1">
-                      A focused session. Take your time with each answer — there&apos;s no rush.
+                      A focused session designed to value your time and expertise.
                     </p>
                   </div>
                 </div>
@@ -187,28 +266,28 @@ export default function Home() {
 
             {/* Right — consent panel */}
             <div className="lg:col-span-5">
-              <div className="glass-panel p-8 md:p-10 rounded-2xl shadow-lg flex flex-col gap-8">
-                <div className="space-y-1">
-                  <h2 className="text-2xl font-bold text-on-surface">Before you begin</h2>
-                  <p className="text-sm text-on-surface-variant">Please read this before recording.</p>
+              <div className="glass-panel p-8 md:p-10 rounded-2xl shadow-[0_12px_40px_rgba(73,95,132,0.08)] flex flex-col gap-8">
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold text-on-surface">Candidate Consent</h2>
+                  <p className="text-sm text-on-surface-variant">Please review our transparency guidelines before we begin.</p>
                 </div>
 
                 <div className="space-y-6">
                   <div className="flex gap-4">
                     <span className="material-symbols-outlined text-primary mt-0.5">verified_user</span>
                     <div>
-                      <h4 className="text-sm font-bold text-on-surface">Data Privacy</h4>
+                      <h4 className="text-sm font-bold text-on-surface">Data Privacy &amp; Security</h4>
                       <p className="text-xs text-on-surface-variant leading-relaxed mt-1">
-                        Your voice responses are encrypted and used solely for evaluation by Cuemath&apos;s hiring team.
+                        Your voice responses are encrypted and used solely for candidate evaluation purposes by Chayan AI.
                       </p>
                     </div>
                   </div>
                   <div className="flex gap-4">
                     <span className="material-symbols-outlined text-primary mt-0.5">gavel</span>
                     <div>
-                      <h4 className="text-sm font-bold text-on-surface">Fair Assessment</h4>
+                      <h4 className="text-sm font-bold text-on-surface">Ethical AI Framework</h4>
                       <p className="text-xs text-on-surface-variant leading-relaxed mt-1">
-                        Our AI models are evaluated for bias to ensure every candidate is assessed fairly and consistently.
+                        Our scoring models are audited for bias to ensure an equitable assessment for every educator.
                       </p>
                     </div>
                   </div>
@@ -223,20 +302,22 @@ export default function Home() {
                         onChange={(e) => setConsented(e.target.checked)}
                       />
                       <span className="text-xs text-on-surface-variant leading-relaxed select-none">
-                        I consent to the recording of this session and understand that my responses will be used for Cuemath&apos;s hiring process.
+                        I consent to the recording of this session and agree to the{" "}
+                        <span className="text-primary font-semibold underline decoration-primary/30">Terms of Service</span> and{" "}
+                        <span className="text-primary font-semibold underline decoration-primary/30">Privacy Policy</span>.
                       </span>
                     </label>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-4">
                   <button
                     id="start-interview-btn"
-                    className="w-full h-14 premium-gradient rounded-xl text-white font-bold text-base shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full h-14 premium-gradient rounded-xl text-white font-bold text-lg shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                     disabled={!consented}
                     onClick={() => setPhase("interview")}
                   >
-                    Accept &amp; Begin Interview
+                    Accept &amp; Continue
                     <span className="material-symbols-outlined">arrow_forward</span>
                   </button>
                   <button className="w-full h-12 bg-surface-container-high text-on-surface-variant font-medium rounded-xl hover:bg-surface-container-highest transition-colors">
@@ -244,14 +325,28 @@ export default function Home() {
                   </button>
                 </div>
 
-                <div className="flex items-center justify-center gap-2 opacity-50">
-                  <span className="material-symbols-outlined text-sm text-on-surface-variant">lock</span>
-                  <span className="text-[10px] font-bold tracking-widest uppercase text-on-surface-variant">Secure Session</span>
+                <div className="flex items-center justify-center gap-6">
+                  <div className="w-8 h-8 rounded-full bg-surface-container-high opacity-60" />
+                  <div className="h-4 w-px bg-outline-variant/30" />
+                  <div className="flex items-center gap-1 opacity-60">
+                    <span className="material-symbols-outlined text-sm">lock</span>
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-on-surface-variant">Secure Session</span>
+                  </div>
                 </div>
               </div>
             </div>
 
           </div>
+        </div>
+
+        {/* Social proof footer */}
+        <div className="absolute bottom-12 left-12 hidden lg:flex items-center gap-4 z-10">
+          <div className="flex -space-x-3">
+            <div className="w-10 h-10 rounded-full border-2 border-background bg-secondary/20 flex items-center justify-center text-secondary text-xs font-bold">AS</div>
+            <div className="w-10 h-10 rounded-full border-2 border-background bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">RK</div>
+            <div className="w-10 h-10 rounded-full border-2 border-background bg-secondary flex items-center justify-center text-[10px] font-bold text-white">+2k</div>
+          </div>
+          <p className="text-xs font-medium text-on-surface-variant">Join 2,000+ expert educators curated by Chayan AI.</p>
         </div>
       </main>
     );
@@ -313,136 +408,217 @@ export default function Home() {
     );
   }
 
-  /* ── Screen 2: Interview ──────────────────────────────────── */
+  /* ── Screen 2: Interview (two-column Figma layout) ─────────── */
   return (
-    <main className="min-h-screen bg-background flex items-start justify-center p-6 pt-12">
-      <div className="w-full max-w-2xl flex flex-col gap-6">
+    <div className="min-h-screen bg-background flex flex-col">
 
-        {/* Top bar */}
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-2xl font-black tracking-tighter text-on-secondary-fixed">Chayan</span>
-          <span className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">
-            Cuemath Tutor Screening
-          </span>
-        </div>
-
-        {/* Progress */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-xs font-bold text-on-surface-variant uppercase tracking-widest">
-            <span>Question {questionIndex + 1} of {questions.length}</span>
-            <span>{progress}% complete</span>
+      {/* ── Top navigation bar ── */}
+      <header className="glass-header sticky top-0 z-50 shadow-[0_4px_20px_rgba(73,95,132,0.04)]">
+        <div className="flex justify-between items-center w-full px-6 md:px-8 py-4">
+          <div className="flex items-center gap-6">
+            <span className="text-xl font-black tracking-tighter text-on-secondary-fixed">InterviewAI</span>
+            <span className="text-sm text-on-surface-variant font-medium hidden sm:inline">Candidate: Chayan</span>
           </div>
-          <div className="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary-container rounded-full transition-all duration-500"
-              style={{ width: `${progress}%` }}
-              role="progressbar"
-              aria-valuenow={progress}
-              aria-valuemin={0}
-              aria-valuemax={100}
-            />
+          <div className="flex items-center gap-3">
+            <button className="p-2 rounded-full text-secondary hover:bg-surface-container-high transition-colors">
+              <span className="material-symbols-outlined text-[20px]">accessibility_new</span>
+            </button>
+            <button className="p-2 rounded-full text-secondary hover:bg-surface-container-high transition-colors">
+              <span className="material-symbols-outlined text-[20px]">info</span>
+            </button>
+            <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-white text-xs font-bold">CH</div>
           </div>
         </div>
-
-        {/* Question card */}
-        <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-sm">
-          <span className="text-xs font-bold text-primary uppercase tracking-widest">
-            Question {questionIndex + 1}
-          </span>
-          <h2 className="text-2xl font-bold text-on-surface mt-2 mb-3">
-            {currentQuestion.prompt}
-          </h2>
-          {currentQuestion.guidance && (
-            <p className="text-sm text-on-surface-variant leading-relaxed">
-              {currentQuestion.guidance}
-            </p>
-          )}
+        {/* Progress bar */}
+        <div className="w-full h-1 bg-surface-container-high">
+          <div
+            className="h-full bg-primary-container transition-all duration-500"
+            style={{ width: `${progress}%` }}
+            role="progressbar"
+            aria-valuenow={progress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          />
         </div>
+      </header>
 
-        {/* Recorder card */}
-        <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm space-y-4">
-          {status === "recording" ? (
-            <>
-              <div className="flex items-center gap-3">
-                <span className="recording-dot" aria-hidden="true" />
-                <span className="text-sm font-bold text-on-surface">Recording…</span>
-                <span className="text-xs text-on-surface-variant">Speak clearly into your microphone</span>
+      {/* ── Main content ── */}
+      <main className="flex-1 flex flex-col items-center justify-start px-4 md:px-8 pt-8 md:pt-16 pb-28">
+        {/* Question counter */}
+        <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-8">
+          Question {questionIndex + 1} of {questions.length}
+        </p>
+
+        {/* Two-column layout */}
+        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+
+          {/* Left column — Question */}
+          <div className="lg:col-span-7">
+            <div className="bg-surface-container-lowest rounded-2xl p-8 md:p-10 shadow-[0_4px_20px_rgba(73,95,132,0.04)] min-h-[240px] flex flex-col justify-center">
+              <h2 className="text-2xl md:text-3xl font-bold text-on-surface leading-snug mb-4">
+                &ldquo;{currentQuestion.prompt}&rdquo;
+              </h2>
+              {currentQuestion.guidance && (
+                <p className="text-sm text-on-surface-variant leading-relaxed flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-[18px]">lightbulb</span>
+                  {currentQuestion.guidance}
+                </p>
+              )}
+            </div>
+
+            {/* Transcript preview (below question card on mobile) */}
+            {transcriptDraft && (
+              <div className="mt-4 bg-surface-container-lowest rounded-2xl p-6 shadow-sm space-y-2">
+                <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Transcript Preview</p>
+                <div className="bg-surface-container-low rounded-xl px-4 py-3 text-sm text-on-surface leading-relaxed italic">
+                  &ldquo;{transcriptDraft}&rdquo;
+                </div>
               </div>
-              <button
-                id="stop-submit-btn"
-                onClick={stopAndSubmit}
-                className="w-full py-4 rounded-xl bg-error text-white font-bold flex items-center justify-center gap-2 active:scale-95 transition-all"
-              >
-                <span className="material-symbols-outlined">stop</span>
-                Stop &amp; Submit Answer
-              </button>
-            </>
-          ) : (
-            <div className="flex gap-3 flex-wrap">
-              <button
-                id="record-answer-btn"
-                onClick={startRecording}
-                disabled={status === "processing"}
-                className="flex-1 py-4 premium-gradient text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {status === "processing" ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                    </svg>
-                    Processing…
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined">mic</span>
-                    Record Answer
-                  </>
-                )}
-              </button>
+            )}
+          </div>
 
+          {/* Right column — Recording panel */}
+          <div className="lg:col-span-5 space-y-4">
+            {/* Timer & waveform card */}
+            <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-[0_4px_20px_rgba(73,95,132,0.04)] flex flex-col items-center">
+              {status === "recording" ? (
+                <>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="recording-dot" aria-hidden="true" />
+                    <span className="text-sm font-bold text-error uppercase tracking-widest">Recording</span>
+                  </div>
+                  <div className="flex items-baseline gap-1 mb-4">
+                    <span className="text-5xl font-black text-on-surface tabular-nums">{formatTime(elapsed)}</span>
+                    <span className="text-xl text-on-surface-variant font-medium">/ {formatTime(MAX_SECONDS)}</span>
+                  </div>
+                  {/* Waveform */}
+                  <div className="flex items-end gap-[3px] h-10 mb-3">
+                    {waveform.map((h, i) => (
+                      <div
+                        key={i}
+                        className="w-1.5 bg-primary-container rounded-full transition-all duration-75"
+                        style={{ height: `${h}px` }}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs text-on-surface-variant">Voice activity detected</p>
+                </>
+              ) : status === "processing" ? (
+                <div className="flex flex-col items-center gap-4 py-4">
+                  <svg className="animate-spin w-10 h-10 text-primary" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  <p className="text-sm font-bold text-on-surface">Processing your answer…</p>
+                  <p className="text-xs text-on-surface-variant">Transcribing and evaluating</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-4 py-4">
+                  <div className="w-16 h-16 rounded-full bg-surface-container-low flex items-center justify-center">
+                    <span className="material-symbols-outlined text-3xl text-on-surface-variant">mic</span>
+                  </div>
+                  <p className="text-sm font-bold text-on-surface">Ready to record</p>
+                  <p className="text-xs text-on-surface-variant text-center">Press the button below to start recording your answer</p>
+                </div>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            {status === "recording" && (
+              <div className="space-y-3">
+                <button
+                  onClick={handleReRecord}
+                  className="w-full py-4 bg-surface-container-high text-on-surface-variant font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-colors active:scale-[0.98]"
+                >
+                  <span className="material-symbols-outlined text-[20px]">replay</span>
+                  Re-record
+                </button>
+                <button
+                  id="stop-submit-btn"
+                  onClick={stopAndSubmit}
+                  className="w-full py-4 bg-surface-container-high text-on-surface-variant font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-colors active:scale-[0.98]"
+                >
+                  <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                  Submit Answer
+                </button>
+              </div>
+            )}
+
+            {status === "idle" && (
               <label
                 id="upload-audio-label"
-                className="flex-1 py-4 border border-outline-variant/50 text-on-surface-variant font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-surface-container-low transition-colors"
-                style={{ pointerEvents: status === "processing" ? "none" : "auto" }}
+                className="w-full py-4 bg-surface-container-high text-on-surface-variant font-bold rounded-2xl flex items-center justify-center gap-2 cursor-pointer hover:bg-surface-container-highest transition-colors"
               >
-                <span className="material-symbols-outlined">upload</span>
-                Upload Audio
+                <span className="material-symbols-outlined text-[20px]">upload</span>
+                Upload Audio File
                 <input
                   id="upload-audio-input"
                   type="file"
                   accept="audio/*"
                   className="hidden"
-                  disabled={status === "processing"}
+                  disabled={status !== "idle"}
                   onChange={(e) => handleUpload(e.target.files?.[0] ?? null)}
                 />
               </label>
-            </div>
-          )}
-
-          {status === "processing" && !transcriptDraft && (
-            <p className="text-xs text-on-surface-variant bg-surface-container-low rounded-xl px-4 py-3">
-              Transcribing and evaluating your answer — this takes a few seconds…
-            </p>
-          )}
-
-          {transcriptDraft && (
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Transcript Preview</p>
-              <div className="bg-surface-container-low rounded-xl px-4 py-3 text-sm text-on-surface leading-relaxed italic">
-                &ldquo;{transcriptDraft}&rdquo;
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div id="error-message" role="alert" className="bg-error-container text-on-error-container text-sm rounded-xl px-4 py-3">
-              {error}
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-      </div>
-    </main>
+        {/* Center CTA button */}
+        <div className="mt-8 md:mt-12">
+          {status === "recording" ? (
+            <button
+              onClick={stopAndSubmit}
+              className="px-12 py-5 premium-gradient rounded-2xl text-white font-bold text-lg shadow-xl flex items-center gap-3 active:scale-95 transition-all"
+            >
+              <span className="material-symbols-outlined text-[24px]">stop</span>
+              Stop Recording
+            </button>
+          ) : status === "idle" ? (
+            <button
+              id="record-answer-btn"
+              onClick={startRecording}
+              className="px-12 py-5 premium-gradient rounded-2xl text-white font-bold text-lg shadow-xl flex items-center gap-3 active:scale-95 transition-all"
+            >
+              <span className="material-symbols-outlined text-[24px]">mic</span>
+              Start Recording
+            </button>
+          ) : null}
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div id="error-message" role="alert" className="mt-6 max-w-md bg-error-container text-on-error-container text-sm rounded-xl px-4 py-3">
+            {error}
+          </div>
+        )}
+      </main>
+
+      {/* ── Bottom status bar ── */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-on-secondary-fixed/95 backdrop-blur-md text-white py-3 px-6 flex items-center justify-between z-40">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px] text-primary-container">mic</span>
+            <span className="text-xs font-medium">Microphone:</span>
+            <span className="text-xs font-bold text-tertiary-fixed">Active</span>
+          </div>
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px] text-primary-container">videocam</span>
+            <span className="text-xs font-medium">Camera:</span>
+            <span className="text-xs font-bold text-tertiary-fixed">Active</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">wifi</span>
+            <span className="text-xs font-medium">Connected</span>
+          </div>
+          <button className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-colors">
+            <span className="material-symbols-outlined text-[18px]">help</span>
+            <span className="text-xs font-bold">Need Help?</span>
+          </button>
+        </div>
+      </footer>
+    </div>
   );
 }
