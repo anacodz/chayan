@@ -47,3 +47,64 @@ export const transcribeAndEvaluateAnswer = inngest.createFunction(
     return { answerId, status: "completed" };
   }
 );
+
+/**
+ * Automated cron job to clean up old data.
+ * Runs daily at midnight.
+ */
+export const cleanupOldData = inngest.createFunction(
+  { id: "cleanup-old-data" },
+  { cron: "0 0 * * *" },
+  async ({ step }) => {
+    // 1. Delete audio older than 90 days
+    const audioRetentionLimit = new Date();
+    audioRetentionLimit.setDate(audioRetentionLimit.getDate() - 90);
+
+    const oldAnswers = await step.run("fetch-old-answers", async () => {
+      return await prisma.answer.findMany({
+        where: {
+          createdAt: { lt: audioRetentionLimit },
+          audioObjectKey: { startsWith: "http" }, // Only delete remote blobs
+        },
+        select: { id: true, audioObjectKey: true },
+      });
+    });
+
+    if (oldAnswers.length > 0) {
+      await step.run("delete-old-audio", async () => {
+        const { deleteAudio } = await import("./storage");
+        for (const answer of oldAnswers) {
+          try {
+            await deleteAudio(answer.audioObjectKey);
+            // Update record to indicate audio was deleted
+            await prisma.answer.update({
+              where: { id: answer.id },
+              data: { audioObjectKey: "deleted-by-retention-policy" },
+            });
+          } catch (e) {
+            logger.error({ answerId: answer.id, url: answer.audioObjectKey }, "Failed to delete old audio");
+          }
+        }
+      });
+    }
+
+    // 2. Mark abandoned sessions (no activity for 24 hours)
+    const abandonmentLimit = new Date();
+    abandonmentLimit.setHours(abandonmentLimit.getHours() - 24);
+
+    await step.run("mark-abandoned-sessions", async () => {
+      const result = await prisma.interviewSession.updateMany({
+        where: {
+          status: { in: ["INVITED", "CONSENTED", "IN_PROGRESS"] },
+          updatedAt: { lt: abandonmentLimit },
+        },
+        data: { status: "ABANDONED" },
+      });
+      return { markedAbandoned: result.count };
+    });
+
+    return { 
+      audioDeleted: oldAnswers.length,
+    };
+  }
+);

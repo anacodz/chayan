@@ -43,6 +43,10 @@
 - **[BACKLOG-010] Question Set Manager (Admin Dashboard)**
   - Implemented "Invite Candidate" modal and API on the recruiter dashboard.
   - Connected recruiter dashboard metrics to real database counts.
+- **[BACKLOG-011] Data Retention and Deletion Workflow**
+  - Implemented manual data deletion API for candidates (ADMIN only).
+  - Created automated Inngest cron job for midnight cleanup of audio > 90 days.
+  - Implemented automatic session abandonment marking for inactive interviews.
 
 ## Technical Notes
 - **Scalable Architecture**: Moved long-running AI tasks to background workers.
