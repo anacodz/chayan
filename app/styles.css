@@ -128,7 +128,24 @@ button, input, label, select, textarea { font: inherit; }
   animation: pulse-dot 1.4s ease-in-out infinite;
 }
 
+/* ── Tabular nums ──────────────────────────────────────────── */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ── Ambient shadow ────────────────────────────────────────── */
+.ambient-shadow {
+  box-shadow:
+    0 4px 20px rgba(73, 95, 132, 0.04),
+    0 12px 40px rgba(73, 95, 132, 0.08);
+}
+
 /* ── Scrollbar ─────────────────────────────────────────────── */
 ::-webkit-scrollbar       { width: 6px; }
 ::-webkit-scrollbar-track { background: #f3f3f6; }
 ::-webkit-scrollbar-thumb { background: #d5c4ac; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #b0a08a; }
+
+/* ── Selection ─────────────────────────────────────────────── */
+::selection {
+  background: #ffdea6;
+  color: #271900;
+}
