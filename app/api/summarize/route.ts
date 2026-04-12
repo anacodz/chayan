@@ -5,6 +5,8 @@ import { extractJsonObject } from "@/lib/json";
 import { env } from "@/lib/env";
 import { withRetry } from "@/lib/retry";
 import prisma from "@/lib/prisma";
+import { logger } from "@/lib/logger";
+import { v4 as uuidv4 } from "uuid";
 import type { AnswerEvaluation, FinalReport } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -17,18 +19,23 @@ type SubmittedAnswer = {
 };
 
 export async function POST(request: Request) {
+  const requestId = uuidv4();
   const body = await request.json();
   const answers = Array.isArray(body.answers) ? (body.answers as SubmittedAnswer[]) : [];
   const sessionId = body.sessionId as string | undefined;
 
   if (answers.length === 0) {
+    logger.warn({ requestId, sessionId }, "Summarize attempt with no answers");
     return NextResponse.json({ error: "At least one evaluated answer is required." }, { status: 400 });
   }
+
+  logger.info({ requestId, sessionId, answerCount: answers.length }, "Processing summary request");
 
   let report: FinalReport;
   let provider: string;
 
   if (!env.GEMINI_API_KEY) {
+    logger.info({ requestId, sessionId }, "Using local fallback for summary (no API key)");
     report = fallbackSummarize(answers);
     provider = "local";
   } else {
@@ -64,8 +71,9 @@ Use only transcript evidence. Keep the report recruiter-ready and concise.`
 
       report = extractJsonObject<FinalReport>(response.text || "");
       provider = "gemini";
+      logger.info({ requestId, sessionId }, "Gemini summary successful");
     } catch (error) {
-      console.error("Summarization error:", error);
+      logger.error({ requestId, sessionId, error: error instanceof Error ? error.message : "Unknown error" }, "Gemini summary failed, using fallback");
       report = fallbackSummarize(answers);
       provider = "local-fallback";
     }
@@ -74,6 +82,7 @@ Use only transcript evidence. Keep the report recruiter-ready and concise.`
   // Save to database if sessionId is provided
   if (sessionId) {
     try {
+      logger.info({ requestId, sessionId }, "Saving final report to DB");
       await prisma.finalReport.upsert({
         where: { sessionId },
         create: {
@@ -110,15 +119,16 @@ Use only transcript evidence. Keep the report recruiter-ready and concise.`
         where: { id: sessionId },
         data: { status: "COMPLETED", completedAt: new Date() }
       });
+      logger.info({ requestId, sessionId }, "Report saved and session completed");
     } catch (dbError) {
-      console.error("Failed to save report to database:", dbError);
+      logger.error({ requestId, sessionId, error: dbError }, "Failed to save report to DB");
     }
   }
 
   return NextResponse.json({ report, provider });
 }
 
-function averageScore(scores: Record<string, number>): number {
+function averageScore(scores: any): number {
   const vals = Object.values(scores) as number[];
   return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
 }

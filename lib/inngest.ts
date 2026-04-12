@@ -1,40 +1,49 @@
 import { Inngest } from "inngest";
+import { transcribeAudioService, evaluateAnswerService } from "./services/ai";
+import prisma from "./prisma";
+import { logger } from "./logger";
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "chayan" });
 
-// Define background functions here or in a separate file
+/**
+ * Background job to transcribe and evaluate an answer.
+ * Triggers on 'answer/uploaded' event.
+ */
 export const transcribeAndEvaluateAnswer = inngest.createFunction(
   { id: "transcribe-and-evaluate-answer" },
   { event: "answer/uploaded" },
   async ({ event, step }) => {
-    const { sessionId, questionId, audioUrl, question, competencyTags } = event.data;
+    const { answerId, sessionId, questionId, audioUrl, question, competencyTags } = event.data;
+    
+    logger.info({ answerId, sessionId }, "Starting background processing for answer");
 
-    const transcript = await step.run("transcribe-audio", async () => {
-      // Logic from transcribe API
-      const res = await fetch(`${process.env.APP_BASE_URL}/api/transcribe/internal`, {
-        method: "POST",
-        body: JSON.stringify({ audioUrl }),
-      });
-      return await res.json();
+    // 1. Transcribe audio
+    const transcriptionResult = await step.run("transcribe-audio", async () => {
+      logger.info({ answerId }, "Transcribing audio");
+      const audioRes = await fetch(audioUrl);
+      const audioBlob = await audioRes.blob();
+      
+      return await transcribeAudioService(audioBlob);
     });
 
+    // 2. Save transcript to database
+    await step.run("save-transcript", async () => {
+      logger.info({ answerId }, "Saving transcript");
+...
+    });
+
+    // 3. Evaluate transcript
     const evaluation = await step.run("evaluate-answer", async () => {
-      // Logic from evaluate API
-      const res = await fetch(`${process.env.APP_BASE_URL}/api/evaluate/internal`, {
-        method: "POST",
-        body: JSON.stringify({
-          question,
-          competencyTags,
-          transcript: transcript.text,
-          sessionId,
-          questionId,
-          audioUrl
-        }),
-      });
-      return await res.json();
+      logger.info({ answerId }, "Evaluating transcript");
+      return await evaluateAnswerService(question, transcriptionResult.text, competencyTags);
     });
 
-    return { transcript, evaluation };
+    // 4. Save evaluation and update answer status
+    await step.run("save-evaluation", async () => {
+      logger.info({ answerId }, "Saving evaluation");
+...
+
+    return { answerId, status: "completed" };
   }
 );

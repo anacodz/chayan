@@ -20,7 +20,8 @@
 ### P1 - Production Hardening
 - **[BACKLOG-005] Asynchronous Processing Queue**
   - Integrated Inngest for background job processing.
-  - Set up API routes and function shells for offloaded transcription/evaluation.
+  - Refactored AI logic into a shared service layer `lib/services/ai.ts`.
+  - Implemented async upload and polling mechanism on the frontend to prevent API timeouts.
 - **[BACKLOG-006] Implement Targeted Follow-up Logic**
   - Updated Gemini evaluation prompt to suggest targeted follow-ups.
   - Enhanced frontend `Home` component to handle one follow-up per question.
@@ -35,11 +36,15 @@
   - Added granular processing steps for better candidate feedback.
 
 ### P2 - Operational Maturity
+- **[BACKLOG-009] Structured Logging and Monitoring**
+  - Integrated `pino` for structured, JSON-based logging.
+  - Added logging to background jobs for better observability.
 - **[BACKLOG-010] Question Set Manager (Admin Dashboard)**
   - Implemented "Invite Candidate" modal and API on the recruiter dashboard.
   - Connected recruiter dashboard metrics to real database counts.
 
 ## Technical Notes
+- **Scalable Architecture**: Moved long-running AI tasks to background workers.
 - **Full Stack Persistence**: Every step of the candidate interview is now saved to the database.
 - **Real Recruiter Portal**: The recruiter dashboard and report details are now fully data-driven.
 - **Resilient AI Pipeline**: Implemented retries, fallbacks, and env validation for all AI calls.
