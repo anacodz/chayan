@@ -42,6 +42,8 @@
 - **[BACKLOG-010] Question Set Manager (Admin Dashboard)**
   - Implemented "Invite Candidate" modal and API on the recruiter dashboard.
   - Connected recruiter dashboard metrics to real database counts.
+  - Built full CRUD UI for managing Question Sets at `/admin/questions`.
+  - Refactored candidate interface to fetch dynamic questions from the database instead of hardcoded values.
 - **[BACKLOG-011] Data Retention and Deletion Workflow**
   - Implemented manual data deletion API for candidates (ADMIN only).
   - Created automated Inngest cron job for midnight cleanup of audio > 90 days.

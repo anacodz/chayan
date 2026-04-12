@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { questions } from "@/lib/questions";
 import type { AnswerEvaluation, FinalReport } from "@/lib/types";
 import Welcome from "./components/candidate/Welcome";
 import Interview from "./components/candidate/Interview";
@@ -14,12 +13,20 @@ type Answer = {
   evaluation: AnswerEvaluation;
 };
 
+type Question = {
+  id: string;
+  prompt: string;
+  guidance?: string;
+  competencyTags: string[];
+};
+
 type Phase = "loading" | "invalid" | "consent" | "interview" | "complete";
 type RecordStatus = "idle" | "recording" | "processing" | "error";
 
 export default function Home() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [session, setSession] = useState<any>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [status, setStatus] = useState<RecordStatus>("idle");
   const [processingStep, setProcessingStep] = useState<string>("");
@@ -46,19 +53,21 @@ export default function Home() {
   const animFrameRef = useRef<number | null>(null);
 
   const currentQuestion = useMemo(() => {
+    if (questions.length === 0) return null;
     if (followUpQuestion) {
       return { 
         id: `follow-up-${questions[questionIndex].id}`, 
         prompt: followUpQuestion, 
-        guidance: "This is a follow-up question based on your previous response."
+        guidance: "This is a follow-up question based on your previous response.",
+        competencyTags: questions[questionIndex].competencyTags
       };
     }
     return questions[questionIndex];
-  }, [questionIndex, followUpQuestion]);
+  }, [questions, questionIndex, followUpQuestion]);
 
   const progress = useMemo(
-    () => Math.round(((questionIndex) / questions.length) * 100),
-    [questionIndex]
+    () => questions.length > 0 ? Math.round(((questionIndex) / questions.length) * 100) : 0,
+    [questionIndex, questions.length]
   );
 
   /* Play TTS for the current question */
@@ -90,14 +99,14 @@ export default function Home() {
 
   /* Auto-play question on change */
   useEffect(() => {
-    if (phase === "interview" && currentQuestion.prompt) {
+    if (phase === "interview" && currentQuestion?.prompt) {
       // Small delay to allow transition
       const timer = setTimeout(() => {
         playTTS(currentQuestion.prompt);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [phase, currentQuestion.prompt, playTTS]);
+  }, [phase, currentQuestion?.prompt, playTTS]);
 
   /* Validate Invite on Mount */
   useEffect(() => {
@@ -106,6 +115,25 @@ export default function Home() {
       const token = urlParams.get("invite");
 
       if (!token) {
+        // Fetch default questions if no token
+        try {
+          const qRes = await fetch("/api/questions?questionSetId=default");
+          if (qRes.ok) {
+            const qData = await qRes.json();
+            if (qData.questions.length > 0) {
+              setQuestions(qData.questions);
+            } else {
+              const fallback = await import("@/lib/questions");
+              setQuestions(fallback.questions as any[]);
+            }
+          } else {
+            const fallback = await import("@/lib/questions");
+            setQuestions(fallback.questions as any[]);
+          }
+        } catch {
+          const fallback = await import("@/lib/questions");
+          setQuestions(fallback.questions as any[]);
+        }
         setPhase("consent");
         return;
       }
@@ -118,6 +146,21 @@ export default function Home() {
         }
         const data = await res.json();
         setSession(data.session);
+
+        const qRes = await fetch(`/api/questions?questionSetId=${data.session.questionSetId}`);
+        if (qRes.ok) {
+          const qData = await qRes.json();
+          if (qData.questions.length > 0) {
+            setQuestions(qData.questions);
+          } else {
+            const fallback = await import("@/lib/questions");
+            setQuestions(fallback.questions as any[]);
+          }
+        } else {
+          const fallback = await import("@/lib/questions");
+          setQuestions(fallback.questions as any[]);
+        }
+
         setPhase("consent");
       } catch {
         setPhase("invalid");
@@ -330,6 +373,10 @@ export default function Home() {
 
   if (phase === "complete") {
     return <Complete answersCount={answers.length} />;
+  }
+
+  if (!currentQuestion) {
+    return null;
   }
 
   return (
