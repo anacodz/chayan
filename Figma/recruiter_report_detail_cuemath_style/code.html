@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VoiceScreen AI - Candidate Report: Chayan</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#31476b",
+                        "surface-dim": "#dadadc",
+                        "on-surface": "#1a1c1e",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#f9f9fc",
+                        "primary-container": "#ffba07",
+                        "primary": "#7b5800",
+                        "secondary-fixed": "#d6e3ff",
+                        "secondary": "#495f84",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#00e372",
+                        "surface": "#f9f9fc",
+                        "outline": "#837560",
+                        "surface-container-low": "#f3f3f6",
+                        "primary-fixed": "#ffdea6",
+                        "on-secondary-container": "#445a7f",
+                        "surface-container-highest": "#e2e2e5",
+                        "inverse-on-surface": "#f0f0f3",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#005f2c",
+                        "on-surface-variant": "#504532",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed": "#271900",
+                        "tertiary-fixed": "#63ff94",
+                        "inverse-primary": "#ffbb11",
+                        "tertiary": "#006d33",
+                        "primary-fixed-dim": "#ffbb11",
+                        "on-secondary-fixed": "#001b3d",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005225",
+                        "error": "#ba1a1a",
+                        "secondary-fixed-dim": "#b1c7f2",
+                        "tertiary-fixed-dim": "#00e472",
+                        "surface-variant": "#e2e2e5",
+                        "error-container": "#ffdad6",
+                        "on-background": "#1a1c1e",
+                        "surface-container": "#eeeef0",
+                        "background": "#f9f9fc",
+                        "inverse-surface": "#2f3133",
+                        "on-tertiary-fixed": "#00210b",
+                        "outline-variant": "#d5c4ac",
+                        "surface-tint": "#7b5800",
+                        "on-primary-fixed-variant": "#5d4200",
+                        "surface-container-high": "#e8e8ea",
+                        "secondary-container": "#bcd2fe",
+                        "on-primary-container": "#6c4d00"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .glass-header {
+            background: rgba(249, 249, 252, 0.8);
+            backdrop-filter: blur(24px);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-40 glass-header shadow-sm shadow-slate-200/50">
+<div class="flex items-center justify-between px-6 py-3 w-full">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tighter text-on-secondary-fixed">VoiceScreen AI</span>
+<nav class="hidden md:flex gap-6">
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-amber-700 font-medium border-b-2 border-amber-600" href="#">Candidates</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors" href="#">Analytics</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<img alt="Recruiter Profile" class="w-10 h-10 rounded-full object-cover" data-alt="Professional headshot of a recruitment manager in a bright office environment, smiling and confident" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA45pW3ZiB264_x9_jyC9-BHHvhFClY0_d_Z2ibqN7_r0zI9MpTYrurnYa5so89jDfJlJFL0JQ5tiEgGj5Okg5P_CS3OLhzlmY8rbPyTrD2nehT0XieipFo9lqo4bkGCMy84RCWLP6vXUBlt5vx9GzOO0CiYaL5hFlBLSibbE83e_XE5Rs0r8ZtEGO-NACNQiZFH8FNzEmH6sUJpJsjQ3AGbaRgmIU88A7qjwiB9o9vGNQAPgXKnHrmNdQPs6piCWbztGZJWEP2Vz-v"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar (Mobile Bottom / Desktop Left Hidden for Detail Focus) -->
+<aside class="hidden lg:flex flex-col h-screen w-64 fixed left-0 top-0 pt-20 p-4 gap-2 bg-slate-50">
+<div class="mb-4 px-4 py-2 bg-white dark:bg-slate-900 text-amber-700 rounded-xl shadow-sm flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="font-medium text-sm">Candidates</span>
+</div>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:translate-x-1 hover:text-amber-600 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-medium text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:translate-x-1 hover:text-amber-600 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-medium text-sm">Analytics</span>
+</a>
+<div class="mt-auto border-t border-slate-200 pt-4">
+<button class="w-full flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-amber-600">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-medium text-sm">Help Center</span>
+</button>
+</div>
+</aside>
+<main class="lg:pl-64 pt-20 min-h-screen">
+<div class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Report Details -->
+<div class="lg:col-span-8 space-y-8">
+<!-- Section 1: Candidate Header -->
+<section class="bg-surface-container-lowest rounded-2xl p-8 flex flex-col md:flex-row items-center md:items-start gap-8">
+<div class="relative">
+<img alt="Chayan" class="w-32 h-32 rounded-2xl object-cover shadow-lg" data-alt="Portrait of a South Asian professional man in his 30s with a warm, intelligent expression, wearing a tailored blazer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrCJIkTq5UJaV9NffndwoQ-EpwvGGmqgMgnBfUZNzuVy3G0H0_Q2AHBrjbDjq2J6wwy9EZmh18jDiWkZEfJS1EKYiT3XWiSySpFMKDPtMgKGPdLnlkKGXR77xGuAtA2CxBbQy8yUUBGKqv4s8V9fafGrOzo3sqI_e7Xzq-y0vAGwv2XKrOxNGGXVHBxzPH67t4agcld-zjtpvNIdw2Ut0wWdurm-1rJnzI_Ct0vI8lUwpZVXgQJ63hXeVg35hWFXu20YhY35pjz2Vb"/>
+<div class="absolute -bottom-2 -right-2 bg-tertiary-container text-on-tertiary-container text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                            VERIFIED
+                        </div>
+</div>
+<div class="flex-1 text-center md:text-left">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h1 class="text-3xl font-extrabold tracking-tight text-on-secondary-fixed">Chayan</h1>
+<p class="text-secondary font-semibold text-lg">Senior Solutions Architect</p>
+</div>
+<div class="flex gap-2 justify-center md:justify-end">
+<span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">Solution Design</span>
+<span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">Cloud Strategy</span>
+</div>
+</div>
+<div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-on-surface-variant text-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="mail">mail</span>
+<span>chayan.architect@example.com</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="phone">phone</span>
+<span>+91 98765 43210</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="calendar_today">calendar_today</span>
+<span>Screened on: Oct 24, 2023</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="timer">timer</span>
+<span>Duration: 18m 42s</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 2: AI Recommendation Banner -->
+<section class="bg-gradient-to-r from-tertiary/10 to-tertiary-container/20 border border-tertiary/20 rounded-2xl p-6 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="bg-tertiary p-3 rounded-xl text-white">
+<span class="material-symbols-outlined text-3xl" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<div>
+<h2 class="text-xl font-bold text-on-tertiary-fixed">AI Recommendation: Move Forward</h2>
+<p class="text-on-tertiary-fixed-variant">High correlation with target pedagogy and technical proficiency benchmarks.</p>
+</div>
+</div>
+<div class="text-right">
+<div class="text-4xl font-black text-tertiary">88%</div>
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-tertiary-fixed-variant opacity-70">Match Score</div>
+</div>
+</section>
+<!-- Section 3: Score Breakdown -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10">
+<div class="flex items-center justify-between mb-4">
+<span class="material-symbols-outlined text-primary" data-icon="record_voice_over">record_voice_over</span>
+<span class="text-xl font-bold text-on-surface">92/100</span>
+</div>
+<h3 class="font-bold text-on-surface-variant text-sm uppercase tracking-wider mb-2">Communication</h3>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[92%]"></div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10">
+<div class="flex items-center justify-between mb-4">
+<span class="material-symbols-outlined text-primary" data-icon="code">code</span>
+<span class="text-xl font-bold text-on-surface">84/100</span>
+</div>
+<h3 class="font-bold text-on-surface-variant text-sm uppercase tracking-wider mb-2">Technical</h3>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[84%]"></div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10">
+<div class="flex items-center justify-between mb-4">
+<span class="material-symbols-outlined text-primary" data-icon="school">school</span>
+<span class="text-xl font-bold text-on-surface">89/100</span>
+</div>
+<h3 class="font-bold text-on-surface-variant text-sm uppercase tracking-wider mb-2">Pedagogy</h3>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[89%]"></div>
+</div>
+</div>
+</section>
+<!-- Section 4: Key Strengths & Risks -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="bg-surface-container-low p-6 rounded-2xl">
+<h3 class="flex items-center gap-2 font-bold text-on-secondary-fixed mb-4">
+<span class="material-symbols-outlined text-tertiary" data-icon="thumb_up">thumb_up</span>
+                            Key Strengths
+                        </h3>
+<ul class="space-y-3">
+<li class="flex gap-3 text-sm text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary mt-1.5 shrink-0"></span>
+                                Exceptional clarity in explaining complex architectural tradeoffs to non-technical stakeholders.
+                            </li>
+<li class="flex gap-3 text-sm text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary mt-1.5 shrink-0"></span>
+                                Strong alignment with the "First Principles" teaching methodology used at Cuemath.
+                            </li>
+<li class="flex gap-3 text-sm text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary mt-1.5 shrink-0"></span>
+                                Demonstrates deep empathy when addressing hypothetical student pain points.
+                            </li>
+</ul>
+</div>
+<div class="bg-surface-container-low p-6 rounded-2xl">
+<h3 class="flex items-center gap-2 font-bold text-on-secondary-fixed mb-4">
+<span class="material-symbols-outlined text-error" data-icon="warning">warning</span>
+                            Potential Risks
+                        </h3>
+<ul class="space-y-3">
+<li class="flex gap-3 text-sm text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-error mt-1.5 shrink-0"></span>
+                                Slightly over-detailed responses in the technical section leading to potential time management issues.
+                            </li>
+<li class="flex gap-3 text-sm text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-error mt-1.5 shrink-0"></span>
+                                May require additional onboarding on specific internal legacy toolings mentioned in Section 4.
+                            </li>
+</ul>
+</div>
+</section>
+<!-- Section 5: Question History -->
+<section class="space-y-6">
+<h2 class="text-2xl font-bold text-on-secondary-fixed">Interview Breakdown</h2>
+<!-- Question Item 1 -->
+<div class="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/10">
+<div class="p-6 border-b border-surface-container">
+<div class="flex items-start justify-between">
+<div class="flex-1">
+<span class="text-xs font-bold text-primary uppercase tracking-widest">Question 1: System Design</span>
+<h4 class="text-lg font-bold text-on-surface mt-1">Explain the difference between monolith and microservices to a 10-year-old.</h4>
+</div>
+<div class="bg-surface-container-high px-3 py-1 rounded-full text-xs font-bold text-on-surface">Pedagogy Focus</div>
+</div>
+</div>
+<div class="p-6 space-y-6">
+<!-- Audio Player Mock -->
+<div class="bg-surface-container-low rounded-xl p-4 flex items-center gap-4">
+<button class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center hover:scale-105 transition-transform">
+<span class="material-symbols-outlined" data-icon="play_arrow" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<div class="flex-1">
+<div class="h-1.5 bg-surface-container-highest rounded-full w-full overflow-hidden">
+<div class="bg-primary-container h-full w-1/3"></div>
+</div>
+<div class="flex justify-between mt-1 text-[10px] font-bold text-on-surface-variant">
+<span>0:45</span>
+<span>2:30</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="volume_up">volume_up</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div>
+<h5 class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-3">AI Transcript</h5>
+<p class="text-sm leading-relaxed text-on-surface">
+                                        "Imagine you have a huge LEGO castle. A monolith is like a castle where every brick is glued together. If you want to change the kitchen, you might break the tower. <span class="bg-tertiary-container/30 border-b-2 border-tertiary px-1">Microservices are like a castle where every room is a separate LEGO set connected by tunnels.</span> You can take the kitchen out and rebuild it without touching the tower."
+                                    </p>
+</div>
+<div class="bg-surface-container-low/50 p-4 rounded-xl">
+<h5 class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">AI Rationale</h5>
+<p class="text-xs italic text-on-surface-variant">
+                                        Candidate uses highly effective metaphors (LEGO) that align with student engagement strategies. Demonstrates the ability to strip away jargon without losing the core conceptual truth.
+                                    </p>
+<div class="mt-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-sm" data-icon="verified">verified</span>
+<span class="text-xs font-bold text-tertiary">Score: 95%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Question Item 2 -->
+<div class="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/10">
+<div class="p-6 border-b border-surface-container">
+<div class="flex items-start justify-between">
+<div class="flex-1">
+<span class="text-xs font-bold text-primary uppercase tracking-widest">Question 2: Technical Depth</span>
+<h4 class="text-lg font-bold text-on-surface mt-1">Describe a time you had to handle a critical production outage.</h4>
+</div>
+<div class="bg-surface-container-high px-3 py-1 rounded-full text-xs font-bold text-on-surface">Experience Focus</div>
+</div>
+</div>
+<div class="p-6 space-y-4">
+<div class="bg-surface-container-low rounded-xl p-4 flex items-center gap-4 opacity-70">
+<button class="w-10 h-10 bg-on-surface-variant text-white rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="play_arrow" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<div class="flex-1 h-1.5 bg-surface-container-highest rounded-full"></div>
+<span class="text-[10px] font-bold text-on-surface-variant">4:12</span>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                                Detailed explanation of a database locking issue on AWS RDS. Candidate walked through the observability stack (Datadog/CloudWatch) and the specific query optimization that resolved the load. High technical competency shown.
+                            </p>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="verified">verified</span>
+<span class="text-xs font-bold text-primary">Score: 82%</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Sidebar Decision -->
+<aside class="lg:col-span-4">
+<div class="sticky top-24 space-y-6">
+<section class="bg-white border border-outline-variant/30 rounded-2xl p-6 shadow-xl shadow-secondary/5">
+<h3 class="text-lg font-bold text-on-secondary-fixed mb-6">Recruiter Decision</h3>
+<div class="space-y-4">
+<div>
+<label class="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-3">Status</label>
+<div class="grid grid-cols-1 gap-2">
+<button class="flex items-center justify-between w-full p-4 border-2 border-tertiary bg-tertiary/5 rounded-xl text-tertiary font-bold">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                                            Move Forward
+                                        </div>
+</button>
+<button class="flex items-center justify-between w-full p-4 border border-outline-variant/30 rounded-xl text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="pause_circle">pause_circle</span>
+                                            Hold
+                                        </div>
+</button>
+<button class="flex items-center justify-between w-full p-4 border border-outline-variant/30 rounded-xl text-on-surface-variant hover:bg-error/5 hover:border-error/30 hover:text-error transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="cancel">cancel</span>
+                                            Decline
+                                        </div>
+</button>
+</div>
+</div>
+<div class="pt-4">
+<label class="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Internal Notes</label>
+<textarea class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all" placeholder="Add your notes about the candidate here..." rows="4"></textarea>
+</div>
+<div class="pt-2">
+<label class="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Next Step</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-4 text-sm font-medium focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none">
+<option>Technical Round with CTO</option>
+<option>Culture Fit Interview</option>
+<option>Assignment Presentation</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-white py-4 rounded-xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all mt-4">
+                                Confirm &amp; Notify Candidate
+                            </button>
+</div>
+</section>
+<!-- Profile Sidebar Mini Info -->
+<section class="bg-surface-container-low rounded-2xl p-6">
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-on-secondary-fixed" data-icon="history">history</span>
+<h4 class="font-bold text-on-secondary-fixed">Screening Timeline</h4>
+</div>
+<div class="space-y-4">
+<div class="flex gap-4 relative">
+<div class="w-2 h-2 rounded-full bg-tertiary mt-2 shrink-0 z-10"></div>
+<div class="absolute left-[3px] top-4 w-[1px] h-10 bg-outline-variant"></div>
+<div>
+<p class="text-xs font-bold text-on-surface">Screening Completed</p>
+<p class="text-[10px] text-on-surface-variant">Oct 24, 10:45 AM</p>
+</div>
+</div>
+<div class="flex gap-4 relative">
+<div class="w-2 h-2 rounded-full bg-tertiary mt-2 shrink-0 z-10"></div>
+<div class="absolute left-[3px] top-4 w-[1px] h-10 bg-outline-variant"></div>
+<div>
+<p class="text-xs font-bold text-on-surface">AI Report Generated</p>
+<p class="text-[10px] text-on-surface-variant">Oct 24, 11:05 AM</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="w-2 h-2 rounded-full bg-outline-variant mt-2 shrink-0 z-10"></div>
+<div>
+<p class="text-xs font-bold text-on-surface-variant">Review Pending</p>
+<p class="text-[10px] text-on-surface-variant">Current Stage</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+</aside>
+</div>
+</main>
+<!-- FAB for quick actions (Contextual) -->
+<button class="fixed bottom-8 right-8 w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-90 transition-all z-50 lg:hidden">
+<span class="material-symbols-outlined text-3xl" data-icon="send">send</span>
+</button>
+</body></html>

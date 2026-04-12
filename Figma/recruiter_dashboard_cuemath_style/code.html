@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Chayan | Recruiter Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f3f3f6",
+                        "primary-container": "#ffba07",
+                        "background": "#f9f9fc",
+                        "primary": "#7b5800",
+                        "surface-container-high": "#e8e8ea",
+                        "on-primary-fixed": "#271900",
+                        "tertiary": "#006d33",
+                        "inverse-primary": "#ffbb11",
+                        "on-secondary-fixed-variant": "#31476b",
+                        "inverse-on-surface": "#f0f0f3",
+                        "primary-fixed": "#ffdea6",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#005225",
+                        "surface-container": "#eeeef0",
+                        "on-secondary": "#ffffff",
+                        "surface": "#f9f9fc",
+                        "on-primary-fixed-variant": "#5d4200",
+                        "on-error": "#ffffff",
+                        "surface-bright": "#f9f9fc",
+                        "outline": "#837560",
+                        "on-secondary-container": "#445a7f",
+                        "tertiary-fixed": "#63ff94",
+                        "surface-dim": "#dadadc",
+                        "on-surface": "#1a1c1e",
+                        "inverse-surface": "#2f3133",
+                        "secondary-fixed": "#d6e3ff",
+                        "on-background": "#1a1c1e",
+                        "tertiary-fixed-dim": "#00e472",
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#d5c4ac",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#e2e2e5",
+                        "on-surface-variant": "#504532",
+                        "on-secondary-fixed": "#001b3d",
+                        "on-tertiary-fixed": "#00210b",
+                        "on-primary": "#ffffff",
+                        "primary-fixed-dim": "#ffbb11",
+                        "secondary": "#495f84",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#005f2c",
+                        "secondary-fixed-dim": "#b1c7f2"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "3xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .tonal-transition {
+            transition: background-color 0.3s ease;
+        }
+        .glass-panel {
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar (Shared Component Shell) -->
+<header class="bg-[#F9F9FC]/80 dark:bg-[#001B3D]/80 backdrop-blur-md font-['Inter'] tracking-tight docked w-full top-0 sticky z-50 shadow-[0_4px_20px_rgba(73,95,132,0.04)] tonal-transition">
+<div class="flex justify-between items-center w-full px-8 py-4 max-w-[1920px] mx-auto">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black text-[#001B3D] dark:text-[#F9F9FC] tracking-tighter">Chayan</span>
+<nav class="hidden md:flex gap-6 items-center">
+<a class="text-[#7B5800] dark:text-[#FFBA07] font-bold border-b-2 border-[#FFBA07] pb-1 transition-all duration-300 ease-in-out active:scale-95" href="#">Dashboard</a>
+<a class="text-[#504532] dark:text-[#F3F3F6]/70 hover:text-[#7B5800] transition-all duration-300 ease-in-out active:scale-95" href="#">Candidates</a>
+<a class="text-[#504532] dark:text-[#F3F3F6]/70 hover:text-[#7B5800] transition-all duration-300 ease-in-out active:scale-95" href="#">Assessments</a>
+<a class="text-[#504532] dark:text-[#F3F3F6]/70 hover:text-[#7B5800] transition-all duration-300 ease-in-out active:scale-95" href="#">Analytics</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="bg-surface-container-lowest border-none rounded-xl pl-10 pr-4 py-2 w-64 focus:ring-2 focus:ring-primary/40 text-sm" placeholder="Search candidates..." type="text"/>
+</div>
+<button class="bg-gradient-to-br from-primary to-primary-container text-white px-5 py-2 rounded-xl text-sm font-bold shadow-sm hover:translate-y-[-1px] active:scale-95 transition-all">
+                    Create New Screening
+                </button>
+<div class="flex gap-2">
+<button class="p-2 rounded-full text-secondary hover:bg-[#E8E8EA] dark:hover:bg-[#495F84]/20 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 rounded-full text-secondary hover:bg-[#E8E8EA] dark:hover:bg-[#495F84]/20 transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<img alt="Recruiter Profile" class="w-10 h-10 rounded-full border-2 border-white object-cover" data-alt="Professional headshot of a smiling male recruiter in a dark blazer against a blurred office background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9GUYn9C5MP5yXNGUL4LKLq3y0L8f29YPYXlf4sfafldpBoxjsA9r0np-GKF-Zs6qSjnjkGH_nvhhT7kUVdkI0g6a40FOt0raXZ_RD3pLrqdF_ydeDLQWKYYpEnvw8ZD-K9imjQUt3TKj--D_HOrbTOAb2rKH-q9etGx8sx-SVpqybHff2gtUXgk0foZ7wrS436sbwCf4pBz030Z8uus_Ut894b7pYqA0yDRO9DbimQTWRhD2RsVOwIrCbj0mKYFIKeU4LyqyTrVCg"/>
+</div>
+</div>
+</header>
+<div class="flex min-h-screen">
+<!-- SideNavBar (Shared Component Shell) -->
+<aside class="bg-[#F3F3F6] dark:bg-[#001B3D] h-screen w-64 sticky left-0 top-0 flex flex-col p-4 gap-2 font-['Inter'] text-sm font-medium tonal-shift">
+<div class="mb-8 px-2 py-4">
+<h2 class="text-[#001B3D] dark:text-white font-black text-lg">Recruiter Portal</h2>
+<p class="text-[#495F84] dark:text-[#F3F3F6]/60 text-xs uppercase tracking-widest font-bold">Expert Mode</p>
+</div>
+<nav class="flex flex-col gap-1 flex-1">
+<a class="flex items-center gap-3 px-4 py-3 bg-[#FFFFFF] dark:bg-[#495F84] text-[#7B5800] dark:text-[#FFBA07] rounded-xl shadow-sm transition-all duration-300 ease-in-out hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span>Overview</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#495F84] dark:text-[#F3F3F6] hover:bg-[#E8E8EA] dark:hover:bg-[#495F84]/50 rounded-xl transition-all duration-300 ease-in-out hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">record_voice_over</span>
+<span>Live Sessions</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#495F84] dark:text-[#F3F3F6] hover:bg-[#E8E8EA] dark:hover:bg-[#495F84]/50 rounded-xl transition-all duration-300 ease-in-out hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">settings_voice</span>
+<span>Voice Quality</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#495F84] dark:text-[#F3F3F6] hover:bg-[#E8E8EA] dark:hover:bg-[#495F84]/50 rounded-xl transition-all duration-300 ease-in-out hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span>Scoring Models</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#495F84] dark:text-[#F3F3F6] hover:bg-[#E8E8EA] dark:hover:bg-[#495F84]/50 rounded-xl transition-all duration-300 ease-in-out hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>Team</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 border-t border-outline-variant/10 flex flex-col gap-1">
+<button class="w-full bg-primary-container text-on-primary-container py-3 rounded-xl font-bold mb-4 shadow-sm active:scale-95 transition-all">
+                    Invite Candidate
+                </button>
+<a class="flex items-center gap-3 px-4 py-3 text-[#495F84] dark:text-[#F3F3F6] hover:bg-[#E8E8EA] rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">help</span>
+<span>Support</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-error hover:bg-error-container/30 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 p-8 overflow-y-auto">
+<header class="mb-10">
+<h1 class="text-4xl font-extrabold text-on-secondary-fixed tracking-tight mb-2">Recruitment Overview</h1>
+<p class="text-on-surface-variant font-medium">Monitoring AI-driven candidate assessment performance.</p>
+</header>
+<!-- Bento Grid Metrics -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+<div class="bg-surface-container-lowest p-8 rounded-3xl flex flex-col gap-4 group hover:bg-white hover:shadow-2xl transition-all duration-500 border border-transparent hover:border-outline-variant/10">
+<div class="flex justify-between items-start">
+<div class="p-3 bg-primary/10 rounded-2xl text-primary">
+<span class="material-symbols-outlined">send</span>
+</div>
+<span class="text-tertiary text-sm font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">trending_up</span> +12%
+                        </span>
+</div>
+<div>
+<p class="text-on-surface-variant font-bold text-xs uppercase tracking-widest">Total Invites</p>
+<p class="text-4xl font-black text-on-surface mt-1">1,284</p>
+</div>
+<div class="w-full h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary w-2/3"></div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-8 rounded-3xl flex flex-col gap-4 group hover:bg-white hover:shadow-2xl transition-all duration-500 border border-transparent hover:border-outline-variant/10">
+<div class="flex justify-between items-start">
+<div class="p-3 bg-tertiary/10 rounded-2xl text-tertiary">
+<span class="material-symbols-outlined">task_alt</span>
+</div>
+<span class="text-tertiary text-sm font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">check</span> 84%
+                        </span>
+</div>
+<div>
+<p class="text-on-surface-variant font-bold text-xs uppercase tracking-widest">Completed Screenings</p>
+<p class="text-4xl font-black text-on-surface mt-1">942</p>
+</div>
+<div class="w-full h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[84%]"></div>
+</div>
+</div>
+<div class="bg-on-secondary-fixed p-8 rounded-3xl flex flex-col gap-4 text-white relative overflow-hidden group hover:shadow-2xl transition-all duration-500">
+<!-- Subtle background decoration -->
+<div class="absolute -right-8 -top-8 w-32 h-32 bg-primary/20 rounded-full blur-3xl"></div>
+<div class="flex justify-between items-start relative z-10">
+<div class="p-3 bg-white/10 rounded-2xl">
+<span class="material-symbols-outlined">pending_actions</span>
+</div>
+<span class="bg-primary text-on-primary text-[10px] px-2 py-0.5 rounded-full font-bold">URGENT</span>
+</div>
+<div class="relative z-10">
+<p class="text-white/60 font-bold text-xs uppercase tracking-widest">Pending Reviews</p>
+<p class="text-4xl font-black mt-1">47</p>
+</div>
+<p class="text-white/40 text-xs mt-auto italic">Review these to meet weekly quota</p>
+</div>
+</div>
+<!-- Main Table Section -->
+<div class="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm border border-outline-variant/5">
+<div class="p-8 border-b border-surface-container flex justify-between items-center bg-white">
+<h3 class="text-xl font-bold text-on-surface">Recent Candidates</h3>
+<div class="flex gap-2">
+<button class="text-sm font-semibold px-4 py-2 bg-surface-container-low text-secondary rounded-xl hover:bg-surface-container-high transition-all">Filter</button>
+<button class="text-sm font-semibold px-4 py-2 bg-surface-container-low text-secondary rounded-xl hover:bg-surface-container-high transition-all">Export CSV</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low/50">
+<tr>
+<th class="px-8 py-5 text-xs font-bold text-on-surface-variant uppercase tracking-widest">Candidate</th>
+<th class="px-8 py-5 text-xs font-bold text-on-surface-variant uppercase tracking-widest">Assessment Type</th>
+<th class="px-8 py-5 text-xs font-bold text-on-surface-variant uppercase tracking-widest">Status</th>
+<th class="px-8 py-5 text-xs font-bold text-on-surface-variant uppercase tracking-widest">Match Score</th>
+<th class="px-8 py-5 text-xs font-bold text-on-surface-variant uppercase tracking-widest"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container">
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-8 py-5">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary font-bold text-sm">JD</div>
+<div>
+<p class="font-bold text-on-surface">James Donovan</p>
+<p class="text-xs text-on-surface-variant">Senior Frontend Engineer</p>
+</div>
+</div>
+</td>
+<td class="px-8 py-5">
+<span class="text-sm font-medium text-on-surface">Voice-First AI Screening</span>
+</td>
+<td class="px-8 py-5">
+<span class="px-3 py-1 bg-primary-container text-on-primary-container text-[11px] font-bold rounded-full uppercase tracking-tight">Needs Review</span>
+</td>
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-2 bg-surface-container-high rounded-full overflow-hidden min-w-[60px]">
+<div class="h-full bg-tertiary w-[92%]"></div>
+</div>
+<span class="text-sm font-black text-tertiary">92%</span>
+</div>
+</td>
+<td class="px-8 py-5 text-right">
+<button class="p-2 text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-8 py-5">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary font-bold text-sm">AS</div>
+<div>
+<p class="font-bold text-on-surface">Amara Singh</p>
+<p class="text-xs text-on-surface-variant">Product Designer</p>
+</div>
+</div>
+</td>
+<td class="px-8 py-5">
+<span class="text-sm font-medium text-on-surface">Logical Reasoning</span>
+</td>
+<td class="px-8 py-5">
+<span class="px-3 py-1 bg-tertiary/10 text-tertiary text-[11px] font-bold rounded-full uppercase tracking-tight">Completed</span>
+</td>
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-2 bg-surface-container-high rounded-full overflow-hidden min-w-[60px]">
+<div class="h-full bg-tertiary w-[78%]"></div>
+</div>
+<span class="text-sm font-black text-on-surface-variant">78%</span>
+</div>
+</td>
+<td class="px-8 py-5 text-right">
+<button class="p-2 text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-8 py-5">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-on-secondary-fixed/10 flex items-center justify-center text-on-secondary-fixed font-bold text-sm">ML</div>
+<div>
+<p class="font-bold text-on-surface">Marcus Low</p>
+<p class="text-xs text-on-surface-variant">Data Scientist</p>
+</div>
+</div>
+</td>
+<td class="px-8 py-5">
+<span class="text-sm font-medium text-on-surface">Algorithm Efficiency</span>
+</td>
+<td class="px-8 py-5">
+<span class="px-3 py-1 bg-secondary/10 text-secondary text-[11px] font-bold rounded-full uppercase tracking-tight">In Progress</span>
+</td>
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-2 bg-surface-container-high rounded-full overflow-hidden min-w-[60px]">
+<div class="h-full bg-primary/30 w-[45%]"></div>
+</div>
+<span class="text-sm font-black text-on-surface-variant/40">--</span>
+</div>
+</td>
+<td class="px-8 py-5 text-right">
+<button class="p-2 text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-8 py-5">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center text-error font-bold text-sm">ET</div>
+<div>
+<p class="font-bold text-on-surface">Elena Torres</p>
+<p class="text-xs text-on-surface-variant">Recruitment Lead</p>
+</div>
+</div>
+</td>
+<td class="px-8 py-5">
+<span class="text-sm font-medium text-on-surface">Management Strategy</span>
+</td>
+<td class="px-8 py-5">
+<span class="px-3 py-1 bg-tertiary/10 text-tertiary text-[11px] font-bold rounded-full uppercase tracking-tight">Completed</span>
+</td>
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-2 bg-surface-container-high rounded-full overflow-hidden min-w-[60px]">
+<div class="h-full bg-tertiary w-[95%]"></div>
+</div>
+<span class="text-sm font-black text-tertiary">95%</span>
+</div>
+</td>
+<td class="px-8 py-5 text-right">
+<button class="p-2 text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-6 bg-surface-container-low/20 border-t border-surface-container flex justify-between items-center">
+<p class="text-xs font-medium text-on-surface-variant">Showing 4 of 1,284 candidates</p>
+<div class="flex gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white font-bold text-xs">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high transition-colors font-bold text-xs">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high transition-colors font-bold text-xs">3</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
+</div>
+</div>
+</div>
+<!-- Bottom Spacer -->
+<div class="h-16"></div>
+</main>
+</div>
+<!-- Mobile Bottom Navigation (Shared Component Logic) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-surface-container p-4 flex justify-around items-center z-50">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="text-[10px] font-bold">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="text-[10px] font-bold">Candidates</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="text-[10px] font-bold">Assessments</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold">Profile</span>
+</a>
+</nav>
+</body></html>

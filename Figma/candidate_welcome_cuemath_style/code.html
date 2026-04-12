@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Welcome to Chayan - Candidate Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f3f3f6",
+                        "primary-container": "#ffba07",
+                        "background": "#f9f9fc",
+                        "primary": "#7b5800",
+                        "surface-container-high": "#e8e8ea",
+                        "on-primary-fixed": "#271900",
+                        "tertiary": "#006d33",
+                        "inverse-primary": "#ffbb11",
+                        "on-secondary-fixed-variant": "#31476b",
+                        "inverse-on-surface": "#f0f0f3",
+                        "primary-fixed": "#ffdea6",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#005225",
+                        "surface-container": "#eeeef0",
+                        "on-secondary": "#ffffff",
+                        "surface": "#f9f9fc",
+                        "on-primary-fixed-variant": "#5d4200",
+                        "on-error": "#ffffff",
+                        "surface-bright": "#f9f9fc",
+                        "outline": "#837560",
+                        "on-secondary-container": "#445a7f",
+                        "tertiary-fixed": "#63ff94",
+                        "surface-dim": "#dadadc",
+                        "on-surface": "#1a1c1e",
+                        "inverse-surface": "#2f3133",
+                        "secondary-fixed": "#d6e3ff",
+                        "on-background": "#1a1c1e",
+                        "tertiary-fixed-dim": "#00e472",
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#d5c4ac",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#e2e2e5",
+                        "on-surface-variant": "#504532",
+                        "on-secondary-fixed": "#001b3d",
+                        "on-tertiary-fixed": "#00210b",
+                        "on-primary": "#ffffff",
+                        "primary-fixed-dim": "#ffbb11",
+                        "secondary": "#495f84",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#005f2c",
+                        "secondary-fixed-dim": "#b1c7f2"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "1.5rem",
+                        "2xl": "2rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .premium-gradient {
+            background: linear-gradient(135deg, #7b5800 0%, #ffba07 100%);
+        }
+        .glass-panel {
+            background: rgba(249, 249, 252, 0.8);
+            backdrop-filter: blur(24px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface selection:bg-primary-fixed">
+<main class="min-h-screen flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+<div class="absolute -top-24 -right-24 w-96 h-96 bg-primary-fixed/20 rounded-full blur-3xl"></div>
+<div class="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary-fixed/30 rounded-full blur-3xl"></div>
+</div>
+<div class="w-full max-w-5xl z-10">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+<div class="lg:col-span-7 flex flex-col gap-8">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 premium-gradient rounded-xl flex items-center justify-center text-white shadow-lg">
+<span class="material-symbols-outlined text-2xl" data-icon="psychology">psychology</span>
+</div>
+<h1 class="text-2xl font-black tracking-tighter text-on-secondary-fixed">Chayan</h1>
+</div>
+<div class="space-y-6">
+<p class="text-sm font-bold tracking-[0.1em] text-primary uppercase">Academic Atelier</p>
+<h2 class="text-5xl md:text-6xl font-bold text-on-surface tracking-tight leading-[1.1]">
+                            Begin your <br/>
+<span class="text-primary italic">educational journey.</span>
+</h2>
+<p class="text-lg text-on-surface-variant max-w-md leading-relaxed">
+                            Welcome to the Chayan expert screening. We've curated a space for you to demonstrate your mastery through a voice-first interactive session.
+                        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="p-6 rounded-2xl bg-surface-container-lowest shadow-[0_4px_20px_rgba(73,95,132,0.04)] border-none flex flex-col gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-fixed">
+<span class="material-symbols-outlined" data-icon="record_voice_over">record_voice_over</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface">Voice-First Experience</h3>
+<p class="text-sm text-on-surface-variant mt-1">Natural dialogue processing for real-time pedagogical assessment.</p>
+</div>
+</div>
+<div class="p-6 rounded-2xl bg-surface-container-lowest shadow-[0_4px_20px_rgba(73,95,132,0.04)] border-none flex flex-col gap-4">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-container">
+<span class="material-symbols-outlined" data-icon="timer">timer</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface">15-Minute Duration</h3>
+<p class="text-sm text-on-surface-variant mt-1">A focused session designed to value your time and expertise.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="lg:col-span-5">
+<div class="glass-panel p-8 md:p-10 rounded-2xl shadow-[0_12px_40px_rgba(73,95,132,0.08)] flex flex-col gap-8">
+<div class="space-y-2">
+<h3 class="text-2xl font-bold text-on-surface">Candidate Consent</h3>
+<p class="text-sm text-on-surface-variant">Please review our transparency guidelines before we begin.</p>
+</div>
+<div class="space-y-6">
+<div class="flex gap-4">
+<div class="mt-1">
+<span class="material-symbols-outlined text-primary" data-icon="verified_user">verified_user</span>
+</div>
+<div>
+<h4 class="text-sm font-bold text-on-surface">Data Privacy &amp; Security</h4>
+<p class="text-xs text-on-surface-variant leading-relaxed mt-1">Your voice responses are encrypted and used solely for candidate evaluation purposes by Chayan AI.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="mt-1">
+<span class="material-symbols-outlined text-primary" data-icon="gavel">gavel</span>
+</div>
+<div>
+<h4 class="text-sm font-bold text-on-surface">Ethical AI Framework</h4>
+<p class="text-xs text-on-surface-variant leading-relaxed mt-1">Our scoring models are audited for bias to ensure an equitable assessment for every educator.</p>
+</div>
+</div>
+<div class="p-4 rounded-xl bg-surface-container-low border-none">
+<label class="flex items-start gap-3 cursor-pointer group">
+<input class="mt-1 w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox"/>
+<span class="text-xs text-on-surface-variant leading-relaxed select-none">
+                                        I consent to the recording of this session and agree to the <span class="text-primary font-semibold underline decoration-primary/30">Terms of Service</span> and <span class="text-primary font-semibold underline decoration-primary/30">Privacy Policy</span>.
+                                    </span>
+</label>
+</div>
+</div>
+<div class="flex flex-col gap-4">
+<button class="w-full h-14 premium-gradient rounded-xl text-white font-bold text-lg shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                                Accept &amp; Continue
+                                <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<button class="w-full h-12 bg-surface-container-high text-on-surface-variant font-medium rounded-xl hover:bg-surface-container-highest transition-colors">
+                                Decline &amp; Exit
+                            </button>
+</div>
+<div class="flex items-center justify-center gap-6 mt-2">
+<img alt="Trust Seal" class="h-8 opacity-60 mix-blend-multiply" data-alt="minimal clean professional certification seal with academic icons in monochrome aesthetic for trust and authority" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBY3mylLY4esOjVYO_H284Zj8rEFOjtDXS6jmsh9zeLUQBK2dFktErWtzATted_0v8BOxp6QTlTbtQiHWaCqK99ZAdOsM3Cak9Yl_GRerqEiDkh0ICyEig2TIvIgLkvSrYwLZCzgbUAFpeT8VymzvhuUKwi_5cf4_6FR7fQR0nkRnWOYp2H3vLRIlX32O1Nx7B4VfpCElA0ADIoIBUCffUbTWmigHepTsA2l1hULRbwq2WtT6ZgZ8990d5OHyTuL_9YLB3VS0ALw6r8"/>
+<div class="h-4 w-[1px] bg-outline-variant/30"></div>
+<div class="flex items-center gap-1 opacity-60">
+<span class="material-symbols-outlined text-sm" data-icon="lock">lock</span>
+<span class="text-[10px] font-bold tracking-widest uppercase text-on-surface-variant">Secure Session</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="absolute bottom-12 left-12 hidden lg:flex items-center gap-4">
+<div class="flex -space-x-3">
+<img class="w-10 h-10 rounded-full border-2 border-background object-cover" data-alt="headshot of a friendly smiling professor in a bright modern classroom setting with natural soft light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBplEnez1pBV0osV1A0_LUKWhV1ncjPcGp5iKIyJP4BxLaAlPY8Gg_VJSlIno4Y-Kmxdph-tyhwuM0e4ZsIinfrG89aKklecPsS6EX4rWWVX2y8t8e8D4xJsh1Q6zPYlA1Dl3WbE_3SXk8sYSOeDbszHHgujKnfemvRiTnUU8PDpgkhD_DIVudgWkClQjCgqHTPeliEY6KxzyibGlSwfSO8tUd7N9sRINZdqZgGu1z2SVcIho_gexcYcEKSmOQNOB4obgAxxyAtSjMN"/>
+<img class="w-10 h-10 rounded-full border-2 border-background object-cover" data-alt="close up of a professional female educator with a warm smile in a brightly lit modern office environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjUvJa4dxzzg2ZjJPte_5S-C8mF8XKgqYN50pm5Bmh7oIvk5ZCemiejOQArUmfnN3hlpsiOBrrczHhE_q2uMQJhHDLaACcBO41hCaEKJTK4lEWaz3iObVsdXuLzGSMY0Aroj8vSaUNCbgNXkVx6_vkm2bb1Jy-54tLG2aZV5gnDBr9FwkowX93vobt_lNtE9yptKTZCZuTUZ-BaCYODFaRZFgjQS_4-WGCIpH6VvHVKkcYnGtRfWQAb0jCb1D9udMW4AEzO1jVyVnS"/>
+<div class="w-10 h-10 rounded-full border-2 border-background bg-secondary flex items-center justify-center text-[10px] font-bold text-white">
+                    +2k
+                </div>
+</div>
+<p class="text-xs font-medium text-on-surface-variant">Join 2,000+ expert educators curated by Chayan AI.</p>
+</div>
+</main>
+</body></html>
