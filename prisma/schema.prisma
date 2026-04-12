@@ -140,6 +140,7 @@ model InterviewSession {
 model Question {
   id                 String   @id @default(uuid())
   questionSetId      String
+  category           String?
   prompt             String
   competencyTags     String[]
   subject            String?
