@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { questions } from "@/lib/questions";
 import type { AnswerEvaluation, FinalReport } from "@/lib/types";
+import Welcome from "./components/candidate/Welcome";
+import Interview from "./components/candidate/Interview";
+import Complete from "./components/candidate/Complete";
 
 type Answer = {
   questionId: string;
@@ -17,14 +20,12 @@ type RecordStatus = "idle" | "recording" | "processing" | "error";
 export default function Home() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [session, setSession] = useState<any>(null);
-  const [consented, setConsented] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [status, setStatus] = useState<RecordStatus>("idle");
   const [processingStep, setProcessingStep] = useState<string>("");
   const [error, setError] = useState("");
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [report, setReport] = useState<FinalReport | null>(null);
-  const [transcriptDraft, setTranscriptDraft] = useState("");
   
   const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(null);
   const [hasAskedFollowUp, setHasAskedFollowUp] = useState(false);
@@ -47,7 +48,7 @@ export default function Home() {
       return { 
         id: `follow-up-${questions[questionIndex].id}`, 
         prompt: followUpQuestion, 
-        competencyTags: questions[questionIndex].competencyTags 
+        guidance: "This is a follow-up question based on your previous response."
       };
     }
     return questions[questionIndex];
@@ -134,7 +135,7 @@ export default function Home() {
   async function startRecording() {
     setError("");
     if (!navigator.mediaDevices?.getUserMedia) {
-      setError("Your browser doesn't support recording. Please upload an audio file instead.");
+      setError("Your browser doesn't support recording.");
       return;
     }
     try {
@@ -155,7 +156,7 @@ export default function Home() {
       recorder.start();
       setStatus("recording");
     } catch {
-      setError("Microphone access was blocked. Please enable it in your browser settings or upload an audio file.");
+      setError("Microphone access was blocked.");
     }
   }
 
@@ -170,38 +171,18 @@ export default function Home() {
     await processAudio(audio);
   }
 
-  async function handleReRecord() {
-    const recorder = mediaRecorder.current;
-    if (recorder && recorder.state !== "inactive") {
-      await new Promise<void>((resolve) => {
-        recorder.addEventListener("stop", () => resolve(), { once: true });
-        recorder.stop();
-      });
-    }
-    audioChunks.current = [];
-    setStatus("idle");
-    setElapsed(0);
-    setTranscriptDraft("");
-  }
-
-  async function handleUpload(file: File | null) {
-    if (!file) return;
-    setError("");
-    await processAudio(file);
-  }
-
   async function processAudio(audio: Blob) {
     if (!currentQuestion) return;
     setStatus("processing");
     setProcessingStep("Uploading your answer...");
-    setTranscriptDraft("");
     try {
       const form = new FormData();
       form.append("audio", audio, "answer.webm");
       form.append("sessionId", session?.id || "demo");
       form.append("questionId", currentQuestion.id);
       form.append("question", currentQuestion.prompt);
-      form.append("competencyTags", JSON.stringify(currentQuestion.competencyTags));
+      // @ts-ignore
+      form.append("competencyTags", JSON.stringify(currentQuestion.competencyTags || []));
 
       const uploadRes = await fetch("/api/answers/upload", { method: "POST", body: form });
       const uploadData = await uploadRes.json();
@@ -233,8 +214,6 @@ export default function Home() {
 
       if (!evaluation) throw new Error("Processing timed out.");
 
-      setTranscriptDraft(transcript);
-
       const nextAnswers: Answer[] = [
         ...answers,
         { questionId: currentQuestion.id, question: currentQuestion.prompt, transcript, evaluation },
@@ -245,7 +224,6 @@ export default function Home() {
         setFollowUpQuestion(evaluation.followUpQuestion);
         setHasAskedFollowUp(true);
         setStatus("idle");
-        setTranscriptDraft("");
         return;
       }
 
@@ -258,10 +236,9 @@ export default function Home() {
       }
       setQuestionIndex((i) => i + 1);
       setStatus("idle");
-      setTranscriptDraft("");
     } catch (err) {
       setStatus("error");
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setError(err instanceof Error ? err.message : "Something went wrong.");
     }
   }
 
@@ -304,124 +281,30 @@ export default function Home() {
     );
   }
 
+  if (phase === "consent") {
+    return <Welcome onAccept={() => setPhase("interview")} onDecline={() => window.location.href = "https://cuemath.com"} />;
+  }
+
   if (phase === "complete") {
-    return (
-      <main className="min-h-screen flex items-center justify-center p-6 bg-background">
-        <div className="w-full max-w-lg text-center flex flex-col items-center gap-8">
-          <div className="w-20 h-20 rounded-full bg-tertiary-container flex items-center justify-center">
-            <span className="material-symbols-outlined text-4xl text-on-tertiary-container" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
-          </div>
-          <div className="space-y-3">
-            <h1 className="text-4xl font-black text-on-secondary-fixed">Screening Complete</h1>
-            <p className="text-on-surface-variant text-lg">Thank you for completing your Cuemath tutor screening.</p>
-          </div>
-          <div className="bg-surface-container-lowest rounded-2xl p-6 w-full text-left space-y-4 shadow-sm">
-            <h3 className="font-bold text-on-secondary-fixed flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">schedule</span>
-              What happens next
-            </h3>
-            <ul className="space-y-3 text-sm text-on-surface-variant">
-              <li className="flex gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                Our AI has analysed your {answers.length} responses across 6 competency dimensions.
-              </li>
-              <li className="flex gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                A recruiter from Cuemath will review your screening report.
-              </li>
-              <li className="flex gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                Expect to hear back within 2–3 business days.
-              </li>
-            </ul>
-          </div>
-          <button onClick={() => { window.location.reload(); }} className="text-sm font-medium text-primary hover:underline">← Start over (demo)</button>
-        </div>
-      </main>
-    );
+    return <Complete answersCount={answers.length} />;
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="glass-header sticky top-0 z-50 shadow-[0_4px_20px_rgba(73,95,132,0.04)]">
-        <div className="flex justify-between items-center w-full px-6 md:px-8 py-4">
-          <div className="flex items-center gap-6">
-            <span className="text-xl font-black tracking-tighter text-on-secondary-fixed">InterviewAI</span>
-            {session && <span className="text-sm text-on-surface-variant font-medium hidden sm:inline">Candidate: {session.candidate.name}</span>}
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-white text-xs font-bold">{session?.candidate.name[0] || "C"}</div>
-          </div>
-        </div>
-        <div className="w-full h-1 bg-surface-container-high">
-          <div className="h-full bg-primary-container transition-all duration-500" style={{ width: `${progress}%` }} />
-        </div>
-      </header>
-
-      <main className="flex-1 flex flex-col items-center justify-start px-4 md:px-8 pt-8 md:pt-16 pb-28">
-        <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-8">Question {questionIndex + 1} of {questions.length}</p>
-        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-          <div className="lg:col-span-7">
-            <div className="bg-surface-container-lowest rounded-2xl p-8 md:p-10 shadow-[0_4px_20px_rgba(73,95,132,0.04)] min-h-[240px] flex flex-col justify-center">
-              <h2 className="text-2xl md:text-3xl font-bold text-on-surface leading-snug mb-4">&ldquo;{currentQuestion.prompt}&rdquo;</h2>
-              {/* @ts-ignore */}
-              {currentQuestion.guidance && (
-                <p className="text-sm text-on-surface-variant leading-relaxed flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-[18px]">lightbulb</span>
-                  {/* @ts-ignore */}
-                  {currentQuestion.guidance}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="lg:col-span-5 space-y-4">
-            <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-[0_4px_20px_rgba(73,95,132,0.04)] flex flex-col items-center">
-              {status === "recording" ? (
-                <>
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="recording-dot" />
-                    <span className="text-sm font-bold text-error uppercase tracking-widest">Recording</span>
-                  </div>
-                  <div className="flex items-baseline gap-1 mb-4">
-                    <span className="text-5xl font-black text-on-surface tabular-nums">{formatTime(elapsed)}</span>
-                    <span className="text-xl text-on-surface-variant font-medium">/ {formatTime(MAX_SECONDS)}</span>
-                  </div>
-                </>
-              ) : status === "processing" ? (
-                <div className="flex flex-col items-center gap-4 py-4 text-center">
-                  <svg className="animate-spin w-10 h-10 text-primary" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                  </svg>
-                  <p className="text-sm font-bold text-on-surface">{processingStep}</p>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-4 py-4">
-                  <div className="w-16 h-16 rounded-full bg-surface-container-low flex items-center justify-center">
-                    <span className="material-symbols-outlined text-3xl text-on-surface-variant">mic</span>
-                  </div>
-                  <p className="text-sm font-bold text-on-surface">Ready to record</p>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-8 flex justify-center">
-              {status === "recording" ? (
-                <button onClick={stopAndSubmit} className="px-12 py-5 premium-gradient rounded-2xl text-white font-bold text-lg shadow-xl flex items-center gap-3">
-                  <span className="material-symbols-outlined">stop</span> Stop Recording
-                </button>
-              ) : status === "idle" ? (
-                <button onClick={startRecording} className="px-12 py-5 premium-gradient rounded-2xl text-white font-bold text-lg shadow-xl flex items-center gap-3">
-                  <span className="material-symbols-outlined">mic</span> Start Recording
-                </button>
-              ) : null}
-            </div>
-            
-            {error && <div className="mt-6 bg-error-container text-on-error-container text-sm rounded-xl px-4 py-3">{error}</div>}
-          </div>
-        </div>
-      </main>
-    </div>
+    <Interview 
+      questionIndex={questionIndex}
+      totalQuestions={questions.length}
+      currentQuestion={currentQuestion}
+      status={status}
+      elapsed={elapsed}
+      maxSeconds={MAX_SECONDS}
+      processingStep={processingStep}
+      error={error}
+      waveform={waveform}
+      onStartRecording={startRecording}
+      onStopRecording={stopAndSubmit}
+      formatTime={formatTime}
+      progress={progress}
+      session={session}
+    />
   );
 }

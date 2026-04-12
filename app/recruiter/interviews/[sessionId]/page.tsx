@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import Header from "../../../components/recruiter/Header";
 
 type Decision = "Move Forward" | "Hold" | "Decline" | null;
 
 /* ── Static demo data ────────────────────────────────────────── */
 const CANDIDATE = {
-  name: "Chayan", initials: "CH", role: "Senior Solutions Architect",
-  email: "chayan.architect@example.com", phone: "+91 98765 43210",
+  name: "Chayan", initials: "CH", role: "Senior Curriculum Developer",
+  email: "chayan.curriculum@example.com", phone: "+91 98765 43210",
   screenedOn: "Oct 24, 2023", duration: "18m 42s",
   matchScore: 88, confidence: 96,
   recommendation: "Move Forward" as const,
@@ -42,25 +43,7 @@ export default function RecruiterReportDetail() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* ── Top nav ── */}
-      <nav className="glass-header sticky top-0 z-50 shadow-[0_4px_20px_rgba(73,95,132,0.04)]">
-        <div className="flex justify-between items-center w-full px-6 md:px-8 py-4 max-w-[1920px] mx-auto">
-          <div className="flex items-center gap-8">
-            <Link href="/recruiter" className="text-2xl font-black text-on-secondary-fixed tracking-tighter">Chayan</Link>
-            <div className="hidden md:flex gap-6 items-center">
-              <Link href="/recruiter" className="text-on-surface-variant font-medium hover:text-primary transition-colors">Dashboard</Link>
-              <Link href="#" className="text-primary font-bold border-b-2 border-primary-container pb-0.5">Candidates</Link>
-              <Link href="#" className="text-on-surface-variant font-medium hover:text-primary transition-colors">Assessments</Link>
-              <Link href="#" className="text-on-surface-variant font-medium hover:text-primary transition-colors">Analytics</Link>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button className="p-2 rounded-full text-secondary hover:bg-surface-container-high transition-colors hidden sm:block"><span className="material-symbols-outlined">notifications</span></button>
-            <button className="p-2 rounded-full text-secondary hover:bg-surface-container-high transition-colors hidden sm:block"><span className="material-symbols-outlined">settings</span></button>
-            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-white font-bold text-sm">HR</div>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       <div className="max-w-[1920px] mx-auto p-6 md:p-8 lg:p-12">
         {/* ── Header ── */}
@@ -71,8 +54,8 @@ export default function RecruiterReportDetail() {
               <span className="material-symbols-outlined text-sm">chevron_right</span>
               <span className="text-[10px] font-bold uppercase tracking-widest">Technical Interview</span>
             </nav>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-on-secondary-fixed mb-2">Chayan&apos;s Analysis</h1>
-            <p className="text-on-surface-variant text-base md:text-lg max-w-xl">Detailed behavioral and technical competency report for the Senior Curriculum Developer role.</p>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-on-secondary-fixed mb-2">{CANDIDATE.name}&apos;s Analysis</h1>
+            <p className="text-on-surface-variant text-base md:text-lg max-w-xl">Detailed behavioral and technical competency report for the {CANDIDATE.role} role.</p>
           </div>
           <div className="flex gap-3 flex-shrink-0">
             <button className="px-5 py-3 rounded-xl bg-surface-container-high text-primary font-bold text-sm flex items-center gap-2 active:scale-95 transition-all">
@@ -87,7 +70,7 @@ export default function RecruiterReportDetail() {
         {/* ── Bento grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Score */}
-          <div className="lg:col-span-4 bg-surface-container-lowest p-8 rounded-2xl shadow-[0_4px_20px_rgba(73,95,132,0.04)] flex flex-col justify-between items-center text-center">
+          <div className="lg:col-span-4 bg-surface-container-lowest p-8 rounded-2xl shadow-sm border border-outline-variant/5 flex flex-col justify-between items-center text-center">
             <div className="mb-6 w-full">
               <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant block mb-8">Overall Match Score</span>
               <div className="relative w-48 h-48 flex items-center justify-center mx-auto">
@@ -113,7 +96,7 @@ export default function RecruiterReportDetail() {
           </div>
 
           {/* Strengths & Risks */}
-          <div className="lg:col-span-8 bg-surface-container-lowest p-6 md:p-8 rounded-2xl shadow-[0_4px_20px_rgba(73,95,132,0.04)]">
+          <div className="lg:col-span-8 bg-surface-container-lowest p-6 md:p-8 rounded-2xl shadow-sm border border-outline-variant/5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
               <div>
                 <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-on-secondary-fixed">
@@ -145,7 +128,7 @@ export default function RecruiterReportDetail() {
           </div>
 
           {/* Question History */}
-          <div className="lg:col-span-9 bg-surface-container-lowest p-6 md:p-8 rounded-2xl shadow-[0_4px_20px_rgba(73,95,132,0.04)] space-y-8">
+          <div className="lg:col-span-9 bg-surface-container-lowest p-6 md:p-8 rounded-2xl shadow-sm border border-outline-variant/5 space-y-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <h3 className="text-2xl font-black text-on-secondary-fixed">Question History</h3>
               <div className="flex gap-2 flex-wrap">
@@ -192,7 +175,7 @@ export default function RecruiterReportDetail() {
               <div className="flex gap-4">
                 <div className="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center flex-shrink-0 text-primary font-bold text-sm">CH</div>
                 <div className="bg-surface-container-low p-4 rounded-xl flex-1 min-w-0">
-                  <p className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-tight">Chayan • 02:02</p>
+                  <p className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-tight">{CANDIDATE.name} • 02:02</p>
                   <p className="text-on-secondary-fixed leading-relaxed">&quot;Absolutely. I start with the &apos;Hook&apos;—usually a real-world scenario like dividing a pizza or a garden plot. I believe students learn best when they don&apos;t realize they&apos;re doing complex calculations until the abstract concept is introduced later. For 5th graders, visual manipulatives are key...&quot;</p>
                   <div className="mt-4 flex gap-2 flex-wrap">
                     {Q1_TAGS.map((tag) => (
