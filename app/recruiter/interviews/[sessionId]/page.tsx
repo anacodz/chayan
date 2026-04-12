@@ -68,13 +68,67 @@ const QUESTIONS = [
 
 type Decision = "Move Forward" | "Hold" | "Decline" | null;
 
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
 export default function RecruiterReportDetail() {
+  const { sessionId } = useParams();
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [decision, setDecision] = useState<Decision>("Move Forward");
   const [notes, setNotes] = useState("");
-  const [nextStep, setNextStep] = useState("Technical Round with CTO");
+
+  useEffect(() => {
+    async function fetchSession() {
+      try {
+        const res = await fetch(`/api/recruiter/interviews/${sessionId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSession(data.session);
+        }
+      } catch (error) {
+        console.error("Failed to fetch session:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (sessionId) fetchSession();
+  }, [sessionId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <svg className="animate-spin w-10 h-10 text-primary" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+        </svg>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background text-center p-6">
+        <h1 className="text-2xl font-bold mb-4">Interview Not Found</h1>
+        <Link href="/recruiter" className="text-primary hover:underline">Return to Dashboard</Link>
+      </div>
+    );
+  }
+
+  const CANDIDATE_DATA = {
+    name: session.candidate.name,
+    initials: session.candidate.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2),
+    role: "Candidate",
+    email: session.candidate.email,
+    screenedOn: new Date(session.completedAt || session.createdAt).toLocaleDateString(),
+    recommendation: session.finalReport?.recommendation || "Needs Review",
+    matchScore: session.finalReport?.overallScore ? session.finalReport.overallScore * 20 : 0,
+    confidence: session.finalReport?.confidence ? Math.round(session.finalReport.confidence * 100) : 0,
+  };
 
   const circumference = 2 * Math.PI * 88;
-  const offset = circumference * (1 - CANDIDATE.matchScore / 100);
+  const offset = circumference * (1 - (CANDIDATE_DATA.matchScore || 0) / 100);
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -177,12 +231,12 @@ export default function RecruiterReportDetail() {
                     Key Strengths
                   </h3>
                   <ul className="space-y-4">
-                    {STRENGTHS.map((s) => (
-                      <li key={s.title} className="p-4 bg-tertiary/5 rounded-xl border-l-4 border-tertiary">
-                        <p className="font-bold text-sm text-on-tertiary-container mb-1">{s.title}</p>
-                        <p className="text-xs text-on-surface-variant">{s.body}</p>
+                    {session.finalReport?.strengths.map((s: string, i: number) => (
+                      <li key={i} className="p-4 bg-tertiary/5 rounded-xl border-l-4 border-tertiary">
+                        <p className="font-bold text-sm text-on-tertiary-container mb-1">Strength</p>
+                        <p className="text-xs text-on-surface-variant">{s}</p>
                       </li>
-                    ))}
+                    )) || <li className="text-sm text-on-surface-variant italic">No strengths identified yet.</li>}
                   </ul>
                 </div>
                 <div>
@@ -191,12 +245,12 @@ export default function RecruiterReportDetail() {
                     Identified Risks
                   </h3>
                   <ul className="space-y-4">
-                    {RISKS.map((r) => (
-                      <li key={r.title} className="p-4 bg-error/5 rounded-xl border-l-4 border-error">
-                        <p className="font-bold text-sm text-on-error-container mb-1">{r.title}</p>
-                        <p className="text-xs text-on-surface-variant">{r.body}</p>
+                    {session.finalReport?.risks.map((r: string, i: number) => (
+                      <li key={i} className="p-4 bg-error/5 rounded-xl border-l-4 border-error">
+                        <p className="font-bold text-sm text-on-error-container mb-1">Risk</p>
+                        <p className="text-xs text-on-surface-variant">{r}</p>
                       </li>
-                    ))}
+                    )) || <li className="text-sm text-on-surface-variant italic">No risks identified yet.</li>}
                   </ul>
                 </div>
               </div>
@@ -212,67 +266,27 @@ export default function RecruiterReportDetail() {
                 </div>
               </div>
 
-              {/* Audio Player */}
-              <div className="bg-surface-container-low rounded-xl p-4 md:p-6 flex flex-col sm:flex-row items-center gap-4 md:gap-6">
-                <button className="w-12 h-12 flex items-center justify-center premium-gradient text-white rounded-full shadow-md active:scale-90 transition-transform flex-shrink-0">
-                  <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-                </button>
-                <div className="flex-1 flex flex-col gap-2 w-full">
-                  <div className="flex items-end gap-[2px] h-8">
-                    {[4,6,8,5,7,4,6,8,5,3,5,7,4,6,3,8,4,6,2,5].map((h, i) => (
-                      <div key={i} className={`w-1 rounded-full ${i < 7 ? 'bg-primary' : i < 10 ? 'bg-primary/40' : 'bg-primary/20'}`} style={{ height: `${h * 4}px` }} />
-                    ))}
-                  </div>
-                  <div className="flex justify-between text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
-                    <span>02:14</span>
-                    <span>04:50</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 border-l border-outline-variant/30 pl-4 md:pl-6 flex-shrink-0">
-                  <div className="text-right">
-                    <p className="text-[10px] font-bold text-on-surface-variant uppercase">Voice Quality</p>
-                    <p className="text-sm font-black text-tertiary">98.2%</p>
-                  </div>
-                  <span className="material-symbols-outlined text-on-secondary-container">equalizer</span>
-                </div>
-              </div>
-
               {/* Transcript */}
               <div className="space-y-6">
-                {QUESTIONS.map((q, qi) => (
-                  <div key={q.id}>
-                    {qi === 0 && (
-                      <>
-                        {/* AI question */}
-                        <div className="flex gap-4 mb-6">
-                          <div className="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center flex-shrink-0">
-                            <span className="material-symbols-outlined text-secondary">smart_toy</span>
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-tight">AI Interviewer • 01:45</p>
-                            <p className="text-on-surface leading-relaxed italic">&quot;Can you walk me through your process for designing a math module for 5th graders that covers fractions while maintaining high student engagement?&quot;</p>
-                          </div>
+                {session.answers.map((a: any) => (
+                  <div key={a.id} className="space-y-4">
+                    {/* Candidate response */}
+                    <div className="flex gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center flex-shrink-0 text-primary font-bold text-sm">
+                        {CANDIDATE_DATA.initials}
+                      </div>
+                      <div className="bg-surface-container-low p-4 rounded-xl flex-1">
+                        <p className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-tight">Answer • {new Date(a.createdAt).toLocaleTimeString()}</p>
+                        <p className="text-on-secondary-fixed leading-relaxed">
+                          &quot;{a.transcript?.text}&quot;
+                        </p>
+                        <div className="mt-4 flex gap-2 flex-wrap">
+                          {a.evaluation?.evidence.map((sig: string, i: number) => (
+                            <span key={i} className="px-2 py-1 bg-tertiary/10 text-tertiary text-[10px] font-bold rounded">{sig}</span>
+                          ))}
                         </div>
-
-                        {/* Candidate response */}
-                        <div className="flex gap-4 mb-4">
-                          <div className="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center flex-shrink-0 text-primary font-bold text-sm">
-                            {CANDIDATE.initials}
-                          </div>
-                          <div className="bg-surface-container-low p-4 rounded-xl flex-1">
-                            <p className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-tight">Chayan • 02:02</p>
-                            <p className="text-on-secondary-fixed leading-relaxed">
-                              &quot;Absolutely. I start with the &apos;Hook&apos;—usually a real-world scenario like dividing a pizza or a garden plot. I believe students learn best when they don&apos;t realize they&apos;re doing complex calculations until the abstract concept is introduced later. For 5th graders, visual manipulatives are key...&quot;
-                            </p>
-                            <div className="mt-4 flex gap-2 flex-wrap">
-                              {q.tags.map((tag) => (
-                                <span key={tag} className="px-2 py-1 bg-tertiary/10 text-tertiary text-[10px] font-bold rounded">{tag}</span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

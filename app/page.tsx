@@ -20,6 +20,7 @@ export default function Home() {
   const [consented, setConsented] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [status, setStatus] = useState<RecordStatus>("idle");
+  const [processingStep, setProcessingStep] = useState<string>("");
   const [error, setError] = useState("");
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [report, setReport] = useState<FinalReport | null>(null);
@@ -191,6 +192,7 @@ export default function Home() {
   async function processAudio(audio: Blob) {
     if (!currentQuestion) return;
     setStatus("processing");
+    setProcessingStep("Transcribing your answer...");
     setTranscriptDraft("");
     try {
       const form = new FormData();
@@ -200,12 +202,21 @@ export default function Home() {
       const tPayload = await tRes.json();
       if (!tRes.ok) throw new Error(tPayload.error || "Transcription failed.");
       const transcript = tPayload.transcript as string;
+      const audioUrl = tPayload.audioUrl as string;
       setTranscriptDraft(transcript);
 
+      setProcessingStep("Evaluating your answer...");
       const eRes = await fetch("/api/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: currentQuestion.prompt, competencyTags: currentQuestion.competencyTags, transcript }),
+        body: JSON.stringify({
+          question: currentQuestion.prompt,
+          competencyTags: currentQuestion.competencyTags,
+          transcript,
+          sessionId: session?.id,
+          questionId: currentQuestion.id,
+          audioUrl
+        }),
       });
       const ePayload = await eRes.json();
       if (!eRes.ok) throw new Error(ePayload.error || "Evaluation failed.");
@@ -219,6 +230,17 @@ export default function Home() {
       setAnswers(nextAnswers);
 
       // Handle follow-up logic
+      // 1. Explicit word count nudge if transcript is too short (< 20 words)
+      const wordCount = transcript.trim().split(/\s+/).length;
+      if (wordCount < 20 && !hasAskedFollowUp) {
+        setFollowUpQuestion("That's a bit brief. Could you please expand on that or provide an example to help us better understand your approach?");
+        setHasAskedFollowUp(true);
+        setStatus("idle");
+        setTranscriptDraft(transcript);
+        return;
+      }
+
+      // 2. AI-generated follow-up logic
       if (evaluation.followUpQuestion && !hasAskedFollowUp) {
         setFollowUpQuestion(evaluation.followUpQuestion);
         setHasAskedFollowUp(true);
@@ -248,7 +270,10 @@ export default function Home() {
     const res = await fetch("/api/summarize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ answers: done }),
+      body: JSON.stringify({
+        answers: done,
+        sessionId: session?.id
+      }),
     });
     const payload = await res.json();
     if (!res.ok) throw new Error(payload.error || "Report generation failed.");
@@ -592,12 +617,12 @@ export default function Home() {
                   <p className="text-xs text-on-surface-variant">Voice activity detected</p>
                 </>
               ) : status === "processing" ? (
-                <div className="flex flex-col items-center gap-4 py-4">
+                <div className="flex flex-col items-center gap-4 py-4 text-center">
                   <svg className="animate-spin w-10 h-10 text-primary" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                   </svg>
-                  <p className="text-sm font-bold text-on-surface">Processing your answer…</p>
+                  <p className="text-sm font-bold text-on-surface">{processingStep}</p>
                   <p className="text-xs text-on-surface-variant">Transcribing and evaluating</p>
                 </div>
               ) : (

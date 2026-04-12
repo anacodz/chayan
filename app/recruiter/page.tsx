@@ -18,6 +18,51 @@ const NAV_ITEMS = [
 ];
 
 export default function RecruiterDashboard() {
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchSessions() {
+      try {
+        const res = await fetch("/api/recruiter/interviews");
+        if (res.ok) {
+          const data = await res.json();
+          setSessions(data.sessions);
+        }
+      } catch (error) {
+        console.error("Failed to fetch sessions:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchSessions();
+  }, []);
+
+  const getInitials = (name: string) => {
+    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  };
+
+  const getStatusClass = (status: string) => {
+    switch (status) {
+      case "COMPLETED": return "bg-tertiary/10 text-tertiary";
+      case "IN_PROGRESS": return "bg-secondary/10 text-secondary";
+      case "NEEDS_HUMAN_REVIEW": return "bg-error/10 text-error";
+      default: return "bg-primary-container text-on-primary-container";
+    }
+  };
+
+  const displayCandidates = sessions.length > 0 ? sessions.map(s => ({
+    id: s.id,
+    name: s.candidate.name,
+    initials: getInitials(s.candidate.name),
+    role: "Candidate",
+    type: "AI Tutor Screen",
+    status: s.status,
+    score: s.finalReport?.overallScore ? s.finalReport.overallScore * 20 : null, // Convert 1-5 to 1-100
+    statusClass: getStatusClass(s.status),
+    scoreColor: s.finalReport?.overallScore >= 4 ? "text-tertiary" : "text-on-surface-variant"
+  })) : MOCK_CANDIDATES;
+
   return (
     <div className="flex min-h-screen">
 
@@ -185,7 +230,7 @@ export default function RecruiterDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-container">
-                  {MOCK_CANDIDATES.map((c) => (
+                  {displayCandidates.map((c) => (
                     <tr key={c.id} className="hover:bg-surface-container-low/30 transition-colors">
                       <td className="px-6 md:px-8 py-5">
                         <div className="flex items-center gap-4">
@@ -230,7 +275,7 @@ export default function RecruiterDashboard() {
             </div>
 
             <div className="p-4 md:p-6 bg-surface-container-low/20 border-t border-surface-container flex flex-col sm:flex-row justify-between items-center gap-3">
-              <p className="text-xs font-medium text-on-surface-variant">Showing 4 of 1,284 candidates</p>
+              <p className="text-xs font-medium text-on-surface-variant">Showing {displayCandidates.length} candidates</p>
               <div className="flex gap-1">
                 <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high transition-colors">
                   <span className="material-symbols-outlined text-sm">chevron_left</span>
