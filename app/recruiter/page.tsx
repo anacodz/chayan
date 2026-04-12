@@ -18,51 +18,6 @@ const NAV_ITEMS = [
 ];
 
 export default function RecruiterDashboard() {
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchSessions() {
-      try {
-        const res = await fetch("/api/recruiter/interviews");
-        if (res.ok) {
-          const data = await res.json();
-          setSessions(data.sessions);
-        }
-      } catch (error) {
-        console.error("Failed to fetch sessions:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchSessions();
-  }, []);
-
-  const getInitials = (name: string) => {
-    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
-  };
-
-  const getStatusClass = (status: string) => {
-    switch (status) {
-      case "COMPLETED": return "bg-tertiary/10 text-tertiary";
-      case "IN_PROGRESS": return "bg-secondary/10 text-secondary";
-      case "NEEDS_HUMAN_REVIEW": return "bg-error/10 text-error";
-      default: return "bg-primary-container text-on-primary-container";
-    }
-  };
-
-  const displayCandidates = sessions.length > 0 ? sessions.map(s => ({
-    id: s.id,
-    name: s.candidate.name,
-    initials: getInitials(s.candidate.name),
-    role: "Candidate",
-    type: "AI Tutor Screen",
-    status: s.status,
-    score: s.finalReport?.overallScore ? s.finalReport.overallScore * 20 : null, // Convert 1-5 to 1-100
-    statusClass: getStatusClass(s.status),
-    scoreColor: s.finalReport?.overallScore >= 4 ? "text-tertiary" : "text-on-surface-variant"
-  })) : MOCK_CANDIDATES;
-
   return (
     <div className="flex min-h-screen">
 
@@ -153,7 +108,6 @@ export default function RecruiterDashboard() {
 
           {/* Metric cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-10">
-            {/* Total Invites */}
             <div className="bg-surface-container-lowest p-6 md:p-8 rounded-3xl flex flex-col gap-4 group hover:bg-white hover:shadow-xl transition-all duration-500 border border-transparent hover:border-outline-variant/10">
               <div className="flex justify-between items-start">
                 <div className="p-3 bg-primary/10 rounded-2xl text-primary">
@@ -172,7 +126,6 @@ export default function RecruiterDashboard() {
               </div>
             </div>
 
-            {/* Completed Screenings */}
             <div className="bg-surface-container-lowest p-6 md:p-8 rounded-3xl flex flex-col gap-4 group hover:bg-white hover:shadow-xl transition-all duration-500 border border-transparent hover:border-outline-variant/10">
               <div className="flex justify-between items-start">
                 <div className="p-3 bg-tertiary/10 rounded-2xl text-tertiary">
@@ -191,7 +144,6 @@ export default function RecruiterDashboard() {
               </div>
             </div>
 
-            {/* Pending Reviews — dark card */}
             <div className="bg-on-secondary-fixed p-6 md:p-8 rounded-3xl flex flex-col gap-4 text-white relative overflow-hidden hover:shadow-xl transition-all duration-500 sm:col-span-2 lg:col-span-1">
               <div className="absolute -right-8 -top-8 w-32 h-32 bg-primary/20 rounded-full blur-3xl" />
               <div className="flex justify-between items-start relative z-10">
@@ -230,7 +182,7 @@ export default function RecruiterDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-container">
-                  {displayCandidates.map((c) => (
+                  {MOCK_CANDIDATES.map((c) => (
                     <tr key={c.id} className="hover:bg-surface-container-low/30 transition-colors">
                       <td className="px-6 md:px-8 py-5">
                         <div className="flex items-center gap-4">
@@ -275,7 +227,7 @@ export default function RecruiterDashboard() {
             </div>
 
             <div className="p-4 md:p-6 bg-surface-container-low/20 border-t border-surface-container flex flex-col sm:flex-row justify-between items-center gap-3">
-              <p className="text-xs font-medium text-on-surface-variant">Showing {displayCandidates.length} candidates</p>
+              <p className="text-xs font-medium text-on-surface-variant">Showing 4 of 1,284 candidates</p>
               <div className="flex gap-1">
                 <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high transition-colors">
                   <span className="material-symbols-outlined text-sm">chevron_left</span>

@@ -149,3 +149,50 @@ button, input, label, select, textarea { font: inherit; }
   background: #ffdea6;
   color: #271900;
 }
+
+/* ── Print Styles ──────────────────────────────────────────── */
+@media print {
+  nav, header, footer, .glass-header, .glass-panel,
+  button, .decision-panel, .decision-panel-sticky,
+  .no-print, [role="button"] {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  main, .max-w-\[1920px\] {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .grid {
+    display: block !important;
+  }
+
+  .bg-surface-container-lowest {
+    background: white !important;
+    box-shadow: none !important;
+    border: 1px solid #eee !important;
+    margin-bottom: 20px !important;
+    break-inside: avoid;
+  }
+
+  .text-on-secondary-fixed {
+    color: black !important;
+  }
+
+  .premium-gradient {
+    background: #7b5800 !important;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .lg\:col-span-4, .lg\:col-span-8, .lg\:col-span-9, .lg\:col-span-3 {
+    width: 100% !important;
+    float: none !important;
+  }
+}
