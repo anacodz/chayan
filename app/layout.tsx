@@ -3,10 +3,10 @@ import "@/app/globals.css";
 import { Providers } from "./components/providers";
 
 export const metadata: Metadata = {
-  title: "Chayan — Cuemath Tutor Screener",
+  title: "Cuemath — Tutor Screener",
   description: "AI-powered voice screening by Cuemath.",
   openGraph: {
-    title: "Chayan — Cuemath Tutor Screener",
+    title: "Cuemath — Tutor Screener",
     description: "AI-powered voice screening for Cuemath tutor candidates.",
     type: "website",
   },

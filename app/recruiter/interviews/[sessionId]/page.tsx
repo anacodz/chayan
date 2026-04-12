@@ -147,7 +147,7 @@ export default function RecruiterReportDetail() {
             </button>
             <button 
               onClick={async () => {
-                const text = `Chayan AI Report for ${CANDIDATE_DATA.name}\nScore: ${CANDIDATE_DATA.matchScore}%\nRecommendation: ${CANDIDATE_DATA.recommendation}\nURL: ${window.location.href}`;
+                const text = `Cuemath AI Report for ${CANDIDATE_DATA.name}\nScore: ${CANDIDATE_DATA.matchScore}%\nRecommendation: ${CANDIDATE_DATA.recommendation}\nURL: ${window.location.href}`;
                 await navigator.clipboard.writeText(text);
                 alert("Report link copied!");
               }}

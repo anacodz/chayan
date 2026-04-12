@@ -50,7 +50,7 @@ export default function AdminLayout({
         <header className="glass-header sticky top-0 z-40 shadow-[0_4px_20px_rgba(73,95,132,0.04)]">
           <div className="flex justify-between items-center w-full px-6 md:px-8 py-4 max-w-[1920px] mx-auto">
             <div className="flex items-center gap-8">
-              <span className="text-2xl font-black text-on-secondary-fixed tracking-tighter">Chayan</span>
+              <span className="text-2xl font-black text-on-secondary-fixed tracking-tighter uppercase">Cuemath</span>
             </div>
             <div className="flex items-center gap-3 md:gap-4">
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">AD</div>

@@ -47,7 +47,8 @@ export default function SignIn() {
             <div className="w-11 h-11 premium-gradient rounded-xl flex items-center justify-center text-white shadow-lg">
               <span className="material-symbols-outlined text-xl">psychology</span>
             </div>
-            <span className="text-2xl font-black tracking-tighter text-on-secondary-fixed">Chayan Recruiter</span>
+            <span className="text-xl font-black tracking-tighter text-on-secondary-fixed uppercase">Cuemath Recruiter</span>
+
           </div>
 
           <div className="space-y-5">

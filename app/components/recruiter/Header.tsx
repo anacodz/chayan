@@ -10,7 +10,7 @@ export default function Header() {
     <header className="bg-[#F9F9FC]/80 backdrop-blur-md sticky top-0 z-40 shadow-[0_4px_20px_rgba(73,95,132,0.04)]">
       <div className="flex justify-between items-center w-full px-6 md:px-8 py-4 max-w-[1920px] mx-auto">
         <div className="flex items-center gap-8">
-          <Link href="/recruiter" className="text-2xl font-black text-[#001B3D] tracking-tighter">Chayan</Link>
+          <Link href="/recruiter" className="text-2xl font-black text-[#001B3D] tracking-tighter">Cuemath</Link>
           <nav className="hidden md:flex gap-6 items-center">
             <Link 
               href="/recruiter" 

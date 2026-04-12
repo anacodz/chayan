@@ -49,7 +49,7 @@ export default function Interview({
       <header className="glass-header sticky top-0 z-50 shadow-[0_4px_20px_rgba(73,95,132,0.04)]">
         <div className="flex justify-between items-center w-full px-6 md:px-8 py-4 max-w-[1920px] mx-auto">
           <div className="flex items-center gap-6">
-            <span className="text-xl font-black tracking-tighter text-on-secondary-fixed">Chayan</span>
+            <span className="text-xl font-black tracking-tighter text-on-secondary-fixed uppercase">Cuemath</span>
             {session && <span className="text-sm text-on-surface-variant font-medium hidden sm:inline">Candidate: {session.candidate.name}</span>}
           </div>
           <div className="flex items-center gap-3">
@@ -182,7 +182,7 @@ export default function Interview({
             +2k
           </div>
         </div>
-        <p className="text-xs font-medium text-on-surface-variant">Join 2,000+ expert educators curated by Chayan AI.</p>
+        <p className="text-xs font-medium text-on-surface-variant">Join 2,000+ expert educators curated by Cuemath.</p>
       </div>
     </div>
   );
