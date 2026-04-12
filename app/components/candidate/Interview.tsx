@@ -55,9 +55,12 @@ export default function Interview({
         <div className="flex justify-between items-center w-full px-6 md:px-8 py-4 max-w-[1920px] mx-auto">
           <div className="flex items-center gap-4">
             <CuemathLogo className="w-8 h-8" />
-            <span className="text-xl font-black tracking-tight text-primary leading-none">Cuemath</span>
-            <div className="w-px h-4 bg-outline-variant/30 hidden sm:block mx-2" />
-            {session && <span className="text-xs text-on-surface-variant font-bold uppercase tracking-widest hidden sm:inline">Certified Assessment</span>}
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xl font-black tracking-tight text-primary leading-none">Cuemath</span>
+              <span className="text-[10px] font-bold text-on-surface-variant/30 tracking-tight lowercase">chayan</span>
+            </div>
+            <div className="w-px h-4 bg-outline-variant/30 hidden sm:block mx-1" />
+            {session && <span className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest hidden sm:inline">Certified Assessment</span>}
           </div>
           <div className="flex items-center gap-3">
             <div className="px-3 py-1.5 rounded-full bg-secondary/10 border border-secondary/20 flex items-center gap-2">

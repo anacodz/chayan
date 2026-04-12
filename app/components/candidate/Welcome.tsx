@@ -30,7 +30,10 @@ export default function Welcome({ onAccept, onDecline, session }: WelcomeProps) 
             <div className="flex items-center gap-4">
               <CuemathLogo className="w-14 h-14 drop-shadow-md" />
               <div className="flex flex-col">
-                <span className="text-3xl font-black tracking-tight text-primary leading-none">Cuemath</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black tracking-tight text-primary leading-none">Cuemath</span>
+                </div>
+                <span className="text-[10px] font-bold text-on-surface-variant/40 tracking-wider">chayan</span>
                 <span className="text-[10px] font-bold tracking-[0.3em] text-secondary uppercase mt-1">Tutor Screener</span>
               </div>
             </div>
