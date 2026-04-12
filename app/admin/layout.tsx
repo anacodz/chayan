@@ -25,7 +25,7 @@ export default function AdminLayout({
             <span className="font-medium text-sm">Question Sets</span>
           </Link>
           <Link
-            href="/admin/metrics"
+            href="/api/admin/metrics"
             className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:translate-x-1 text-secondary hover:bg-surface-container-high"
           >
             <span className="material-symbols-outlined">analytics</span>
