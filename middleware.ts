@@ -14,7 +14,10 @@ export default function middleware(req: NextRequest) {
   const isAdminApi = req.nextUrl.pathname.startsWith("/api/admin");
 
   if ((isRecruiterPage || isRecruiterApi || isAdminPage || isAdminApi) && !isAuth) {
-    return NextResponse.redirect(new URL("/auth/signin", req.nextUrl));
+    const signInUrl = req.nextUrl.clone();
+    signInUrl.pathname = "/auth/signin";
+    signInUrl.search = `callbackUrl=${encodeURIComponent(req.nextUrl.pathname)}`;
+    return NextResponse.redirect(signInUrl);
   }
 
   return NextResponse.next();

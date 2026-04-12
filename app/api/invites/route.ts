@@ -30,6 +30,9 @@ export async function POST(request: Request) {
     const { session, token } = await createInvite(candidate.id, questionSetId);
     logger.info({ requestId, sessionId: session.id }, "Invite session created");
 
+    const baseUrl = new URL(request.url).origin;
+    const inviteUrl = `${baseUrl}/?invite=${token}`;
+
     return NextResponse.json({
       session: {
         id: session.id,
@@ -37,7 +40,7 @@ export async function POST(request: Request) {
         inviteExpiresAt: session.inviteExpiresAt,
       },
       token,
-      url: `${new URL(request.url).origin}/?invite=${token}`,
+      url: inviteUrl,
     });
   } catch (error) {
     logger.error({ requestId, error: error instanceof Error ? error.message : "Unknown error" }, "Invite creation failed");
