@@ -39,7 +39,7 @@ export default function Welcome({ onAccept, onDecline }: WelcomeProps) {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-6 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-4">
+              <div className="p-6 rounded-2xl bg-surface-container-lowest shadow-[0_4px_20px_rgba(73,95,132,0.04)] border-none flex flex-col gap-4">
                 <div className="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-fixed">
                   <span className="material-symbols-outlined">record_voice_over</span>
                 </div>
@@ -48,7 +48,7 @@ export default function Welcome({ onAccept, onDecline }: WelcomeProps) {
                   <p className="text-sm text-on-surface-variant mt-1">Natural dialogue processing for real-time pedagogical assessment.</p>
                 </div>
               </div>
-              <div className="p-6 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-4">
+              <div className="p-6 rounded-2xl bg-surface-container-lowest shadow-[0_4px_20px_rgba(73,95,132,0.04)] border-none flex flex-col gap-4">
                 <div className="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-container">
                   <span className="material-symbols-outlined">timer</span>
                 </div>
@@ -61,7 +61,7 @@ export default function Welcome({ onAccept, onDecline }: WelcomeProps) {
           </div>
           
           <div className="lg:col-span-5">
-            <div className="glass-panel p-8 md:p-10 rounded-2xl shadow-xl flex flex-col gap-8">
+            <div className="glass-panel p-8 md:p-10 rounded-2xl shadow-[0_12px_40px_rgba(73,95,132,0.08)] flex flex-col gap-8">
               <div className="space-y-2">
                 <h3 className="text-2xl font-bold text-on-surface">Candidate Consent</h3>
                 <p className="text-sm text-on-surface-variant">Please review our transparency guidelines before we begin.</p>
