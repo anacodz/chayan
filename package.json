@@ -11,12 +11,15 @@
   },
   "dependencies": {
     "@google/genai": "^1.31.0",
+    "@tailwindcss/postcss": "^4.2.2",
     "framer-motion": "^12.38.0",
     "next": "^15.5.6",
     "openai": "^6.8.1",
+    "postcss": "^8.5.9",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "sarvamai": "^1.1.6"
+    "sarvamai": "^1.1.6",
+    "tailwindcss": "^4.2.2"
   },
   "devDependencies": {
     "@types/node": "^22.18.8",

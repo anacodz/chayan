@@ -16,6 +16,7 @@ tsconfig.tsbuildinfo
 .env
 .env.*
 !.env.example
+BACKLOG.txt
 
 # Vercel
 .vercel
