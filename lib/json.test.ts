@@ -31,14 +31,9 @@ describe("extractJsonObject utility", () => {
     expect(result).toEqual({ a: { b: 1 }, c: [2, 3] });
   });
 
-  it("handles multiple objects by taking the outer boundaries", () => {
+  it("handles multiple objects by taking the first valid one", () => {
     const text = 'Something: { "a": 1 } and { "b": 2 }';
-    // Current implementation uses first { and last }
-    // which might not be ideal but it's consistent with current code
     const result = extractJsonObject<any>(text);
-    expect(result).toEqual({ a: 1, "} and { b": 2 }); 
-    // Wait, this is interesting. If there are multiple separate objects, 
-    // it will try to parse everything between the first { and last }.
-    // This is probably not what we want if they are separate.
+    expect(result).toEqual({ a: 1 });
   });
 });

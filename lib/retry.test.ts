@@ -33,7 +33,10 @@ describe("withRetry utility", () => {
 
   it("applies exponential backoff correctly", async () => {
     vi.useFakeTimers();
-    const fn = vi.fn().mockRejectedValue(new Error("failure"));
+    // Use an async function that throws instead of a returned rejected promise to avoid unhandled rejections
+    const fn = vi.fn(async () => {
+      throw new Error("failure");
+    });
     
     const promise = withRetry(fn, { maxRetries: 3, delayMs: 100, backoff: true });
     
@@ -49,13 +52,15 @@ describe("withRetry utility", () => {
     await vi.advanceTimersByTimeAsync(200);
     expect(fn).toHaveBeenCalledTimes(3);
     
-    await expect(promise).rejects.toThrow();
+    await expect(promise).rejects.toThrow("failure");
     vi.useRealTimers();
   });
 
   it("uses constant delay if backoff is disabled", async () => {
     vi.useFakeTimers();
-    const fn = vi.fn().mockRejectedValue(new Error("failure"));
+    const fn = vi.fn(async () => {
+      throw new Error("failure");
+    });
     
     const promise = withRetry(fn, { maxRetries: 3, delayMs: 100, backoff: false });
     
@@ -71,7 +76,7 @@ describe("withRetry utility", () => {
     await vi.advanceTimersByTimeAsync(100);
     expect(fn).toHaveBeenCalledTimes(3);
     
-    await expect(promise).rejects.toThrow();
+    await expect(promise).rejects.toThrow("failure");
     vi.useRealTimers();
   });
 });
