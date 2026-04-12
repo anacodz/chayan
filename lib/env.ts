@@ -22,6 +22,10 @@ const envSchema = z.object({
 
 const isBuildTime = process.env.NEXT_PHASE === "phase-production-build";
 
+if (isBuildTime && !process.env.NEXTAUTH_URL) {
+  process.env.NEXTAUTH_URL = "http://localhost:3000";
+}
+
 export const env = isBuildTime 
   ? envSchema.partial().parse(process.env) as any
   : envSchema.parse(process.env);
