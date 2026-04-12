@@ -221,8 +221,9 @@ export default function Home() {
       form.append("sessionId", session?.id || "demo");
       form.append("questionId", currentQuestion.id);
       form.append("question", currentQuestion.prompt);
-      // @ts-ignore
-      form.append("competencyTags", JSON.stringify(currentQuestion.competencyTags || []));
+      
+      const competencyTags = "competencyTags" in currentQuestion ? currentQuestion.competencyTags : [];
+      form.append("competencyTags", JSON.stringify(competencyTags));
 
       const uploadRes = await fetch("/api/answers/upload", { method: "POST", body: form });
       const uploadData = await uploadRes.json();
