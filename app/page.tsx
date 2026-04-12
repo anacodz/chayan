@@ -147,7 +147,20 @@ export default function Home() {
         const data = await res.json();
         setSession(data.session);
 
-        const qRes = await fetch(`/api/questions?questionSetId=${data.session.questionSetId}`);
+        const qParams = new URLSearchParams({
+          questionSetId: data.session.questionSetId,
+          randomize: "true",
+          limit: "6"
+        });
+        
+        if (data.session.candidate.subject) {
+          qParams.append("subject", data.session.candidate.subject);
+        }
+        if (data.session.candidate.experienceLevel) {
+          qParams.append("experienceLevel", data.session.candidate.experienceLevel);
+        }
+
+        const qRes = await fetch(`/api/questions?${qParams.toString()}`);
         if (qRes.ok) {
           const qData = await qRes.json();
           if (qData.questions.length > 0) {
@@ -368,7 +381,7 @@ export default function Home() {
   }
 
   if (phase === "consent") {
-    return <Welcome onAccept={() => setPhase("interview")} onDecline={() => window.location.href = "https://cuemath.com"} />;
+    return <Welcome onAccept={() => setPhase("interview")} onDecline={() => window.location.href = "https://cuemath.com"} session={session} />;
   }
 
   if (phase === "complete") {

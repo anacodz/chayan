@@ -4,9 +4,16 @@ import CuemathLogo from "../CuemathLogo";
 interface WelcomeProps {
   onAccept: () => void;
   onDecline: () => void;
+  session?: {
+    candidate: {
+      name: string;
+      subject?: string;
+      experienceLevel?: string;
+    };
+  };
 }
 
-export default function Welcome({ onAccept, onDecline }: WelcomeProps) {
+export default function Welcome({ onAccept, onDecline, session }: WelcomeProps) {
   const [consented, setConsented] = useState(false);
 
   return (
@@ -29,16 +36,15 @@ export default function Welcome({ onAccept, onDecline }: WelcomeProps) {
             </div>
             
             <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10">
-                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                <p className="text-[10px] font-bold tracking-widest text-primary uppercase">MathFit™ Certification</p>
-              </div>
               <h2 className="text-5xl md:text-[64px] font-bold text-on-surface tracking-tight leading-[1.05]">
-                Shape the <br/>
-                <span className="text-primary italic">MathFit™ mindset.</span>
+                {session ? `Ready, ${session.candidate.name.split(" ")[0]}?` : "Shape the"} <br/>
+                <span className="text-primary italic">{session ? "Show your mastery." : "MathFit™ mindset."}</span>
               </h2>
               <p className="text-xl text-on-surface-variant max-w-lg leading-relaxed font-medium">
-                Welcome to the Cuemath elite educator screening. We&apos;re looking for masters of conceptual understanding to join our global network of 2,000+ experts.
+                {session 
+                  ? `We've prepared a specialized assessment for your expertise in ${session.candidate.subject || "Teaching"} at the ${session.candidate.experienceLevel || "Expert"} level.`
+                  : "Welcome to the Cuemath elite educator screening. We're looking for masters of conceptual understanding to join our global network of 2,000+ experts."
+                }
               </p>
             </div>
             
