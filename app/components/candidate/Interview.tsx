@@ -21,6 +21,8 @@ interface InterviewProps {
   formatTime: (s: number) => string;
   progress: number;
   session?: any;
+  onPlayTts: () => void;
+  isTtsLoading: boolean;
 }
 
 export default function Interview({
@@ -38,6 +40,8 @@ export default function Interview({
   formatTime,
   progress,
   session,
+  onPlayTts,
+  isTtsLoading,
 }: InterviewProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -66,9 +70,23 @@ export default function Interview({
         <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
           <div className="lg:col-span-7">
             <div className="bg-surface-container-lowest rounded-2xl p-8 md:p-10 shadow-sm min-h-[240px] flex flex-col justify-center">
-              <h2 className="text-2xl md:text-3xl font-bold text-on-surface leading-snug mb-4">
-                &ldquo;{currentQuestion.prompt}&rdquo;
-              </h2>
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold text-on-surface leading-snug">
+                  &ldquo;{currentQuestion.prompt}&rdquo;
+                </h2>
+                <button 
+                  onClick={onPlayTts}
+                  disabled={isTtsLoading}
+                  className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                    isTtsLoading ? "bg-surface-container-high animate-pulse" : "bg-primary/10 text-primary hover:bg-primary/20"
+                  }`}
+                  title="Listen to question"
+                >
+                  <span className="material-symbols-outlined text-[20px]">
+                    {isTtsLoading ? "more_horiz" : "volume_up"}
+                  </span>
+                </button>
+              </div>
               {currentQuestion.guidance && (
                 <p className="text-sm text-on-surface-variant leading-relaxed flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary text-[18px]">lightbulb</span>
@@ -145,6 +163,17 @@ export default function Interview({
           </div>
         </div>
       </main>
+
+      <div className="absolute bottom-12 left-12 hidden lg:flex items-center gap-4">
+        <div className="flex -space-x-3">
+          <img className="w-10 h-10 rounded-full border-2 border-background object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBplEnez1pBV0osV1A0_LUKWhV1ncjPcGp5iKIyJP4BxLaAlPY8Gg_VJSlIno4Y-Kmxdph-tyhwuM0e4ZsIinfrG89aKklecPsS6EX4rWWVX2y8t8e8D4xJsh1Q6zPYlA1Dl3WbE_3SXk8sYSOeDbszHHgujKnfemvRiTnUU8PDpgkhD_DIVudgWkClQjCgqHTPeliEY6KxzyibGlSwfSO8tUd7N9sRINZdqZgGu1z2SVcIho_gexcYcEKSmOQNOB4obgAxxyAtSjMN" alt="Tutor" />
+          <img className="w-10 h-10 rounded-full border-2 border-background object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjUvJa4dxzzg2ZjJPte_5S-C8mF8XKgqYN50pm5Bmh7oIvk5ZCemiejOQArUmfnN3hlpsiOBrrczHhE_q2uMQJhHDLaACcBO41hCaEKJTK4lEWaz3iObVsdXuLzGSMY0Aroj8vSaUNCbgNXkVx6_vkm2bb1Jy-54tLG2aZV5gnDBr9FwkowX93vobt_lNtE9yptKTZCZuTUZ-BaCYODFaRZFgjQS_4-WGCIpH6VvHVKkcYnGtRfWQAb0jCb1D9udMW4AEzO1jVyVnS" alt="Tutor" />
+          <div className="w-10 h-10 rounded-full border-2 border-background bg-secondary flex items-center justify-center text-[10px] font-bold text-white">
+            +2k
+          </div>
+        </div>
+        <p className="text-xs font-medium text-on-surface-variant">Join 2,000+ expert educators curated by Chayan AI.</p>
+      </div>
     </div>
   );
 }

@@ -5,17 +5,17 @@ import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   { icon: "dashboard",         label: "Overview",        href: "/recruiter", active: true  },
-  { icon: "record_voice_over", label: "Live Sessions",   href: "#",          active: false },
-  { icon: "settings_voice",    label: "Voice Quality",   href: "#",          active: false },
-  { icon: "psychology",        label: "Scoring Models",  href: "#",          active: false },
-  { icon: "group",             label: "Team",            href: "#",          active: false },
-];
+  { icon: "record_voice_over", label: "Live Sessions",   href: "/recruiter", active: false },
+  { icon: "settings_voice",    label: "Voice Quality",   href: "/recruiter", active: false },
+  { icon: "psychology",        label: "Scoring Models",  href: "/recruiter", active: false },
+  { icon: "group",             label: "Team",            href: "/recruiter", active: false },
+] as const;
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 h-screen sticky top-0 bg-surface-container-low p-4 gap-2">
+    <aside className="hidden lg:flex flex-col w-64 h-screen sticky top-0 bg-[#F3F3F6] p-4 gap-2">
       <div className="mb-8 px-2 py-4">
         <h2 className="text-on-secondary-fixed font-black text-lg">Recruiter Portal</h2>
         <p className="text-secondary text-xs uppercase tracking-widest font-bold mt-0.5">Expert Mode</p>
@@ -27,7 +27,7 @@ export default function Sidebar() {
             <Link 
               key={item.label} 
               href={item.href} 
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:translate-x-1 ${isActive ? "bg-surface-container-lowest text-primary shadow-sm" : "text-secondary hover:bg-surface-container-high"}`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:translate-x-1 ${isActive ? "bg-[#FFFFFF] text-[#7B5800] shadow-sm" : "text-[#495F84] hover:bg-[#E8E8EA]"}`}
             >
               <span className="material-symbols-outlined" style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>{item.icon}</span>
               <span className="font-medium text-sm">{item.label}</span>
@@ -42,7 +42,7 @@ export default function Sidebar() {
         <Link href="#" className="flex items-center gap-3 px-4 py-3 text-secondary hover:bg-surface-container-high rounded-xl transition-all text-sm font-medium">
           <span className="material-symbols-outlined">help</span>Support
         </Link>
-        <Link href="#" className="flex items-center gap-3 px-4 py-3 text-secondary hover:bg-surface-container-high rounded-xl transition-all text-sm font-medium">
+        <Link href="#" className="flex items-center gap-3 px-4 py-3 text-error hover:bg-error-container/30 rounded-xl transition-all text-sm font-medium">
           <span className="material-symbols-outlined">logout</span>Logout
         </Link>
       </div>

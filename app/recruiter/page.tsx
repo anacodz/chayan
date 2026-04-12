@@ -5,10 +5,10 @@ import Sidebar from "../components/recruiter/Sidebar";
 import Header from "../components/recruiter/Header";
 
 const MOCK_CANDIDATES = [
-  { id: "s1", name: "James Donovan",  initials: "JD", role: "Senior Frontend Engineer",    type: "Voice-First AI Screening", status: "Needs Review", score: 92,   statusClass: "bg-primary-container text-on-primary-fixed",  scoreColor: "text-tertiary" },
-  { id: "s2", name: "Amara Singh",    initials: "AS", role: "Product Designer",              type: "Logical Reasoning",        status: "Completed",    score: 78,   statusClass: "bg-tertiary/10 text-tertiary",                    scoreColor: "text-on-surface-variant" },
-  { id: "s3", name: "Marcus Low",     initials: "ML", role: "Data Scientist",                type: "Algorithm Efficiency",     status: "In Progress",  score: null, statusClass: "bg-secondary/10 text-secondary",                  scoreColor: "text-on-surface-variant/40" },
-  { id: "s4", name: "Elena Torres",   initials: "ET", role: "Recruitment Lead",              type: "Management Strategy",      status: "Completed",    score: 95,   statusClass: "bg-tertiary/10 text-tertiary",                    scoreColor: "text-tertiary" },
+  { id: "s1", name: "James Donovan",  initials: "JD", role: "Senior Frontend Engineer",    type: "Voice-First AI Screening", status: "Needs Review", score: 92,   statusClass: "bg-primary-container text-on-primary-fixed",  scoreColor: "text-tertiary", avatarClass: "bg-secondary/10 text-secondary" },
+  { id: "s2", name: "Amara Singh",    initials: "AS", role: "Product Designer",              type: "Logical Reasoning",        status: "Completed",    score: 78,   statusClass: "bg-tertiary/10 text-tertiary",                    scoreColor: "text-on-surface-variant", avatarClass: "bg-tertiary/10 text-tertiary" },
+  { id: "s3", name: "Marcus Low",     initials: "ML", role: "Data Scientist",                type: "Algorithm Efficiency",     status: "In Progress",  score: null, statusClass: "bg-secondary/10 text-secondary",                  scoreColor: "text-on-surface-variant/40", avatarClass: "bg-on-secondary-fixed/10 text-on-secondary-fixed" },
+  { id: "s4", name: "Elena Torres",   initials: "ET", role: "Recruitment Lead",              type: "Management Strategy",      status: "Completed",    score: 95,   statusClass: "bg-tertiary/10 text-tertiary",                    scoreColor: "text-tertiary", avatarClass: "bg-error/10 text-error" },
 ];
 
 export default function RecruiterDashboard() {
@@ -75,10 +75,10 @@ export default function RecruiterDashboard() {
                 <tbody className="divide-y divide-surface-container">
                   {MOCK_CANDIDATES.map((c) => (
                     <tr key={c.id} className="hover:bg-surface-container-low/30 transition-colors">
-                      <td className="px-6 md:px-8 py-5"><div className="flex items-center gap-4"><div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary font-bold text-sm flex-shrink-0">{c.initials}</div><div><p className="font-bold text-on-surface">{c.name}</p><p className="text-xs text-on-surface-variant">{c.role}</p></div></div></td>
+                      <td className="px-6 md:px-8 py-5"><div className="flex items-center gap-4"><div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0 ${c.avatarClass}`}>{c.initials}</div><div><p className="font-bold text-on-surface">{c.name}</p><p className="text-xs text-on-surface-variant">{c.role}</p></div></div></td>
                       <td className="px-6 md:px-8 py-5"><span className="text-sm font-medium text-on-surface">{c.type}</span></td>
                       <td className="px-6 md:px-8 py-5"><span className={`px-3 py-1 text-[11px] font-bold rounded-full uppercase tracking-tight ${c.statusClass}`}>{c.status}</span></td>
-                      <td className="px-6 md:px-8 py-5"><div className="flex items-center gap-3"><div className="flex-1 h-2 bg-surface-container-high rounded-full overflow-hidden min-w-[60px]">{c.score ? <div className="h-full bg-tertiary" style={{ width: `${c.score}%` }} /> : <div className="h-full bg-primary/30 w-[45%]" />}</div><span className={`text-sm font-black ${c.scoreColor}`}>{c.score ? `${c.score}%` : "—"}</span></div></td>
+                      <td className="px-6 md:px-8 py-5"><div className="flex items-center gap-3"><div className="flex-1 h-2 bg-surface-container-high rounded-full overflow-hidden min-w-[60px]">{c.score ? <div className="h-full bg-tertiary" style={{ width: `${c.score}%` }} /> : <div className="h-full bg-primary/30 w-[45%]" />}</div><span className={`text-sm font-black ${c.scoreColor}`}>{c.score ? `${c.score}%` : "--"}</span></div></td>
                       <td className="px-6 md:px-8 py-5 text-right"><Link href={`/recruiter/interviews/${c.id}`} className="p-2 text-secondary hover:text-primary transition-colors inline-flex"><span className="material-symbols-outlined">more_vert</span></Link></td>
                     </tr>
                   ))}

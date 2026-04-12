@@ -195,19 +195,20 @@ export default function RecruiterReportDetail() {
                   <span className="material-symbols-outlined text-primary-container">fact_check</span>Decision Panel
                 </h3>
                 <div className="space-y-3">
-                  {(["Move Forward", "Hold", "Decline"] as const).map((d) => (
-                    <button key={d} onClick={() => setDecision(d)} className={`w-full py-4 font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm ${
-                      decision === d
-                        ? d === "Move Forward" ? "bg-primary-container text-on-primary-fixed" : d === "Hold" ? "bg-white/20 text-white" : "bg-error text-white"
-                        : "bg-white/10 hover:bg-white/20 text-white border border-white/10"
-                    }`}>
-                      <span className="material-symbols-outlined text-[18px]">{d === "Move Forward" ? "arrow_forward" : d === "Hold" ? "pause" : "close"}</span>{d}
-                    </button>
-                  ))}
+                  <button onClick={() => setDecision("Move Forward")} className={`w-full py-4 font-black rounded-xl transition-all flex items-center justify-center gap-2 text-sm group ${decision === "Move Forward" ? "bg-[#FFBA07] hover:bg-[#FFD258] text-[#271900]" : "bg-white/10 text-white border border-white/10 hover:bg-white/20"}`}>
+                    Move Forward
+                    <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                  </button>
+                  <button onClick={() => setDecision("Hold")} className={`w-full py-4 font-bold rounded-xl transition-all text-sm border ${decision === "Hold" ? "bg-white/20 text-white border-white/20" : "bg-white/10 hover:bg-white/20 text-white border-white/10"}`}>
+                    Put on Hold
+                  </button>
+                  <button onClick={() => setDecision("Decline")} className={`w-full py-4 font-bold rounded-xl transition-all text-sm ${decision === "Decline" ? "bg-error text-white" : "bg-transparent hover:bg-error/20 text-error-container"}`}>
+                    Decline
+                  </button>
                 </div>
                 <div className="mt-8 pt-6 border-t border-white/10">
                   <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">Internal Notes</p>
-                  <textarea className="w-full bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-white/25 p-3 h-24 focus:outline-none focus:ring-1 focus:ring-primary-container resize-none" placeholder="Add a note to the hiring manager…" value={notes} onChange={(e) => setNotes(e.target.value)} />
+                  <textarea className="w-full bg-white/5 border-none rounded-lg text-sm text-white focus:ring-1 focus:ring-primary-container placeholder:text-white/20 p-3 h-24 resize-none" placeholder="Add a note to the hiring manager..." value={notes} onChange={(e) => setNotes(e.target.value)} />
                 </div>
               </div>
 

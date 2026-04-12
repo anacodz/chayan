@@ -29,9 +29,11 @@ export default function Home() {
   
   const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(null);
   const [hasAskedFollowUp, setHasAskedFollowUp] = useState(false);
+  const [isTtsLoading, setIsTtsLoading] = useState(false);
 
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   /* Timer state */
   const [elapsed, setElapsed] = useState(0);
@@ -58,6 +60,44 @@ export default function Home() {
     () => Math.round(((questionIndex) / questions.length) * 100),
     [questionIndex]
   );
+
+  /* Play TTS for the current question */
+  const playTTS = useCallback(async (text: string) => {
+    if (isTtsLoading) return;
+    setIsTtsLoading(true);
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+      }
+
+      const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
+      audioPlayerRef.current = audio;
+      audio.play();
+    } catch (err) {
+      console.error("TTS playback failed:", err);
+    } finally {
+      setIsTtsLoading(false);
+    }
+  }, [isTtsLoading]);
+
+  /* Auto-play question on change */
+  useEffect(() => {
+    if (phase === "interview" && currentQuestion.prompt) {
+      // Small delay to allow transition
+      const timer = setTimeout(() => {
+        playTTS(currentQuestion.prompt);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [phase, currentQuestion.prompt, playTTS]);
 
   /* Validate Invite on Mount */
   useEffect(() => {
@@ -207,6 +247,8 @@ export default function Home() {
           evaluation = statusData.evaluation;
           transcript = statusData.transcript;
           break;
+        } else if (statusData.status === "NEEDS_RETRY") {
+          throw new Error("Your answer was too short or unclear. Please provide a more detailed response.");
         } else if (statusData.status === "FAILED") {
           throw new Error("AI processing failed. Please try again.");
         }
@@ -305,6 +347,8 @@ export default function Home() {
       formatTime={formatTime}
       progress={progress}
       session={session}
+      onPlayTts={() => playTTS(currentQuestion.prompt)}
+      isTtsLoading={isTtsLoading}
     />
   );
 }
