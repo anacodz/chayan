@@ -20,7 +20,11 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 });
 
-export const env = envSchema.parse(process.env);
+const isBuildTime = process.env.NEXT_PHASE === "phase-production-build";
+
+export const env = isBuildTime 
+  ? envSchema.partial().parse(process.env) as any
+  : envSchema.parse(process.env);
 
 export function validateEnv() {
   try {
