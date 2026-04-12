@@ -204,43 +204,50 @@ export default function Home() {
     setTranscriptDraft("");
   }
 
-  /* ── Welcome screen ─────────────────────────────────────────── */
+  /* ── Welcome / Consent screen ───────────────────────────────── */
   if (!started) {
     return (
       <main className="screen">
+        <div className="bg-grid" aria-hidden="true" />
         <div className="container fade-in">
-          <div>
-            <p className="eyebrow">Cuemath Tutor Screening</p>
+          <div className="welcome-header">
+            <div className="cuemath-wordmark">cuemath</div>
+            <p className="eyebrow">Tutor Screening</p>
             <h1>
-              <span className="gradient-text">Chayan</span>
+              Welcome to your<br />
+              <span className="gradient-text">voice interview</span>
             </h1>
-            <p className="lede" style={{ marginTop: "16px" }}>
-              Complete a short voice interview from your browser. You&apos;ll answer
-              {" "}<strong style={{ color: "#f4f4f5" }}>{questions.length} questions</strong> — takes
-              about 5–10 minutes.
+            <p className="lede">
+              You&apos;ll answer {questions.length} short questions about teaching.
+              This takes about 5–10 minutes. Your responses are recorded, transcribed,
+              and evaluated to help our hiring team.
             </p>
           </div>
 
-          <div className="card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <h2 style={{ margin: 0 }}>Before you start</h2>
+          <div className="card">
+            <h2 style={{ margin: 0 }}>What to expect</h2>
             <ul className="clean">
-              <li>You&apos;ll need to grant microphone access</li>
-              <li>Speak clearly — your answers are transcribed automatically</li>
-              <li>You can upload a pre-recorded audio file as a fallback</li>
-              <li>Your responses are evaluated against a tutor-readiness rubric</li>
+              <li>You&apos;ll need to allow microphone access in your browser</li>
+              <li>Each question has a 90-second recording window</li>
+              <li>You can upload a pre-recorded audio file as an alternative</li>
+              <li>Your answers are scored on communication, empathy, explanation, and professionalism</li>
             </ul>
-            <p className="notice notice-info" style={{ marginTop: "4px" }}>
-              By clicking &quot;Start Interview&quot; you consent to your voice being recorded and processed for the purposes of this screening. Recordings are retained per our data policy.
+          </div>
+
+          <div className="consent-notice">
+            <p>
+              By starting this interview, you consent to your voice being recorded
+              and processed for hiring evaluation. Recordings are handled per
+              Cuemath&apos;s data policy and retained only for the screening period.
             </p>
           </div>
 
           <button
             id="start-interview-btn"
-            className="btn btn-primary"
-            style={{ alignSelf: "flex-start", height: "52px", fontSize: "1rem" }}
+            className="btn btn-primary btn-lg"
             onClick={() => setStarted(true)}
           >
-            Start Interview →
+            I understand — Start Interview
           </button>
         </div>
       </main>
@@ -251,9 +258,11 @@ export default function Home() {
   if (report) {
     return (
       <main className="screen" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
+        <div className="bg-grid" aria-hidden="true" />
         <div className="container-wide fade-in">
           {/* Header */}
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div className="cuemath-wordmark" style={{ marginBottom: "8px" }}>cuemath</div>
             <p className="eyebrow">Assessment Report</p>
             <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
               <h1 style={{ fontSize: "2.6rem", margin: 0 }}>Screening Complete</h1>
@@ -340,6 +349,7 @@ export default function Home() {
   /* ── Interview question screen ──────────────────────────────── */
   return (
     <main className="screen">
+      <div className="bg-grid" aria-hidden="true" />
       <div className="container fade-in">
         {/* Progress */}
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
