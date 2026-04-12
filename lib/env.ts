@@ -12,6 +12,10 @@ const envSchema = z.object({
   // Storage
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
 
+  // Auth
+  NEXTAUTH_SECRET: z.string().optional(),
+  NEXTAUTH_URL: z.string().url().optional(),
+
   // App
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 });

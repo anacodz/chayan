@@ -6,7 +6,6 @@
 - **[BACKLOG-001] Implement Persistence Layer (Database)**
   - Initialized Prisma ORM with PostgreSQL.
   - Defined comprehensive schema for Candidates, Sessions, Questions, Answers, Transcripts, Evaluations, and Reports.
-  - Implemented a singleton Prisma client in `lib/prisma.ts`.
 - **[BACKLOG-002] Implement Object Storage for Audio**
   - Integrated `@vercel/blob` for secure audio storage.
   - Updated `/api/transcribe` to upload recordings before processing.
@@ -17,24 +16,30 @@
 - **[BACKLOG-004] Robust Error Handling and Retry Logic**
   - Implemented Zod-based environment variable validation in `lib/env.ts`.
   - Created a `withRetry` utility for resilient AI provider calls.
-  - Added graceful fallbacks in API routes.
 
 ### P1 - Production Hardening
+- **[BACKLOG-005] Asynchronous Processing Queue**
+  - Integrated Inngest for background job processing.
+  - Set up API routes and function shells for offloaded transcription/evaluation.
 - **[BACKLOG-006] Implement Targeted Follow-up Logic**
   - Updated Gemini evaluation prompt to suggest targeted follow-ups.
   - Enhanced frontend `Home` component to handle one follow-up per question.
+- **[BACKLOG-007] Recruiter Authentication and RBAC**
+  - Integrated Auth.js (NextAuth) with Prisma Adapter.
+  - Implemented Credentials provider for secure recruiter access.
+  - Added middleware to protect recruiter routes.
 - **[BACKLOG-007] Automated Testing Suite**
   - Set up Vitest and React Testing Library.
-  - Added unit tests for core evaluation logic in `lib/evaluation.test.ts`.
+  - Added unit tests for core evaluation logic.
 - **[BACKLOG-008] Real-time Progress and UX Polish**
-  - Added granular processing steps ("Transcribing...", "Evaluating...") for better candidate feedback.
+  - Added granular processing steps for better candidate feedback.
 
-### Additional Improvements
-- **Persistent Candidate Flow**: Updated evaluation and summarization APIs to save all data to the database.
-- **Real Recruiter Dashboard**: Updated the recruiter portal to fetch real candidate sessions and report data instead of using mocks.
-- **Recruiter Report Detail**: Implemented real data fetching for per-candidate assessment reports.
+### P2 - Operational Maturity
+- **[BACKLOG-010] Question Set Manager (Admin Dashboard)**
+  - Implemented "Invite Candidate" modal and API on the recruiter dashboard.
+  - Connected recruiter dashboard metrics to real database counts.
 
 ## Technical Notes
-- **Prisma 7**: Adapted to Prisma 7 configuration requirements (datasource URL in `prisma.config.ts`).
-- **Resilience**: All AI calls now use exponential backoff retries.
-- **Security**: Invite tokens are hashed at rest; PII is excluded from object storage keys.
+- **Full Stack Persistence**: Every step of the candidate interview is now saved to the database.
+- **Real Recruiter Portal**: The recruiter dashboard and report details are now fully data-driven.
+- **Resilient AI Pipeline**: Implemented retries, fallbacks, and env validation for all AI calls.
