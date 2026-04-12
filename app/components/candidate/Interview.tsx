@@ -8,7 +8,7 @@ interface InterviewProps {
   totalQuestions: number;
   currentQuestion: Question | { id: string; prompt: string; guidance?: string; competencyTags?: string[] };
   status: "idle" | "recording" | "processing" | "error";
-  elapsed: number;
+  elapsed: number; // This is now timeLeft from parent
   maxSeconds: number;
   processingStep: string;
   error: string;
@@ -32,7 +32,6 @@ export default function Interview({
   currentQuestion,
   status,
   elapsed,
-  maxSeconds,
   processingStep,
   error,
   waveform,
@@ -46,26 +45,25 @@ export default function Interview({
 }: InterviewProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <div className="absolute inset-y-0 right-0 w-[38%] bg-[#f6f2e8]/40 pointer-events-none hidden lg:block" />
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary-fixed/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary-fixed/10 rounded-full blur-3xl"></div>
-      </div>
+      <div className="absolute inset-y-0 right-0 w-[35%] bg-[#f0f4f8]/70 pointer-events-none hidden lg:block" />
       <header className="glass-header sticky top-0 z-50 shadow-[0_4px_20px_rgba(0,46,110,0.04)] border-b border-outline-variant/10">
         <div className="flex justify-between items-center w-full px-6 md:px-8 py-4 max-w-[1920px] mx-auto">
           <div className="flex items-center gap-4">
             <CuemathLogo className="w-8 h-8" />
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-black tracking-tight text-primary leading-none">Cuemath</span>
-              <span className="text-[10px] font-bold text-on-surface-variant/30 tracking-tight lowercase">chayan</span>
+            <span className="text-xl font-black tracking-tight text-primary leading-none">Cuemath</span>
+            <div className="w-px h-4 bg-outline-variant/30 hidden sm:block mx-2" />
+            <div className="flex items-center gap-2 px-3 py-1 bg-error/10 text-error rounded-full animate-pulse">
+              <span className="material-symbols-outlined text-sm">lock</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">Secure Mode</span>
             </div>
-            <div className="w-px h-4 bg-outline-variant/30 hidden sm:block mx-1" />
-            {session && <span className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest hidden sm:inline">Certified Assessment</span>}
           </div>
-          <div className="flex items-center gap-3">
-            <div className="px-3 py-1.5 rounded-full bg-secondary/10 border border-secondary/20 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-              <span className="text-[10px] font-bold text-secondary uppercase tracking-tighter">Live Session</span>
+          
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Total Time Remaining</span>
+              <span className={`text-xl font-black tabular-nums ${elapsed < 60 ? 'text-error' : 'text-on-secondary-fixed'}`}>
+                {formatTime(elapsed)}
+              </span>
             </div>
             <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shadow-sm">
               {session?.candidate.name[0] || "C"}
@@ -119,11 +117,7 @@ export default function Interview({
                     <span className="recording-dot" />
                     <span className="text-sm font-bold text-error uppercase tracking-widest">Recording</span>
                   </div>
-                  <div className="flex items-baseline gap-1 mb-6">
-                    <span className="text-5xl font-black text-on-surface tabular-nums">{formatTime(elapsed)}</span>
-                    <span className="text-xl text-on-surface-variant font-medium">/ {formatTime(maxSeconds)}</span>
-                  </div>
-                  <div className="flex items-end gap-[3px] h-12 w-full justify-center">
+                  <div className="flex items-end gap-[3px] h-16 w-full justify-center mb-4">
                     {waveform.map((h, i) => (
                       <div 
                         key={i} 
@@ -132,6 +126,7 @@ export default function Interview({
                       />
                     ))}
                   </div>
+                  <p className="text-xs text-on-surface-variant font-medium">Capturing your voice response...</p>
                 </>
               ) : status === "processing" ? (
                 <div className="flex flex-col items-center gap-4 py-8 text-center">
@@ -161,7 +156,7 @@ export default function Interview({
                 </button>
               ) : status === "idle" ? (
                 <button 
-                  onClick={onStartRecording} 
+                  onClick={startRecordingInternal} 
                   className="w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-5 premium-gradient rounded-2xl text-white font-bold text-base sm:text-lg shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all"
                 >
                   <span className="material-symbols-outlined">mic</span> Start Recording
@@ -177,27 +172,26 @@ export default function Interview({
             )}
 
             <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10">
-              <h3 className="text-xs font-bold tracking-widest uppercase text-on-surface-variant mb-3">Speaking Tips</h3>
-              <ul className="space-y-2.5 text-sm text-on-surface-variant leading-relaxed">
-                <li className="flex gap-2"><span className="text-primary">•</span>Use concrete classroom examples when possible.</li>
-                <li className="flex gap-2"><span className="text-primary">•</span>Keep your answer structured: context, approach, result.</li>
-                <li className="flex gap-2"><span className="text-primary">•</span>If stuck, pause briefly and continue clearly.</li>
+              <h3 className="text-[10px] font-black tracking-widest uppercase text-error mb-3 flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs">warning</span>
+                Security Warning
+              </h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed mb-3">
+                Do not switch tabs or exit fullscreen. Doing so will immediately invalidate your assessment session.
+              </p>
+              <h3 className="text-[10px] font-black tracking-widest uppercase text-on-surface-variant mb-2">Speaking Tips</h3>
+              <ul className="space-y-2 text-xs text-on-surface-variant leading-relaxed">
+                <li className="flex gap-2"><span className="text-primary">•</span>Be clear and concise.</li>
+                <li className="flex gap-2"><span className="text-primary">•</span>Explain concepts as if to a student.</li>
               </ul>
             </div>
           </div>
         </div>
       </main>
-
-      <div className="absolute bottom-12 left-12 hidden lg:flex items-center gap-4">
-        <div className="flex -space-x-3">
-          <img className="w-10 h-10 rounded-full border-2 border-background object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBplEnez1pBV0osV1A0_LUKWhV1ncjPcGp5iKIyJP4BxLaAlPY8Gg_VJSlIno4Y-Kmxdph-tyhwuM0e4ZsIinfrG89aKklecPsS6EX4rWWVX2y8t8e8D4xJsh1Q6zPYlA1Dl3WbE_3SXk8sYSOeDbszHHgujKnfemvRiTnUU8PDpgkhD_DIVudgWkClQjCgqHTPeliEY6KxzyibGlSwfSO8tUd7N9sRINZdqZgGu1z2SVcIho_gexcYcEKSmOQNOB4obgAxxyAtSjMN" alt="Tutor" />
-          <img className="w-10 h-10 rounded-full border-2 border-background object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjUvJa4dxzzg2ZjJPte_5S-C8mF8XKgqYN50pm5Bmh7oIvk5ZCemiejOQArUmfnN3hlpsiOBrrczHhE_q2uMQJhHDLaACcBO41hCaEKJTK4lEWaz3iObVsdXuLzGSMY0Aroj8vSaUNCbgNXkVx6_vkm2bb1Jy-54tLG2aZV5gnDBr9FwkowX93vobt_lNtE9yptKTZCZuTUZ-BaCYODFaRZFgjQS_4-WGCIpH6VvHVKkcYnGtRfWQAb0jCb1D9udMW4AEzO1jVyVnS" alt="Tutor" />
-          <div className="w-10 h-10 rounded-full border-2 border-background bg-secondary flex items-center justify-center text-[10px] font-bold text-white">
-            +2k
-          </div>
-        </div>
-        <p className="text-xs font-medium text-on-surface-variant">Join 2,000+ expert educators curated by Cuemath.</p>
-      </div>
     </div>
   );
+
+  function startRecordingInternal() {
+    onStartRecording();
+  }
 }

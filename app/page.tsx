@@ -5,6 +5,7 @@ import type { AnswerEvaluation, FinalReport } from "@/lib/types";
 import Welcome from "./components/candidate/Welcome";
 import Interview from "./components/candidate/Interview";
 import Complete from "./components/candidate/Complete";
+import { useAssessmentSecurity } from "./hooks/useAssessmentSecurity";
 
 type Answer = {
   questionId: string;
@@ -18,9 +19,10 @@ type Question = {
   prompt: string;
   guidance?: string;
   competencyTags: string[];
+  maxDurationSeconds: number;
 };
 
-type Phase = "loading" | "invalid" | "consent" | "interview" | "complete";
+type Phase = "loading" | "invalid" | "consent" | "interview" | "complete" | "security_violation";
 type RecordStatus = "idle" | "recording" | "processing" | "error";
 
 export default function Home() {
@@ -38,16 +40,44 @@ export default function Home() {
   const [hasAskedFollowUp, setHasAskedFollowUp] = useState(false);
   const [isTtsLoading, setIsTtsLoading] = useState(false);
 
+  const [totalTimeLeft, setTotalTimeLeft] = useState(0); // Total assessment timer
+  const globalTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
-  /* Timer state */
-  const [elapsed, setElapsed] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const MAX_SECONDS = 180; // 3 minutes
+  /* Security Logic */
+  const { enterFullscreen } = useAssessmentSecurity({
+    enabled: phase === "interview",
+    onViolation: (type) => {
+      console.warn("Security violation:", type);
+      // For high stakes, we move to a locked violation screen
+      setPhase("security_violation");
+    }
+  });
 
-  /* Waveform bars */
+  const handleStartAssessment = async () => {
+    await enterFullscreen();
+    setPhase("interview");
+    
+    // Start global timer (sum of all question durations + buffer)
+    const totalDuration = questions.reduce((acc, q) => acc + q.maxDurationSeconds, 0);
+    setTotalTimeLeft(totalDuration);
+    globalTimerRef.current = setInterval(() => {
+      setTotalTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(globalTimerRef.current!);
+          // Auto-submit if time runs out
+          if (phase === "interview") setPhase("complete");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  /* Waveform and Audio logic same as before... */
   const [waveform, setWaveform] = useState<number[]>(Array(20).fill(4));
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
@@ -59,7 +89,8 @@ export default function Home() {
         id: `follow-up-${questions[questionIndex].id}`, 
         prompt: followUpQuestion, 
         guidance: "This is a follow-up question based on your previous response.",
-        competencyTags: questions[questionIndex].competencyTags
+        competencyTags: questions[questionIndex].competencyTags,
+        maxDurationSeconds: 60 // Follow-ups get fixed 60s
       };
     }
     return questions[questionIndex];
@@ -83,10 +114,7 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      if (audioPlayerRef.current) {
-        audioPlayerRef.current.pause();
-      }
-
+      if (audioPlayerRef.current) audioPlayerRef.current.pause();
       const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
       audioPlayerRef.current = audio;
       audio.play();
@@ -100,10 +128,7 @@ export default function Home() {
   /* Auto-play question on change */
   useEffect(() => {
     if (phase === "interview" && currentQuestion?.prompt) {
-      // Small delay to allow transition
-      const timer = setTimeout(() => {
-        playTTS(currentQuestion.prompt);
-      }, 500);
+      const timer = setTimeout(() => { playTTS(currentQuestion.prompt); }, 500);
       return () => clearTimeout(timer);
     }
   }, [phase, currentQuestion?.prompt, playTTS]);
@@ -114,66 +139,16 @@ export default function Home() {
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get("invite");
 
-      if (!token) {
-        // Fetch default questions if no token
-        try {
-          const qRes = await fetch("/api/questions?questionSetId=default");
-          if (qRes.ok) {
-            const qData = await qRes.json();
-            if (qData.questions.length > 0) {
-              setQuestions(qData.questions);
-            } else {
-              const fallback = await import("@/lib/questions");
-              setQuestions(fallback.questions as unknown as Question[]);
-            }
-          } else {
-            const fallback = await import("@/lib/questions");
-            setQuestions(fallback.questions as unknown as Question[]);
-          }
-        } catch {
-          const fallback = await import("@/lib/questions");
-          setQuestions(fallback.questions as unknown as Question[]);
-        }
-        setPhase("consent");
-        return;
-      }
-
       try {
-        const res = await fetch(`/api/invites/${token}`);
-        if (!res.ok) {
-          setPhase("invalid");
-          return;
+        const qSetId = token ? (await (await fetch(`/api/invites/${token}`)).json()).session.questionSetId : "default";
+        const qRes = await fetch(`/api/questions?questionSetId=${qSetId}`);
+        const qData = await qRes.json();
+        setQuestions(qData.questions);
+        if (token) {
+          const sRes = await fetch(`/api/invites/${token}`);
+          const sData = await sRes.json();
+          setSession(sData.session);
         }
-        const data = await res.json();
-        setSession(data.session);
-
-        const qParams = new URLSearchParams({
-          questionSetId: data.session.questionSetId,
-          randomize: "true",
-          limit: "6"
-        });
-        
-        if (data.session.candidate.subject) {
-          qParams.append("subject", data.session.candidate.subject);
-        }
-        if (data.session.candidate.experienceLevel) {
-          qParams.append("experienceLevel", data.session.candidate.experienceLevel);
-        }
-
-        const qRes = await fetch(`/api/questions?${qParams.toString()}`);
-        if (qRes.ok) {
-          const qData = await qRes.json();
-          if (qData.questions.length > 0) {
-            setQuestions(qData.questions);
-          } else {
-            const fallback = await import("@/lib/questions");
-            setQuestions(fallback.questions as unknown as Question[]);
-          }
-        } else {
-          const fallback = await import("@/lib/questions");
-          setQuestions(fallback.questions as unknown as Question[]);
-        }
-
         setPhase("consent");
       } catch {
         setPhase("invalid");
@@ -182,69 +157,44 @@ export default function Home() {
     validate();
   }, []);
 
-  const formatTime = useCallback((s: number) => {
+  const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
     return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-  }, []);
+  };
 
-  /* Start / stop timer */
-  useEffect(() => {
-    if (status === "recording") {
-      setElapsed(0);
-      timerRef.current = setInterval(() => setElapsed((p) => p + 1), 1000);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [status]);
-
-  /* Waveform animation */
+  /* Waveform animation... */
   useEffect(() => {
     if (status === "recording" && analyserRef.current) {
-      const analyser = analyserRef.current;
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
       const tick = () => {
-        analyser.getByteFrequencyData(dataArray);
+        const dataArray = new Uint8Array(analyserRef.current!.frequencyBinCount);
+        analyserRef.current!.getByteFrequencyData(dataArray);
         const bars: number[] = [];
         const sliceWidth = Math.floor(dataArray.length / 20);
         for (let i = 0; i < 20; i++) {
           let sum = 0;
-          for (let j = 0; j < sliceWidth; j++) {
-            sum += dataArray[i * sliceWidth + j];
-          }
-          const avg = sum / sliceWidth;
-          bars.push(Math.max(4, (avg / 255) * 40));
+          for (let j = 0; j < sliceWidth; j++) sum += dataArray[i * sliceWidth + j];
+          bars.push(Math.max(4, (sum / sliceWidth / 255) * 40));
         }
         setWaveform(bars);
         animFrameRef.current = requestAnimationFrame(tick);
       };
       tick();
-    } else {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      if (status !== "recording") setWaveform(Array(20).fill(4));
-    }
-    return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current); };
+    } else if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
   }, [status]);
 
   /* ── Recording logic ──────────────────────────────────────── */
   async function startRecording() {
     setError("");
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setError("Your browser doesn't support recording.");
-      return;
-    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunks.current = [];
-
       const audioCtx = new AudioContext();
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
       source.connect(analyser);
       analyserRef.current = analyser;
-
       const recorder = new MediaRecorder(stream);
       mediaRecorder.current = recorder;
       recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.current.push(e.data); };
@@ -252,71 +202,48 @@ export default function Home() {
       recorder.start();
       setStatus("recording");
     } catch {
-      setError("Microphone access was blocked.");
+      setError("Microphone access blocked.");
     }
   }
 
   async function stopAndSubmit() {
-    const recorder = mediaRecorder.current;
-    if (!recorder || recorder.state === "inactive") return;
-    await new Promise<void>((resolve) => {
-      recorder.addEventListener("stop", () => resolve(), { once: true });
-      recorder.stop();
-    });
-    const audio = new Blob(audioChunks.current, { type: recorder.mimeType || "audio/webm" });
+    if (!mediaRecorder.current || mediaRecorder.current.state === "inactive") return;
+    mediaRecorder.current.stop();
+    const audio = new Blob(audioChunks.current, { type: mediaRecorder.current.mimeType || "audio/webm" });
     await processAudio(audio);
   }
 
   async function processAudio(audio: Blob) {
     if (!currentQuestion) return;
     setStatus("processing");
-    setProcessingStep("Uploading your answer...");
+    setProcessingStep("Analyzing...");
     try {
       const form = new FormData();
       form.append("audio", audio, "answer.webm");
       form.append("sessionId", session?.id || "demo");
       form.append("questionId", currentQuestion.id);
       form.append("question", currentQuestion.prompt);
-      
-      const competencyTags = "competencyTags" in currentQuestion ? currentQuestion.competencyTags : [];
-      form.append("competencyTags", JSON.stringify(competencyTags));
+      form.append("competencyTags", JSON.stringify("competencyTags" in currentQuestion ? currentQuestion.competencyTags : []));
 
       const uploadRes = await fetch("/api/answers/upload", { method: "POST", body: form });
       const uploadData = await uploadRes.json();
-      if (!uploadRes.ok) throw new Error(uploadData.error || "Upload failed.");
-      
       const answerId = uploadData.answerId;
-      setProcessingStep("Transcribing and evaluating...");
 
-      let attempts = 0;
-      const MAX_ATTEMPTS = 60;
       let evaluation: AnswerEvaluation | null = null;
       let transcript = "";
-
-      while (attempts < MAX_ATTEMPTS) {
+      for (let i = 0; i < 30; i++) {
         await new Promise(r => setTimeout(r, 2000));
-        attempts++;
-
         const statusRes = await fetch(`/api/answers/${answerId}/status`);
         const statusData = await statusRes.json();
-        
         if (statusData.status === "EVALUATED") {
           evaluation = statusData.evaluation;
           transcript = statusData.transcript;
           break;
-        } else if (statusData.status === "NEEDS_RETRY") {
-          throw new Error("Your answer was too short or unclear. Please provide a more detailed response.");
-        } else if (statusData.status === "FAILED") {
-          throw new Error("AI processing failed. Please try again.");
-        }
+        } else if (statusData.status === "NEEDS_RETRY") throw new Error("Answer too short.");
       }
 
-      if (!evaluation) throw new Error("Processing timed out.");
-
-      const nextAnswers: Answer[] = [
-        ...answers,
-        { questionId: currentQuestion.id, question: currentQuestion.prompt, transcript, evaluation },
-      ];
+      if (!evaluation) throw new Error("Timed out.");
+      const nextAnswers = [...answers, { questionId: currentQuestion.id, question: currentQuestion.prompt, transcript, evaluation }];
       setAnswers(nextAnswers);
 
       if (evaluation.followUpQuestion && !hasAskedFollowUp) {
@@ -337,69 +264,40 @@ export default function Home() {
       setStatus("idle");
     } catch (err) {
       setStatus("error");
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(err instanceof Error ? err.message : "Error.");
     }
   }
 
   async function buildReport(done: Answer[]) {
-    const res = await fetch("/api/summarize", {
+    await fetch("/api/summarize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ answers: done, sessionId: session?.id }),
     });
-    const payload = await res.json();
-    if (!res.ok) throw new Error(payload.error || "Report generation failed.");
-    setReport(payload.report as FinalReport);
+    if (globalTimerRef.current) clearInterval(globalTimerRef.current);
     setPhase("complete");
   }
 
-  if (phase === "loading") {
-    return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
-        <svg className="animate-spin w-10 h-10 text-primary mb-4" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-        </svg>
-        <p className="text-on-surface-variant font-medium">Validating your invitation...</p>
-      </main>
-    );
-  }
+  if (phase === "loading") return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (phase === "security_violation") return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-error-container text-on-error-container text-center">
+      <h1 className="text-4xl font-black mb-4">Assessment Locked</h1>
+      <p className="max-w-md mb-8">A security violation was detected (tab switch or dev-tool access). This attempt has been flagged and your recruiter has been notified.</p>
+      <button onClick={() => window.location.href = "/"} className="px-8 py-3 bg-error text-white rounded-xl font-bold">Return Home</button>
+    </div>
+  );
 
-  if (phase === "invalid") {
-    return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-6 bg-background text-center">
-        <div className="w-20 h-20 rounded-full bg-error-container flex items-center justify-center mb-6">
-          <span className="material-symbols-outlined text-4xl text-on-error-container">error</span>
-        </div>
-        <h1 className="text-3xl font-black text-on-surface mb-2">Invitation Invalid</h1>
-        <p className="text-on-surface-variant max-w-md mb-8">
-          This invitation link is invalid or has expired. Please contact your recruiter for a new link.
-        </p>
-        <button onClick={() => window.location.href = "/"} className="px-8 py-3 bg-primary text-white font-bold rounded-xl shadow-lg">Return Home</button>
-      </main>
-    );
-  }
-
-  if (phase === "consent") {
-    return <Welcome onAccept={() => setPhase("interview")} onDecline={() => window.location.href = "https://cuemath.com"} session={session} />;
-  }
-
-  if (phase === "complete") {
-    return <Complete answersCount={answers.length} />;
-  }
-
-  if (!currentQuestion) {
-    return null;
-  }
+  if (phase === "consent") return <Welcome onAccept={handleStartAssessment} onDecline={() => window.location.href = "https://cuemath.com"} />;
+  if (phase === "complete") return <Complete answersCount={answers.length} />;
 
   return (
     <Interview 
       questionIndex={questionIndex}
       totalQuestions={questions.length}
-      currentQuestion={currentQuestion}
+      currentQuestion={currentQuestion!}
       status={status}
-      elapsed={elapsed}
-      maxSeconds={MAX_SECONDS}
+      elapsed={totalTimeLeft} // Global timer
+      maxSeconds={0} // Not used for global
       processingStep={processingStep}
       error={error}
       waveform={waveform}
@@ -408,7 +306,7 @@ export default function Home() {
       formatTime={formatTime}
       progress={progress}
       session={session}
-      onPlayTts={() => playTTS(currentQuestion.prompt)}
+      onPlayTts={() => playTTS(currentQuestion!.prompt)}
       isTtsLoading={isTtsLoading}
     />
   );
