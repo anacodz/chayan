@@ -11,11 +11,12 @@ type Answer = {
   evaluation: AnswerEvaluation;
 };
 
-type Phase = "consent" | "interview" | "complete";
+type Phase = "loading" | "invalid" | "consent" | "interview" | "complete";
 type RecordStatus = "idle" | "recording" | "processing" | "error";
 
 export default function Home() {
-  const [phase, setPhase] = useState<Phase>("consent");
+  const [phase, setPhase] = useState<Phase>("loading");
+  const [session, setSession] = useState<any>(null);
   const [consented, setConsented] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [status, setStatus] = useState<RecordStatus>("idle");
@@ -36,11 +37,49 @@ export default function Home() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
 
-  const currentQuestion = questions[questionIndex];
+  const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(null);
+  const [hasAskedFollowUp, setHasAskedFollowUp] = useState(false);
+
+  const currentQuestion = useMemo(() => {
+    if (followUpQuestion) {
+      return { id: `follow-up-${questions[questionIndex].id}`, prompt: followUpQuestion, competencyTags: questions[questionIndex].competencyTags };
+    }
+    return questions[questionIndex];
+  }, [questionIndex, followUpQuestion]);
+
   const progress = useMemo(
     () => Math.round(((questionIndex) / questions.length) * 100),
     [questionIndex]
   );
+
+  /* Validate Invite on Mount */
+  useEffect(() => {
+    async function validate() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get("invite");
+
+      if (!token) {
+        // For development/demo purposes, allow access if no token is provided
+        // but mark it as a "demo" session.
+        setPhase("consent");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/invites/${token}`);
+        if (!res.ok) {
+          setPhase("invalid");
+          return;
+        }
+        const data = await res.json();
+        setSession(data.session);
+        setPhase("consent");
+      } catch {
+        setPhase("invalid");
+      }
+    }
+    validate();
+  }, []);
 
   const formatTime = useCallback((s: number) => {
     const m = Math.floor(s / 60);
@@ -171,13 +210,28 @@ export default function Home() {
       const ePayload = await eRes.json();
       if (!eRes.ok) throw new Error(ePayload.error || "Evaluation failed.");
 
+      const evaluation = ePayload.evaluation as AnswerEvaluation;
+
       const nextAnswers: Answer[] = [
         ...answers,
-        { questionId: currentQuestion.id, question: currentQuestion.prompt, transcript, evaluation: ePayload.evaluation as AnswerEvaluation },
+        { questionId: currentQuestion.id, question: currentQuestion.prompt, transcript, evaluation },
       ];
       setAnswers(nextAnswers);
 
-      if (nextAnswers.length === questions.length) {
+      // Handle follow-up logic
+      if (evaluation.followUpQuestion && !hasAskedFollowUp) {
+        setFollowUpQuestion(evaluation.followUpQuestion);
+        setHasAskedFollowUp(true);
+        setStatus("idle");
+        setTranscriptDraft("");
+        return;
+      }
+
+      // Reset follow-up state for the next base question
+      setFollowUpQuestion(null);
+      setHasAskedFollowUp(false);
+
+      if (questionIndex === questions.length - 1) {
         await buildReport(nextAnswers);
         return;
       }
@@ -200,6 +254,40 @@ export default function Home() {
     if (!res.ok) throw new Error(payload.error || "Report generation failed.");
     setReport(payload.report as FinalReport);
     setPhase("complete");
+  }
+
+  /* ── Screen 0: Loading ────────────────────────────────────── */
+  if (phase === "loading") {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
+        <svg className="animate-spin w-10 h-10 text-primary mb-4" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+        </svg>
+        <p className="text-on-surface-variant font-medium">Validating your invitation...</p>
+      </main>
+    );
+  }
+
+  /* ── Screen 0.1: Invalid ──────────────────────────────────── */
+  if (phase === "invalid") {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center p-6 bg-background text-center">
+        <div className="w-20 h-20 rounded-full bg-error-container flex items-center justify-center mb-6">
+          <span className="material-symbols-outlined text-4xl text-on-error-container">error</span>
+        </div>
+        <h1 className="text-3xl font-black text-on-surface mb-2">Invitation Invalid</h1>
+        <p className="text-on-surface-variant max-w-md mb-8">
+          This invitation link is invalid or has expired. Please contact your recruiter for a new link.
+        </p>
+        <button
+          onClick={() => window.location.href = "/"}
+          className="px-8 py-3 bg-primary text-white font-bold rounded-xl shadow-lg"
+        >
+          Return Home
+        </button>
+      </main>
+    );
   }
 
   /* ── Screen 1: Consent ────────────────────────────────────── */
