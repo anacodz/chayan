@@ -45,17 +45,15 @@
 - **[BACKLOG-011] Data Retention and Deletion Workflow**
   - Implemented manual data deletion API for candidates (ADMIN only).
   - Created automated Inngest cron job for midnight cleanup of audio > 90 days.
+  - Implemented automatic session abandonment marking for inactive interviews.
 
-### Roadmap Milestones (Completed)
-- **Milestone 2b: Schema Validation (Zod)**
-  - Added Zod schemas for AI outputs.
-  - Implemented AI-driven repair retries for malformed JSON.
-- **Milestone 2c: Transcript Quality Check**
-  - Implemented minimum word count check (8 words).
-  - Added `NEEDS_RETRY` flow for short or empty transcripts.
+### Milestone 5b - System Metrics & KPIs
+- Implemented **Metrics Service** (`lib/services/metrics.ts`) to calculate conversion funnels, STT fallback rates, and processing latency.
+- Added protected `/api/admin/metrics` endpoint for real-time system health monitoring.
 
 ## Technical Notes
-- **Scalable Architecture**: Moved long-running AI tasks to background workers.
+- **Security Patterns**: Prepped `lib/storage.ts` for time-limited signed URLs to protect candidate audio (Milestone 4b).
+- **Scalable Architecture**: Moved long-running AI tasks to background workers using Inngest.
 - **Resilient AI Pipeline**: Implemented retries, Zod-based repair, and quality fallbacks.
 - **Full Stack Persistence**: Every step of the candidate interview is now saved to the database.
-- **Production Observability**: Structured logs and correlation IDs across the stack.
+- **Production Observability**: Structured logs and correlation IDs across the entire stack.
