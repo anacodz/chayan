@@ -44,7 +44,8 @@ export default function Interview({
   isTtsLoading,
 }: InterviewProps) {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      <div className="absolute inset-y-0 right-0 w-[35%] bg-[#f6f2e8]/70 pointer-events-none" />
       <header className="glass-header sticky top-0 z-50 shadow-[0_4px_20px_rgba(73,95,132,0.04)]">
         <div className="flex justify-between items-center w-full px-6 md:px-8 py-4 max-w-[1920px] mx-auto">
           <div className="flex items-center gap-6">
@@ -62,12 +63,12 @@ export default function Interview({
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-start px-4 md:px-8 pt-8 md:pt-16 pb-28">
+      <main className="flex-1 flex flex-col items-center justify-start px-4 md:px-8 pt-8 md:pt-16 pb-28 relative z-10">
         <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-8">
           Question {questionIndex + 1} of {totalQuestions}
         </p>
         
-        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+        <div className="w-full max-w-[1120px] grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
           <div className="lg:col-span-7">
             <div className="bg-surface-container-lowest rounded-2xl p-8 md:p-10 shadow-sm min-h-[240px] flex flex-col justify-center">
               <div className="flex justify-between items-start mb-4">
@@ -160,6 +161,15 @@ export default function Interview({
                 {error}
               </div>
             )}
+
+            <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10">
+              <h3 className="text-xs font-bold tracking-widest uppercase text-on-surface-variant mb-3">Speaking Tips</h3>
+              <ul className="space-y-2.5 text-sm text-on-surface-variant leading-relaxed">
+                <li className="flex gap-2"><span className="text-primary">•</span>Use concrete classroom examples when possible.</li>
+                <li className="flex gap-2"><span className="text-primary">•</span>Keep your answer structured: context, approach, result.</li>
+                <li className="flex gap-2"><span className="text-primary">•</span>If stuck, pause briefly and continue clearly.</li>
+              </ul>
+            </div>
           </div>
         </div>
       </main>
