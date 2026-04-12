@@ -44,3 +44,7 @@ __pycache__/
 *.py[oc]
 .venv
 .python-version
+
+# Figma assets and product documents
+Figma/
+PRODUCT.md
