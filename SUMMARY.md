@@ -21,7 +21,7 @@
 - **[BACKLOG-005] Asynchronous Processing Queue**
   - Integrated Inngest for background job processing.
   - Refactored AI logic into a shared service layer `lib/services/ai.ts`.
-  - Implemented async upload and polling mechanism on the frontend to prevent API timeouts.
+  - Implemented async upload and polling mechanism on the frontend.
 - **[BACKLOG-006] Implement Targeted Follow-up Logic**
   - Updated Gemini evaluation prompt to suggest targeted follow-ups.
   - Enhanced frontend `Home` component to handle one follow-up per question.
@@ -38,18 +38,24 @@
 ### P2 - Operational Maturity
 - **[BACKLOG-009] Structured Logging and Monitoring**
   - Integrated `pino` for structured, JSON-based logging across all API routes and background jobs.
-  - Implemented request tracking with unique correlation IDs for better traceability.
-  - Added comprehensive error logging with metadata for faster production debugging.
+  - Implemented request tracking with unique correlation IDs.
 - **[BACKLOG-010] Question Set Manager (Admin Dashboard)**
   - Implemented "Invite Candidate" modal and API on the recruiter dashboard.
   - Connected recruiter dashboard metrics to real database counts.
 - **[BACKLOG-011] Data Retention and Deletion Workflow**
   - Implemented manual data deletion API for candidates (ADMIN only).
   - Created automated Inngest cron job for midnight cleanup of audio > 90 days.
-  - Implemented automatic session abandonment marking for inactive interviews.
+
+### Roadmap Milestones (Completed)
+- **Milestone 2b: Schema Validation (Zod)**
+  - Added Zod schemas for AI outputs.
+  - Implemented AI-driven repair retries for malformed JSON.
+- **Milestone 2c: Transcript Quality Check**
+  - Implemented minimum word count check (8 words).
+  - Added `NEEDS_RETRY` flow for short or empty transcripts.
 
 ## Technical Notes
 - **Scalable Architecture**: Moved long-running AI tasks to background workers.
+- **Resilient AI Pipeline**: Implemented retries, Zod-based repair, and quality fallbacks.
 - **Full Stack Persistence**: Every step of the candidate interview is now saved to the database.
-- **Real Recruiter Portal**: The recruiter dashboard and report details are now fully data-driven.
-- **Resilient AI Pipeline**: Implemented retries, fallbacks, and env validation for all AI calls.
+- **Production Observability**: Structured logs and correlation IDs across the stack.

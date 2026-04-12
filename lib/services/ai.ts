@@ -5,12 +5,23 @@ import { env } from "@/lib/env";
 import { withRetry } from "@/lib/retry";
 import { fallbackEvaluate, fallbackSummarize } from "@/lib/evaluation";
 import { extractJsonObject } from "@/lib/json";
-import type { AnswerEvaluation, FinalReport } from "@/lib/types";
+import { AnswerEvaluationSchema, type AnswerEvaluation, type FinalReport } from "@/lib/schemas";
+import { logger } from "@/lib/logger";
+
+export type TranscriptionQuality = "OK" | "TOO_SHORT" | "EMPTY";
+
+export interface TranscriptionResult {
+  text: string;
+  provider: string;
+  model: string;
+  quality: TranscriptionQuality;
+}
 
 /**
  * Core transcription logic with Sarvam primary and Whisper fallback.
+ * Includes quality check (Milestone 2c).
  */
-export async function transcribeAudioService(audioFile: File | Blob): Promise<{ text: string; provider: string; model: string }> {
+export async function transcribeAudioService(audioFile: File | Blob): Promise<TranscriptionResult> {
   if (env.SARVAM_API_KEY) {
     try {
       const client = new SarvamAIClient({
@@ -23,11 +34,16 @@ export async function transcribeAudioService(audioFile: File | Blob): Promise<{ 
       });
       
       const text = readTranscript(response);
-      if (text) {
-        return { text, provider: "sarvam", model: "saaras:v3" };
+      if (!text.trim()) {
+        return { text: "", provider: "sarvam", model: "saaras:v3", quality: "EMPTY" };
       }
+
+      const wordCount = text.split(/\s+/).filter(Boolean).length;
+      const quality = wordCount < 8 ? "TOO_SHORT" : "OK";
+
+      return { text, provider: "sarvam", model: "saaras:v3", quality };
     } catch (error) {
-      console.error("Sarvam transcription failed, falling back to Whisper:", error);
+      logger.error({ error }, "Sarvam transcription failed, falling back to Whisper");
     }
   }
 
@@ -37,14 +53,18 @@ export async function transcribeAudioService(audioFile: File | Blob): Promise<{ 
       file: audioFile as File,
       model: "whisper-1"
     });
-    return { text: response.text, provider: "openai", model: "whisper-1" };
+    
+    const wordCount = response.text.split(/\s+/).filter(Boolean).length;
+    const quality = wordCount < 8 ? "TOO_SHORT" : "OK";
+    
+    return { text: response.text, provider: "openai", model: "whisper-1", quality };
   }
 
   throw new Error("No transcription provider configured.");
 }
 
 /**
- * Core evaluation logic using Gemini Flash.
+ * Core evaluation logic using Gemini Flash with Zod validation and repair retry.
  */
 export async function evaluateAnswerService(
   question: string,
@@ -52,14 +72,11 @@ export async function evaluateAnswerService(
   competencyTags: string[]
 ): Promise<AnswerEvaluation> {
   if (!env.GEMINI_API_KEY) {
-    return fallbackEvaluate(transcript);
+    return fallbackEvaluate(transcript) as any;
   }
 
   const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
-  const response = await withRetry(async () => {
-    return await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: `Evaluate this tutor screening answer.
+  const prompt = `Evaluate this tutor screening answer.
 
 Question: ${question}
 Competency tags: ${competencyTags.join(", ")}
@@ -84,11 +101,70 @@ Return JSON only with this shape:
 }
 
 Scores must be 1 to 5. Confidence must be 0 to 1. Ground every judgment in the transcript.
-If the answer is too short, vague, or missing key competency signals, provide a short, targeted follow-up question in "followUpQuestion". Otherwise, set it to null.`
+If the answer is too short, vague, or missing key competency signals, provide a short, targeted follow-up question in "followUpQuestion". Otherwise, set it to null.`;
+
+  try {
+    const response = await withRetry(async () => {
+      return await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: prompt
+      });
     });
+
+    const text = response.text || "";
+    const rawJson = extractJsonObject<any>(text);
+    
+    try {
+      return AnswerEvaluationSchema.parse(rawJson);
+    } catch (parseError) {
+      logger.warn({ error: parseError, text }, "Evaluation JSON schema mismatch, attempting repair");
+      
+      const repairResponse = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: `The following JSON did not match the required schema:
+${JSON.stringify(rawJson)}
+
+Error: ${parseError instanceof Error ? parseError.message : String(parseError)}
+
+Please fix the JSON to strictly match this schema:
+${JSON.stringify(AnswerEvaluationSchema.shape)}
+
+Return fixed JSON only.`
+      });
+      
+      const repairedJson = extractJsonObject<any>(repairResponse.text || "");
+      return AnswerEvaluationSchema.parse(repairedJson);
+    }
+  } catch (error) {
+    logger.error({ error }, "Evaluation service failed after retries");
+    return fallbackEvaluate(transcript) as any;
+  }
+}
+
+/**
+ * Text-to-Speech service using Sarvam AI Bulbul model.
+ */
+export async function textToSpeechService(text: string): Promise<{ audio: string }> {
+  if (!env.SARVAM_API_KEY) {
+    throw new Error("SARVAM_API_KEY is not configured.");
+  }
+
+  const client = new SarvamAIClient({
+    apiSubscriptionKey: env.SARVAM_API_KEY
   });
 
-  return extractJsonObject<AnswerEvaluation>(response.text || "");
+  const response = await client.textToSpeech.convert({
+    text,
+    target_language_code: "en-IN",
+    speaker: "shubh",
+    model: "bulbul:v3"
+  });
+
+  if (response.audios && response.audios.length > 0) {
+    return { audio: response.audios[0] };
+  }
+
+  throw new Error("Failed to generate audio from Sarvam TTS.");
 }
 
 function readTranscript(response: unknown): string {
