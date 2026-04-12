@@ -1,6 +1,5 @@
-"use client";
-
 import { useState } from "react";
+import CuemathLogo from "../CuemathLogo";
 
 interface WelcomeProps {
   onAccept: () => void;
@@ -12,94 +11,95 @@ export default function Welcome({ onAccept, onDecline }: WelcomeProps) {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden bg-background">
-      <div className="absolute inset-y-0 right-0 w-[38%] bg-[#f6f2e8]/70 pointer-events-none hidden lg:block" />
+      <div className="absolute inset-y-0 right-0 w-[38%] bg-[#f0f4f8]/70 pointer-events-none hidden lg:block" />
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary-fixed/20 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary-fixed/30 rounded-full blur-3xl"></div>
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary/15 rounded-full blur-3xl"></div>
       </div>
       
-      <div className="w-full max-w-5xl z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+      <div className="w-full max-w-[1180px] z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           <div className="lg:col-span-7 flex flex-col gap-8">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 premium-gradient rounded-xl flex items-center justify-center text-white shadow-lg">
-                <span className="material-symbols-outlined text-2xl">menu_book</span>
-              </div>
+            <div className="flex items-center gap-4">
+              <CuemathLogo className="w-14 h-14 drop-shadow-md" />
               <div className="flex flex-col">
-                <span className="text-2xl font-black tracking-[0.2em] text-on-secondary-fixed uppercase">Cuemath</span>
-                <span className="text-[10px] font-bold tracking-[0.3em] text-primary uppercase -mt-1 ml-0.5">Tutor Screener</span>
+                <span className="text-3xl font-black tracking-tight text-primary leading-none">Cuemath</span>
+                <span className="text-[10px] font-bold tracking-[0.3em] text-secondary uppercase mt-1">Tutor Screener</span>
               </div>
             </div>
             
             <div className="space-y-6">
-              <p className="text-sm font-bold tracking-[0.1em] text-primary uppercase">Elite Educator Network</p>
-              <h2 className="text-4xl sm:text-5xl md:text-[60px] font-bold text-on-surface tracking-tight leading-[1.08]">
-                Empower the <br/>
-                <span className="text-primary italic">next generation.</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <p className="text-[10px] font-bold tracking-widest text-primary uppercase">MathFit™ Certification</p>
+              </div>
+              <h2 className="text-5xl md:text-[64px] font-bold text-on-surface tracking-tight leading-[1.05]">
+                Shape the <br/>
+                <span className="text-primary italic">MathFit™ mindset.</span>
               </h2>
-              <p className="text-lg text-on-surface-variant max-w-md leading-relaxed">
-                Welcome to the Cuemath expert screening. We&apos;ve curated a space for you to demonstrate your pedagogical mastery through a voice-first interactive session.
+              <p className="text-xl text-on-surface-variant max-w-lg leading-relaxed font-medium">
+                Welcome to the Cuemath elite educator screening. We&apos;re looking for masters of conceptual understanding to join our global network of 2,000+ experts.
               </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-6 rounded-2xl bg-surface-container-lowest shadow-[0_4px_20px_rgba(73,95,132,0.04)] border-none flex flex-col gap-4">
-                <div className="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-fixed">
-                  <span className="material-symbols-outlined">record_voice_over</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="p-6 rounded-3xl bg-surface-container-lowest shadow-sm border border-outline-variant/10 flex flex-col gap-4 hover:border-primary/20 transition-colors">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                  <span className="material-symbols-outlined text-2xl">psychology</span>
                 </div>
                 <div>
-                  <h3 className="font-bold text-on-surface">Voice-First Experience</h3>
-                  <p className="text-sm text-on-surface-variant mt-1">Natural dialogue processing for real-time pedagogical assessment.</p>
+                  <h3 className="font-bold text-on-surface text-lg">Conceptual Mastery</h3>
+                  <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">Demonstrate your ability to make complex math feel intuitive.</p>
                 </div>
               </div>
-              <div className="p-6 rounded-2xl bg-surface-container-lowest shadow-[0_4px_20px_rgba(73,95,132,0.04)] border-none flex flex-col gap-4">
-                <div className="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-container">
-                  <span className="material-symbols-outlined">timer</span>
+              <div className="p-6 rounded-3xl bg-surface-container-lowest shadow-sm border border-outline-variant/10 flex flex-col gap-4 hover:border-primary/20 transition-colors">
+                <div className="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary">
+                  <span className="material-symbols-outlined text-2xl">auto_awesome</span>
                 </div>
                 <div>
-                  <h3 className="font-bold text-on-surface">15-Minute Duration</h3>
-                  <p className="text-sm text-on-surface-variant mt-1">A focused session designed to value your time and expertise.</p>
+                  <h3 className="font-bold text-on-surface text-lg">AI-Powered Signal</h3>
+                  <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">Our models provide objective feedback on your pedagogical style.</p>
                 </div>
               </div>
             </div>
           </div>
           
           <div className="lg:col-span-5 lg:pl-2">
-            <div className="glass-panel p-6 sm:p-8 md:p-10 rounded-2xl shadow-[0_12px_40px_rgba(73,95,132,0.08)] flex flex-col gap-8 max-w-[430px] w-full ml-auto">
+            <div className="glass-panel p-8 md:p-10 rounded-[32px] shadow-[0_20px_50px_rgba(0,46,110,0.08)] flex flex-col gap-8 max-w-[440px] w-full ml-auto border border-white/40">
               <div className="space-y-2">
                 <h3 className="text-2xl font-bold text-on-surface">Candidate Consent</h3>
-                <p className="text-sm text-on-surface-variant">Please review our transparency guidelines before we begin.</p>
+                <p className="text-sm text-on-surface-variant">Transparency is our priority at Cuemath.</p>
               </div>
               
               <div className="space-y-6">
                 <div className="flex gap-4">
-                  <div className="mt-1">
-                    <span className="material-symbols-outlined text-primary">verified_user</span>
+                  <div className="mt-1 w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center flex-shrink-0">
+                    <span className="material-symbols-outlined text-primary text-[20px]">verified_user</span>
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-on-surface">Data Privacy &amp; Security</h4>
-                    <p className="text-xs text-on-surface-variant leading-relaxed mt-1">Your voice responses are encrypted and used solely for candidate evaluation purposes by Cuemath.</p>
+                    <h4 className="text-sm font-bold text-on-surface">Secure Evaluation</h4>
+                    <p className="text-xs text-on-surface-variant leading-relaxed mt-1">Your responses are encrypted and used exclusively for your application at Cuemath.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <div className="mt-1">
-                    <span className="material-symbols-outlined text-primary">gavel</span>
+                  <div className="mt-1 w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center flex-shrink-0">
+                    <span className="material-symbols-outlined text-primary text-[20px]">balance</span>
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-on-surface">Ethical AI Framework</h4>
-                    <p className="text-xs text-on-surface-variant leading-relaxed mt-1">Our scoring models are audited for bias to ensure an equitable assessment for every educator.</p>
+                    <h4 className="text-sm font-bold text-on-surface">Bias-Free Assessment</h4>
+                    <p className="text-xs text-on-surface-variant leading-relaxed mt-1">We use standardized rubrics to ensure an equitable screening for every educator.</p>
                   </div>
                 </div>
-                <div className="p-4 rounded-xl bg-surface-container-low border-none">
+                <div className="p-5 rounded-2xl bg-surface-container-low border border-outline-variant/10">
                   <label className="flex items-start gap-3 cursor-pointer group">
                     <input 
-                      className="mt-1 w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary/20" 
+                      className="mt-1 w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary/20 transition-all cursor-pointer" 
                       type="checkbox"
                       checked={consented}
                       onChange={(e) => setConsented(e.target.checked)}
                     />
-                    <span className="text-xs text-on-surface-variant leading-relaxed select-none">
-                      I consent to the recording of this session and agree to the <span className="text-primary font-semibold underline decoration-primary/30">Terms of Service</span> and <span className="text-primary font-semibold underline decoration-primary/30">Privacy Policy</span>.
+                    <span className="text-xs text-on-surface-variant leading-relaxed select-none group-hover:text-on-surface transition-colors">
+                      I consent to the recording of this session and agree to Cuemath&apos;s <span className="text-primary font-semibold underline decoration-primary/30">Candidate Terms</span> and <span className="text-primary font-semibold underline decoration-primary/30">Privacy Policy</span>.
                     </span>
                   </label>
                 </div>
@@ -109,26 +109,27 @@ export default function Welcome({ onAccept, onDecline }: WelcomeProps) {
                 <button 
                   disabled={!consented}
                   onClick={onAccept}
-                  className="w-full h-14 premium-gradient rounded-xl text-white font-bold text-lg shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full h-16 premium-gradient rounded-2xl text-white font-bold text-lg shadow-xl active:scale-[0.98] hover:shadow-2xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                 >
-                  Accept &amp; Continue
-                  <span className="material-symbols-outlined">arrow_forward</span>
+                  Start Assessment
+                  <span className="material-symbols-outlined">rocket_launch</span>
                 </button>
                 <button 
                   onClick={onDecline}
-                  className="w-full h-12 bg-surface-container-high text-on-surface-variant font-medium rounded-xl hover:bg-surface-container-highest transition-colors"
+                  className="w-full h-12 text-on-surface-variant font-bold text-sm rounded-xl hover:bg-surface-container-high transition-colors tracking-wide"
                 >
                   Decline &amp; Exit
                 </button>
               </div>
               
-              <div className="flex flex-col items-center justify-center gap-2 mt-2">
-                <div className="flex items-center gap-1.5 grayscale opacity-80">
-                  <span className="text-xl font-black tracking-[0.25em] text-on-surface uppercase">Cuemath</span>
+              <div className="flex flex-col items-center justify-center gap-3 mt-2 border-t border-outline-variant/10 pt-6">
+                <div className="flex items-center gap-2 grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-500">
+                  <CuemathLogo className="w-5 h-5" />
+                  <span className="text-sm font-black tracking-tight text-on-surface">Cuemath</span>
                 </div>
-                <div className="flex items-center gap-1 opacity-40">
-                  <span className="material-symbols-outlined text-[10px]">lock</span>
-                  <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-on-surface-variant">Secure AI Session</span>
+                <div className="flex items-center gap-1.5 opacity-30">
+                  <span className="material-symbols-outlined text-[12px]">security</span>
+                  <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-on-surface-variant">Validated AI Environment</span>
                 </div>
               </div>
             </div>
