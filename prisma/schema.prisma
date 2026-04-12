@@ -1,0 +1,180 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum InterviewStatus {
+  INVITED
+  CONSENTED
+  IN_PROGRESS
+  ANSWER_UPLOADED
+  TRANSCRIBING
+  EVALUATING
+  READY_FOR_NEXT_QUESTION
+  FINALIZING
+  COMPLETED
+  NEEDS_CANDIDATE_RETRY
+  NEEDS_HUMAN_REVIEW
+  ABANDONED
+  EXPIRED
+}
+
+enum AnswerStatus {
+  UPLOADED
+  TRANSCRIBED
+  EVALUATED
+  FAILED
+  NEEDS_RETRY
+}
+
+enum TranscriptProvider {
+  sarvam
+  openai
+}
+
+enum Recommendation {
+  MOVE_FORWARD
+  HOLD
+  DECLINE
+}
+
+enum RecruiterDecisionType {
+  MOVE_FORWARD
+  HOLD
+  DECLINE
+  NEEDS_REVIEW
+}
+
+model Candidate {
+  id               String             @id @default(uuid())
+  name             String
+  email            String             @unique
+  phone            String?
+  source           String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  interviewSessions InterviewSession[]
+}
+
+model InterviewSession {
+  id                String          @id @default(uuid())
+  candidateId       String
+  candidate         Candidate       @relation(fields: [candidateId], references: [id])
+  status            InterviewStatus @default(INVITED)
+  questionSetId     String
+  inviteTokenHash   String          @unique
+  inviteExpiresAt   DateTime
+  consentAcceptedAt DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  answers           Answer[]
+  finalReport       FinalReport?
+  recruiterDecision RecruiterDecision?
+}
+
+model Question {
+  id                 String   @id @default(uuid())
+  questionSetId      String
+  prompt             String
+  competencyTags     String[]
+  maxDurationSeconds Int      @default(90)
+  order              Int
+  active             Boolean  @default(true)
+  answers            Answer[]
+}
+
+model Answer {
+  id                    String        @id @default(uuid())
+  sessionId             String
+  session               InterviewSession @relation(fields: [sessionId], references: [id])
+  questionId            String
+  question              Question      @relation(fields: [questionId], references: [id])
+  attemptNumber         Int           @default(1)
+  audioObjectKey        String
+  audioDurationSeconds  Float?
+  status                AnswerStatus  @default(UPLOADED)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  transcript            Transcript?
+  evaluation            AnswerEvaluation?
+}
+
+model Transcript {
+  id            String             @id @default(uuid())
+  answerId      String             @unique
+  answer        Answer             @relation(fields: [answerId], references: [id])
+  provider      TranscriptProvider
+  model         String
+  text          String
+  correctedText String?
+  language      String?
+  confidence    Float?
+  latencyMs     Int
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+}
+
+model AnswerEvaluation {
+  id                      String   @id @default(uuid())
+  answerId                String   @unique
+  answer                  Answer   @relation(fields: [answerId], references: [id])
+  modelProvider           String   @default("google")
+  model                   String
+  promptVersion           String
+  schemaVersion           String
+  transcriptHash          String
+  communicationClarity    Int
+  conceptExplanation      Int
+  empathyAndPatience      Int
+  adaptability            Int
+  professionalism         Int
+  englishFluency          Int
+  confidence              Float
+  evidence                String[]
+  concerns                String[]
+  followUpQuestion        String?
+  requiresHumanReview     Boolean  @default(false)
+  rawModelOutputObjectKey String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+model FinalReport {
+  id                  String         @id @default(uuid())
+  sessionId           String         @unique
+  session             InterviewSession @relation(fields: [sessionId], references: [id])
+  recommendation      Recommendation
+  overallScore        Float
+  confidence          Float
+  strengths           String[]
+  risks               String[]
+  suggestedFollowUps  String[]
+  evidenceByQuestion  Json
+  model               String
+  promptVersion       String
+  schemaVersion       String
+  requiresHumanReview Boolean        @default(false)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+}
+
+model RecruiterDecision {
+  id         String                @id @default(uuid())
+  sessionId  String                @unique
+  session    InterviewSession      @relation(fields: [sessionId], references: [id])
+  reviewerId String
+  decision   RecruiterDecisionType
+  notes      String?
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+}
