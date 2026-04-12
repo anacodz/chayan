@@ -3,9 +3,9 @@ import prisma from "@/lib/prisma";
 
 export async function GET(
   request: Request,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
-  const { sessionId } = params;
+  const { sessionId } = await params;
 
   try {
     const session = await prisma.interviewSession.findUnique({
@@ -35,9 +35,9 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
-  const { sessionId } = params;
+  const { sessionId } = await params;
   const body = await request.json();
   const { decision, notes, reviewerId } = body;
 

@@ -118,7 +118,7 @@ Use only transcript evidence. Keep the report recruiter-ready and concise.`
   return NextResponse.json({ report, provider });
 }
 
-function averageScore(scores: any): number {
+function averageScore(scores: Record<string, number>): number {
   const vals = Object.values(scores) as number[];
   return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
 }
