@@ -135,7 +135,7 @@ export default function Welcome({ onAccept, onDecline, session }: WelcomeProps) 
                 </div>
                 <div className="flex items-center gap-1.5 opacity-30">
                   <span className="material-symbols-outlined text-[12px]">security</span>
-                  <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-on-surface-variant">Validated AI Environment</span>
+                  <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-on-surface-variant">Secured AI Environment</span>
                 </div>
               </div>
             </div>

@@ -46,7 +46,11 @@ export default function Interview({
 }: InterviewProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <div className="absolute inset-y-0 right-0 w-[35%] bg-[#f0f4f8]/70 pointer-events-none hidden lg:block" />
+      <div className="absolute inset-y-0 right-0 w-[38%] bg-[#f6f2e8]/40 pointer-events-none hidden lg:block" />
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary-fixed/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary-fixed/10 rounded-full blur-3xl"></div>
+      </div>
       <header className="glass-header sticky top-0 z-50 shadow-[0_4px_20px_rgba(0,46,110,0.04)] border-b border-outline-variant/10">
         <div className="flex justify-between items-center w-full px-6 md:px-8 py-4 max-w-[1920px] mx-auto">
           <div className="flex items-center gap-4">
