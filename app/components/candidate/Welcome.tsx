@@ -23,19 +23,22 @@ export default function Welcome({ onAccept, onDecline }: WelcomeProps) {
           <div className="lg:col-span-7 flex flex-col gap-8">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 premium-gradient rounded-xl flex items-center justify-center text-white shadow-lg">
-                <span className="material-symbols-outlined text-2xl">psychology</span>
+                <span className="material-symbols-outlined text-2xl">menu_book</span>
               </div>
-              <h1 className="text-2xl font-black tracking-tighter text-on-secondary-fixed">Chayan</h1>
+              <div className="flex flex-col">
+                <span className="text-2xl font-black tracking-[0.2em] text-on-secondary-fixed uppercase">Cuemath</span>
+                <span className="text-[10px] font-bold tracking-[0.3em] text-primary uppercase -mt-1 ml-0.5">Tutor Screener</span>
+              </div>
             </div>
             
             <div className="space-y-6">
-              <p className="text-sm font-bold tracking-[0.1em] text-primary uppercase">Academic Atelier</p>
+              <p className="text-sm font-bold tracking-[0.1em] text-primary uppercase">Elite Educator Network</p>
               <h2 className="text-4xl sm:text-5xl md:text-[60px] font-bold text-on-surface tracking-tight leading-[1.08]">
-                Begin your <br/>
-                <span className="text-primary italic">educational journey.</span>
+                Empower the <br/>
+                <span className="text-primary italic">next generation.</span>
               </h2>
               <p className="text-lg text-on-surface-variant max-w-md leading-relaxed">
-                Welcome to the Chayan expert screening. We&apos;ve curated a space for you to demonstrate your mastery through a voice-first interactive session.
+                Welcome to the Cuemath expert screening. We&apos;ve curated a space for you to demonstrate your pedagogical mastery through a voice-first interactive session.
               </p>
             </div>
             
@@ -75,7 +78,7 @@ export default function Welcome({ onAccept, onDecline }: WelcomeProps) {
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-on-surface">Data Privacy &amp; Security</h4>
-                    <p className="text-xs text-on-surface-variant leading-relaxed mt-1">Your voice responses are encrypted and used solely for candidate evaluation purposes by Chayan AI.</p>
+                    <p className="text-xs text-on-surface-variant leading-relaxed mt-1">Your voice responses are encrypted and used solely for candidate evaluation purposes by Cuemath.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
@@ -119,12 +122,13 @@ export default function Welcome({ onAccept, onDecline }: WelcomeProps) {
                 </button>
               </div>
               
-              <div className="flex items-center justify-center gap-6 mt-2">
-                <img alt="Trust Seal" className="h-8 opacity-60 mix-blend-multiply" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBY3mylLY4esOjVYO_H284Zj8rEFOjtDXS6jmsh9zeLUQBK2dFktErWtzATted_0v8BOxp6QTlTbtQiHWaCqK99ZAdOsM3Cak9Yl_GRerqEiDkh0ICyEig2TIvIgLkvSrYwLZCzgbUAFpeT8VymzvhuUKwi_5cf4_6FR7fQR0nkRnWOYp2H3vLRIlX32O1Nx7B4VfpCElA0ADIoIBUCffUbTWmigHepTsA2l1hULRbwq2WtT6ZgZ8990d5OHyTuL_9YLB3VS0ALw6r8"/>
-                <div className="h-4 w-[1px] bg-outline-variant/30"></div>
-                <div className="flex items-center gap-1 opacity-60">
-                  <span className="material-symbols-outlined text-sm">lock</span>
-                  <span className="text-[10px] font-bold tracking-widest uppercase text-on-surface-variant">Secure Session</span>
+              <div className="flex flex-col items-center justify-center gap-2 mt-2">
+                <div className="flex items-center gap-1.5 grayscale opacity-80">
+                  <span className="text-xl font-black tracking-[0.25em] text-on-surface uppercase">Cuemath</span>
+                </div>
+                <div className="flex items-center gap-1 opacity-40">
+                  <span className="material-symbols-outlined text-[10px]">lock</span>
+                  <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-on-surface-variant">Secure AI Session</span>
                 </div>
               </div>
             </div>
@@ -140,7 +144,7 @@ export default function Welcome({ onAccept, onDecline }: WelcomeProps) {
             +2k
           </div>
         </div>
-        <p className="text-xs font-medium text-on-surface-variant">Join 2,000+ expert educators curated by Chayan AI.</p>
+        <p className="text-xs font-medium text-on-surface-variant">Join 2,000+ expert educators curated by Cuemath.</p>
       </div>
     </main>
   );
