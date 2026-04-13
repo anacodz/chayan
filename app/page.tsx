@@ -62,7 +62,7 @@ export default function Home() {
     setPhase("interview");
     
     // Start global timer (sum of all question durations + buffer)
-    const totalDuration = questions.reduce((acc, q) => acc + q.maxDurationSeconds, 0);
+    const totalDuration = (questions || []).reduce((acc, q) => acc + (q?.maxDurationSeconds || 90), 0);
     setTotalTimeLeft(totalDuration);
     globalTimerRef.current = setInterval(() => {
       setTotalTimeLeft((prev) => {
@@ -83,13 +83,13 @@ export default function Home() {
   const animFrameRef = useRef<number | null>(null);
 
   const currentQuestion = useMemo(() => {
-    if (questions.length === 0) return null;
+    if (!questions || questions.length === 0) return null;
     if (followUpQuestion) {
       return { 
-        id: `follow-up-${questions[questionIndex].id}`, 
+        id: `follow-up-${questions[questionIndex]?.id || "fup"}`, 
         prompt: followUpQuestion, 
         guidance: "This is a follow-up question based on your previous response.",
-        competencyTags: questions[questionIndex].competencyTags,
+        competencyTags: questions[questionIndex]?.competencyTags || [],
         maxDurationSeconds: 60 // Follow-ups get fixed 60s
       };
     }
@@ -97,8 +97,8 @@ export default function Home() {
   }, [questions, questionIndex, followUpQuestion]);
 
   const progress = useMemo(
-    () => questions.length > 0 ? Math.round(((questionIndex) / questions.length) * 100) : 0,
-    [questionIndex, questions.length]
+    () => (questions && questions.length > 0) ? Math.round(((questionIndex) / questions.length) * 100) : 0,
+    [questionIndex, questions?.length]
   );
 
   /* Play TTS for the current question */
@@ -140,17 +140,31 @@ export default function Home() {
       const token = urlParams.get("invite");
 
       try {
-        const qSetId = token ? (await (await fetch(`/api/invites/${token}`)).json()).session.questionSetId : "default";
-        const qRes = await fetch(`/api/questions?questionSetId=${qSetId}`);
-        const qData = await qRes.json();
-        setQuestions(qData.questions);
+        let qSetId = "default";
+        
         if (token) {
           const sRes = await fetch(`/api/invites/${token}`);
-          const sData = await sRes.json();
-          setSession(sData.session);
+          if (sRes.ok) {
+            const sData = await sRes.json();
+            if (sData.session) {
+              setSession(sData.session);
+              qSetId = sData.session.questionSetId || "default";
+            }
+          }
         }
+        
+        const qRes = await fetch(`/api/questions?questionSetId=${qSetId}`);
+        if (qRes.ok) {
+          const qData = await qRes.json();
+          setQuestions(qData.questions || []);
+        } else {
+          setPhase("invalid");
+          return;
+        }
+        
         setPhase("consent");
-      } catch {
+      } catch (err) {
+        console.error("Initialization failed:", err);
         setPhase("invalid");
       }
     }
@@ -256,7 +270,7 @@ export default function Home() {
       setFollowUpQuestion(null);
       setHasAskedFollowUp(false);
 
-      if (questionIndex === questions.length - 1) {
+      if (questionIndex === (questions?.length || 0) - 1) {
         await buildReport(nextAnswers);
         return;
       }
@@ -278,22 +292,24 @@ export default function Home() {
     setPhase("complete");
   }
 
-  if (phase === "loading") return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (phase === "loading") return <div className="min-h-screen flex items-center justify-center text-on-surface-variant font-medium">Validating invitation...</div>;
   if (phase === "security_violation") return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-error-container text-on-error-container text-center">
-      <h1 className="text-4xl font-black mb-4">Assessment Locked</h1>
+      <h1 className="text-4xl font-black mb-4 tracking-tighter uppercase">Assessment Locked</h1>
       <p className="max-w-md mb-8">A security violation was detected (tab switch or dev-tool access). This attempt has been flagged and your recruiter has been notified.</p>
-      <button onClick={() => window.location.href = "/"} className="px-8 py-3 bg-error text-white rounded-xl font-bold">Return Home</button>
+      <button onClick={() => window.location.href = "/"} className="px-8 py-3 bg-error text-white rounded-xl font-bold shadow-lg">Return Home</button>
     </div>
   );
 
-  if (phase === "consent") return <Welcome onAccept={handleStartAssessment} onDecline={() => window.location.href = "https://cuemath.com"} />;
+  if (phase === "consent") return <Welcome onAccept={handleStartAssessment} onDecline={() => window.location.href = "https://cuemath.com"} session={session} />;
   if (phase === "complete") return <Complete answersCount={answers.length} />;
+
+  if (!questions || questions.length === 0) return null;
 
   return (
     <Interview 
       questionIndex={questionIndex}
-      totalQuestions={questions.length}
+      totalQuestions={questions?.length || 0}
       currentQuestion={currentQuestion!}
       status={status}
       elapsed={totalTimeLeft} // Global timer

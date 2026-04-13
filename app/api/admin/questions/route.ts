@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { prompt, competencyTags, questionSetId = "default", maxDurationSeconds = 90, order } = body;
+    const { prompt, competencyTags, category, questionSetId = "default", maxDurationSeconds = 90, order } = body;
 
     if (!prompt) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
@@ -56,6 +56,7 @@ export async function POST(req: Request) {
     const question = await prisma.question.create({
       data: {
         prompt,
+        category,
         competencyTags: Array.isArray(competencyTags) ? competencyTags : [],
         questionSetId,
         maxDurationSeconds,

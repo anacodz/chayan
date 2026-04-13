@@ -1,17 +1,16 @@
-import NextAuth from "next-auth";
+import NextAuth, { NextAuthOptions, getServerSession } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import prisma from "./prisma";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma as any),
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     }),
-    // Temporary Credentials provider for development
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -19,8 +18,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // In a real app, verify the password hash. 
-        // For the build challenge, we allow a development bypass or simple check.
         if (credentials?.email === "admin@cuemath.com" && credentials?.password === "admin123") {
           return { id: "admin", name: "Admin", email: "admin@cuemath.com", role: "ADMIN" };
         }
@@ -31,17 +28,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async session({ session, user, token }) {
       if (session.user) {
-        // @ts-expect-error -- session user type extension
+        // @ts-ignore -- session user type extension
         session.user.id = user?.id || token?.sub;
-        // @ts-expect-error -- session user type extension
-        session.user.role = user?.role || token?.role || "RECRUITER";
+        // @ts-ignore -- session user type extension
+        session.user.role = user?.role || (token as any)?.role || "RECRUITER";
       }
       return session;
     },
     async jwt({ token, user }) {
       if (user) {
-        // @ts-expect-error -- session user type extension
-        token.role = user.role;
+        // @ts-ignore -- session user type extension
+        token.role = (user as unknown as any).role;
       }
       return token;
     },
@@ -52,4 +49,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: "/auth/signin",
   },
-});
+};
+
+export const auth = () => getServerSession(authOptions);

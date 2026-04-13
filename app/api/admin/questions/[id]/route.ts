@@ -20,13 +20,14 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
   try {
     const body = await req.json();
-    const { prompt, competencyTags, maxDurationSeconds, active, order } = body;
+    const { prompt, competencyTags, category, maxDurationSeconds, active, order } = body;
 
     const question = await prisma.question.update({
       where: { id },
       data: {
         ...(prompt !== undefined && { prompt }),
         ...(competencyTags !== undefined && { competencyTags }),
+        ...(category !== undefined && { category }),
         ...(maxDurationSeconds !== undefined && { maxDurationSeconds }),
         ...(active !== undefined && { active }),
         ...(order !== undefined && { order }),
