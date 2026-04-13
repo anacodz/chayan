@@ -30,22 +30,29 @@ type Session = {
 
 export default function RecruiterDashboard() {
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [totalSessions, setTotalSessions] = useState(0);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     async function fetchData() {
+      setLoading(true);
+      const skip = (currentPage - 1) * itemsPerPage;
       try {
         const [sessionsRes, metricsRes] = await Promise.all([
-          fetch("/api/recruiter/interviews"),
+          fetch(`/api/recruiter/interviews?skip=${skip}&take=${itemsPerPage}`),
           fetch("/api/admin/metrics")
         ]);
 
         if (sessionsRes.ok) {
           const data = await sessionsRes.json();
           setSessions(data.sessions);
+          setTotalSessions(data.total);
         }
         
         if (metricsRes.ok) {
@@ -59,12 +66,14 @@ export default function RecruiterDashboard() {
       }
     }
     fetchData();
-  }, []);
+  }, [currentPage]);
 
   const filteredSessions = sessions.filter(s => 
     s.candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.candidate.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const totalPages = Math.ceil(totalSessions / itemsPerPage);
 
   const getStatusClass = (status: string) => {
     switch (status) {
