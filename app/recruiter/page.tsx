@@ -237,6 +237,38 @@ export default function RecruiterDashboard() {
                     </tbody>
                   </table>
                 </div>
+                <div className="p-4 md:p-6 bg-surface-container-low/20 border-t border-surface-container flex flex-col sm:flex-row justify-between items-center gap-3">
+                  <p className="text-xs font-medium text-on-surface-variant">
+                    Showing {sessions.length} of {totalSessions} candidates
+                  </p>
+                  <div className="flex gap-1">
+                    <button 
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high transition-colors disabled:opacity-30"
+                    >
+                      <span className="material-symbols-outlined text-sm">chevron_left</span>
+                    </button>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <button 
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all font-bold text-xs ${currentPage === page ? 'bg-primary text-white' : 'hover:bg-surface-container-high'}`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <button 
+                      disabled={currentPage === totalPages || totalPages === 0}
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high transition-colors disabled:opacity-30"
+                    >
+                      <span className="material-symbols-outlined text-sm">chevron_right</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </>
           )}
