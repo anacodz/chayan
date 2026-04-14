@@ -1,12 +1,28 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { auth } from "@/lib/auth";
 
-export async function GET(req: Request) {
+async function isAuthorized(req: Request, allowRecruiter = false) {
   const requiredAdminToken = process.env.ADMIN_API_TOKEN;
   const providedAdminToken = req.headers.get("x-admin-token");
 
-  if (requiredAdminToken && providedAdminToken !== requiredAdminToken) {
+  if (requiredAdminToken && providedAdminToken === requiredAdminToken) {
+    return true;
+  }
+
+  const session = await auth();
+  const role = (session?.user as { role?: string })?.role;
+  if (!role) return false;
+  
+  if (role === "ADMIN") return true;
+  if (allowRecruiter && role === "RECRUITER") return true;
+  
+  return false;
+}
+
+export async function GET(req: Request) {
+  if (!(await isAuthorized(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -26,10 +42,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const requiredAdminToken = process.env.ADMIN_API_TOKEN;
-  const providedAdminToken = req.headers.get("x-admin-token");
-
-  if (requiredAdminToken && providedAdminToken !== requiredAdminToken) {
+  if (!(await isAuthorized(req, true))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

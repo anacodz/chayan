@@ -23,13 +23,32 @@ type CalibrationSample = {
   createdAt: string;
 };
 
+type SampleInput = {
+  questionId: string;
+  transcript: string;
+  communicationClarity: number;
+  conceptExplanation: number;
+  empathyAndPatience: number;
+  adaptability: number;
+  professionalism: number;
+  englishFluency: number;
+  reasoning: string;
+};
+
+type TestResult = {
+  evaluation: {
+    confidence: number;
+  };
+  comparison: Record<string, { ai: number; truth: number }>;
+};
+
 export default function CalibrationDashboard() {
   const [samples, setSamples] = useState<CalibrationSample[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [newSample, setNewSample] = useState({
+  const [newSample, setNewSample] = useState<SampleInput>({
     questionId: "",
     transcript: "",
     communicationClarity: 3,
@@ -41,7 +60,7 @@ export default function CalibrationDashboard() {
     reasoning: "",
   });
 
-  const [testResults, setTestResults] = useState<Record<string, any>>({});
+  const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
   const [testingId, setTestingId] = useState<string | null>(null);
 
   const fetchData = async () => {
@@ -171,12 +190,12 @@ export default function CalibrationDashboard() {
             <div className="space-y-4">
               <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">Ground Truth Scores (1-5)</label>
               <div className="grid grid-cols-2 gap-4">
-                {['communicationClarity', 'conceptExplanation', 'empathyAndPatience', 'adaptability', 'professionalism', 'englishFluency'].map(dim => (
+                {(['communicationClarity', 'conceptExplanation', 'empathyAndPatience', 'adaptability', 'professionalism', 'englishFluency'] as const).map(dim => (
                   <div key={dim}>
                     <label className="block text-[10px] font-bold text-on-surface-variant mb-1 uppercase">{dim.replace(/([A-Z])/g, ' $1')}</label>
                     <input 
                       type="number" min="1" max="5" 
-                      value={(newSample as any)[dim]}
+                      value={newSample[dim]}
                       onChange={e => setNewSample({...newSample, [dim]: parseInt(e.target.value)})}
                       className="w-full bg-surface-container-low border-none rounded-lg px-3 py-2 text-sm"
                     />
@@ -250,7 +269,7 @@ export default function CalibrationDashboard() {
                         <span className="text-tertiary">Confidence: {Math.round(testResults[sample.id].evaluation.confidence * 100)}%</span>
                       </h4>
                       <div className="grid grid-cols-3 gap-3">
-                        {Object.entries(testResults[sample.id].comparison).map(([key, data]: [string, any]) => {
+                        {Object.entries(testResults[sample.id].comparison).map(([key, data]) => {
                           const diff = Math.abs(data.ai - data.truth);
                           return (
                             <div key={key} className={`p-2 rounded-lg text-center border ${diff === 0 ? 'bg-tertiary/5 border-tertiary/20' : diff <= 1 ? 'bg-secondary/5 border-secondary/20' : 'bg-error/5 border-error/20'}`}>
