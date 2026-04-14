@@ -2,6 +2,7 @@ import { Inngest } from "inngest";
 import { transcribeAudioService, evaluateAnswerService } from "./services/ai";
 import prisma from "./prisma";
 import { logger } from "./logger";
+import { monitoring } from "./monitoring";
 import { createHash } from "node:crypto";
 import { env } from "./env";
 
@@ -25,52 +26,62 @@ export const transcribeAndEvaluateAnswer = inngest.createFunction(
     // 1. Transcribe audio
     const transcriptionResult = await step.run("transcribe-audio", async () => {
       logger.info({ answerId }, "Transcribing audio");
-      const audioRes = await fetch(audioUrl);
-      const audioBlob = await audioRes.blob();
-      
-      return await transcribeAudioService(audioBlob);
+      try {
+        const audioRes = await fetch(audioUrl);
+        const audioBlob = await audioRes.blob();
+        
+        return await transcribeAudioService(audioBlob);
+      } catch (error) {
+        monitoring.captureException(error, { answerId, sessionId, step: "transcribe-audio" });
+        throw error; // Let Inngest retry
+      }
     });
 
     // 2. Save transcript to database and handle quality
     const shouldEvaluate = await step.run("save-transcript-and-check-quality", async () => {
       logger.info({ answerId, quality: transcriptionResult.quality }, "Saving transcript");
       
-      await prisma.transcript.upsert({
-        where: { answerId },
-        create: {
-          answerId,
-          provider: transcriptionResult.provider as any,
-          model: transcriptionResult.model,
-          text: transcriptionResult.text,
-          latencyMs: 0,
-        },
-        update: {
-          provider: transcriptionResult.provider as any,
-          model: transcriptionResult.model,
-          text: transcriptionResult.text,
-          latencyMs: 0,
-        }
-      });
+      try {
+        await prisma.transcript.upsert({
+          where: { answerId },
+          create: {
+            answerId,
+            provider: transcriptionResult.provider as any,
+            model: transcriptionResult.model,
+            text: transcriptionResult.text,
+            latencyMs: 0,
+          },
+          update: {
+            provider: transcriptionResult.provider as any,
+            model: transcriptionResult.model,
+            text: transcriptionResult.text,
+            latencyMs: 0,
+          }
+        });
 
-      if (transcriptionResult.quality !== "OK") {
+        if (transcriptionResult.quality !== "OK") {
+          await prisma.answer.update({
+            where: { id: answerId },
+            data: { status: "NEEDS_RETRY" }
+          });
+          
+          await prisma.interviewSession.update({
+            where: { id: sessionId },
+            data: { status: "NEEDS_CANDIDATE_RETRY" }
+          });
+          
+          return false;
+        }
+
         await prisma.answer.update({
           where: { id: answerId },
-          data: { status: "NEEDS_RETRY" }
+          data: { status: "TRANSCRIBED" }
         });
-        
-        await prisma.interviewSession.update({
-          where: { id: sessionId },
-          data: { status: "NEEDS_CANDIDATE_RETRY" }
-        });
-        
-        return false;
+        return true;
+      } catch (error) {
+        monitoring.captureException(error, { answerId, sessionId, step: "save-transcript" });
+        throw error;
       }
-
-      await prisma.answer.update({
-        where: { id: answerId },
-        data: { status: "TRANSCRIBED" }
-      });
-      return true;
     });
 
     if (!shouldEvaluate) {
@@ -80,70 +91,80 @@ export const transcribeAndEvaluateAnswer = inngest.createFunction(
     // 3. Evaluate transcript
     const evaluation = await step.run("evaluate-answer", async () => {
       logger.info({ answerId }, "Evaluating transcript");
-      return await evaluateAnswerService(question, transcriptionResult.text, competencyTags);
+      try {
+        return await evaluateAnswerService(question, transcriptionResult.text, competencyTags);
+      } catch (error) {
+        monitoring.captureException(error, { answerId, sessionId, step: "evaluate-answer" });
+        throw error;
+      }
     });
 
     // 4. Save evaluation and update answer status
     await step.run("save-evaluation", async () => {
       logger.info({ answerId }, "Saving evaluation");
-      const transcriptHash = createHash("sha256")
-        .update(transcriptionResult.text)
-        .digest("hex");
+      try {
+        const transcriptHash = createHash("sha256")
+          .update(transcriptionResult.text)
+          .digest("hex");
 
-      await prisma.answerEvaluation.upsert({
-        where: { answerId },
-        create: {
-          answerId,
-          modelProvider: "google",
-          model: "gemini-2.0-flash",
-          promptVersion: "v1",
-          schemaVersion: "v1",
-          transcriptHash,
-          communicationClarity: Math.round(evaluation.dimensionScores.communicationClarity),
-          conceptExplanation: Math.round(evaluation.dimensionScores.conceptExplanation),
-          empathyAndPatience: Math.round(evaluation.dimensionScores.empathyAndPatience),
-          adaptability: Math.round(evaluation.dimensionScores.adaptability),
-          professionalism: Math.round(evaluation.dimensionScores.professionalism),
-          englishFluency: Math.round(evaluation.dimensionScores.englishFluency),
-          confidence: evaluation.confidence,
-          evidence: evaluation.signals,
-          concerns: evaluation.redFlags,
-          followUpQuestion: evaluation.followUpQuestion ?? null,
-          requiresHumanReview: false,
-        },
-        update: {
-          modelProvider: "google",
-          model: "gemini-2.0-flash",
-          promptVersion: "v1",
-          schemaVersion: "v1",
-          transcriptHash,
-          communicationClarity: Math.round(evaluation.dimensionScores.communicationClarity),
-          conceptExplanation: Math.round(evaluation.dimensionScores.conceptExplanation),
-          empathyAndPatience: Math.round(evaluation.dimensionScores.empathyAndPatience),
-          adaptability: Math.round(evaluation.dimensionScores.adaptability),
-          professionalism: Math.round(evaluation.dimensionScores.professionalism),
-          englishFluency: Math.round(evaluation.dimensionScores.englishFluency),
-          confidence: evaluation.confidence,
-          evidence: evaluation.signals,
-          concerns: evaluation.redFlags,
-          followUpQuestion: evaluation.followUpQuestion ?? null,
-          requiresHumanReview: false,
-        },
-      });
+        await prisma.answerEvaluation.upsert({
+          where: { answerId },
+          create: {
+            answerId,
+            modelProvider: "google",
+            model: "gemini-2.0-flash",
+            promptVersion: "v1",
+            schemaVersion: "v1",
+            transcriptHash,
+            communicationClarity: Math.round(evaluation.dimensionScores.communicationClarity),
+            conceptExplanation: Math.round(evaluation.dimensionScores.conceptExplanation),
+            empathyAndPatience: Math.round(evaluation.dimensionScores.empathyAndPatience),
+            adaptability: Math.round(evaluation.dimensionScores.adaptability),
+            professionalism: Math.round(evaluation.dimensionScores.professionalism),
+            englishFluency: Math.round(evaluation.dimensionScores.englishFluency),
+            confidence: evaluation.confidence,
+            evidence: evaluation.signals,
+            concerns: evaluation.redFlags,
+            followUpQuestion: evaluation.followUpQuestion ?? null,
+            requiresHumanReview: false,
+          },
+          update: {
+            modelProvider: "google",
+            model: "gemini-2.0-flash",
+            promptVersion: "v1",
+            schemaVersion: "v1",
+            transcriptHash,
+            communicationClarity: Math.round(evaluation.dimensionScores.communicationClarity),
+            conceptExplanation: Math.round(evaluation.dimensionScores.conceptExplanation),
+            empathyAndPatience: Math.round(evaluation.dimensionScores.empathyAndPatience),
+            adaptability: Math.round(evaluation.dimensionScores.adaptability),
+            professionalism: Math.round(evaluation.dimensionScores.professionalism),
+            englishFluency: Math.round(evaluation.dimensionScores.englishFluency),
+            confidence: evaluation.confidence,
+            evidence: evaluation.signals,
+            concerns: evaluation.redFlags,
+            followUpQuestion: evaluation.followUpQuestion ?? null,
+            requiresHumanReview: false,
+          },
+        });
 
-      await prisma.answer.update({
-        where: { id: answerId },
-        data: { status: "EVALUATED" },
-      });
+        await prisma.answer.update({
+          where: { id: answerId },
+          data: { status: "EVALUATED" },
+        });
 
-      await prisma.interviewSession.update({
-        where: { id: sessionId },
-        data: {
-          status: evaluation.followUpQuestion
-            ? "NEEDS_CANDIDATE_RETRY"
-            : "READY_FOR_NEXT_QUESTION",
-        },
-      });
+        await prisma.interviewSession.update({
+          where: { id: sessionId },
+          data: {
+            status: evaluation.followUpQuestion
+              ? "NEEDS_CANDIDATE_RETRY"
+              : "READY_FOR_NEXT_QUESTION",
+          },
+        });
+      } catch (error) {
+        monitoring.captureException(error, { answerId, sessionId, step: "save-evaluation" });
+        throw error;
+      }
     });
 
     return { answerId, status: "completed" };
