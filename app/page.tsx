@@ -2,6 +2,7 @@
 
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 function HomeContent() {
   const router = useRouter();
@@ -32,7 +33,7 @@ function HomeContent() {
 
         <div className="p-10 bg-surface-container-lowest rounded-[2rem] border border-outline-variant/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
           <p className="text-sm md:text-base text-on-surface-variant font-medium leading-relaxed mb-6">
-            If you have been invited to a Cuemath tutor screening, please click the unique interview link provided in your email.
+            If you have been invited to a Cuemath tutor screening, please click the unique interview link provided in your email. or <Link href="/recruiter" className="text-inherit"><u>login as a recruiter</u></Link>
           </p>
           <div className="h-1.5 w-12 bg-primary/20 mx-auto rounded-full" />
         </div>
