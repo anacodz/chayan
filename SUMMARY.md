@@ -61,10 +61,11 @@
 - **[BACKLOG-013] Audio Waveform Playback**
   - Integrated `wavesurfer.js` for high-fidelity audio visualization in recruiter reports.
   - Created a reusable `Waveform` component for candidate responses.
-- **[BACKLOG-014] Automated Quality Assurance (E2E)**
+- **[BACKLOG-014] Automated Quality Assurance (E2E & Load)**
   - Configured Playwright with fake media stream support for CI-ready audio testing.
   - Implemented mocked E2E test for the full candidate "Happy Path" flow.
   - Implemented mocked E2E test for the recruiter dashboard and decision workflow.
+  - Created a concurrent stress test (`tests/load/stress-upload.js`) to validate Inngest queue stability under load.
 
 ### Sprint 1 (Parallel) - Frontend Refactor & Metrics Enhancement
 - **[BACKLOG-015] Frontend Logic Decoupling (Domain Hooks)**
