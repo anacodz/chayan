@@ -219,7 +219,7 @@ export default function RecruiterReportDetail() {
             {/* Transcript & Audio */}
             <div className="space-y-10">
               {session.answers.map((answer: any, idx: number) => (
-                <div key={answer.id} className="space-y-6 pb-10 border-b border-outline-variant/10 last:border-0 last:pb-0">
+                <div key={answer.id} className="space-y-6 pb-10 border-b border-outline-variant/10 last:border-0 last:pb-0 interview-evidence-item">
                   <div className="flex gap-4">
                     <div className="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center flex-shrink-0">
                       <span className="material-symbols-outlined text-secondary">smart_toy</span>
@@ -241,7 +241,7 @@ export default function RecruiterReportDetail() {
                         </p>
                       </div>
                       
-                      <div className="mb-4">
+                      <div className="mb-4 waveform-container">
                         <Waveform audioUrl={answer.audioObjectKey} />
                       </div>
                       
