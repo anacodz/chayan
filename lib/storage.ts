@@ -20,18 +20,19 @@ export async function getAudioMetadata(url: string) {
 }
 
 /**
- * Generates a time-limited signed URL for private blobs.
+ * Generates an authenticated proxy URL for private blobs.
+ * Recruiters must be logged in to access the returned URL.
  */
 export async function getSignedAudioUrl(url: string) {
-  // If the URL is already private/protected, we need to generate a token or 
-  // use the SDK to get a temporary readable URL.
-  // For Vercel Blob, private blobs require a token for client-side access.
+  if (!url || !url.startsWith("http")) return url;
   
-  // Note: generateBlobToken is used for client-side uploads, 
-  // for reading private blobs, we typically use the SDK directly or 
-  // temporary signed URLs if the provider supports them.
-  // In Vercel Blob, 'private' means it's not guessable and requires 
-  // server-side interaction to retrieve or a signed token.
-  
-  return url; 
+  try {
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname; // e.g. /recordings/xyz.webm
+    
+    // Return our secure proxy endpoint
+    return `/api/audio${pathname}?url=${encodeURIComponent(url)}`;
+  } catch (e) {
+    return url;
+  }
 }

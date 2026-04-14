@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getSignedAudioUrl } from "@/lib/storage";
 
 export async function GET(
   request: Request,
@@ -26,7 +27,20 @@ export async function GET(
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ session });
+    // Sign audio URLs for recruiter playback
+    const signedAnswers = await Promise.all(
+      session.answers.map(async (answer) => ({
+        ...answer,
+        audioObjectKey: await getSignedAudioUrl(answer.audioObjectKey),
+      }))
+    );
+
+    return NextResponse.json({ 
+      session: {
+        ...session,
+        answers: signedAnswers
+      } 
+    });
   } catch (error) {
     console.error("Failed to fetch session:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

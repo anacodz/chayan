@@ -22,6 +22,7 @@ export default function InterviewPage({ params }: { params: Promise<{ token: str
     answers,
     status: sessionStatus,
     processingStep,
+    processingProgress,
     error: sessionError,
     totalTimeLeft,
     startAssessment,
@@ -59,6 +60,11 @@ export default function InterviewPage({ params }: { params: Promise<{ token: str
   const handleStartAssessment = async () => {
     await enterFullscreen();
     await startAssessment();
+  };
+
+  const handleStartRecording = () => {
+    setSessionError("");
+    startRecording();
   };
 
   /* Auto-play question on change */
@@ -122,9 +128,10 @@ export default function InterviewPage({ params }: { params: Promise<{ token: str
       elapsed={totalTimeLeft}
       maxSeconds={0}
       processingStep={processingStep}
+      processingProgress={processingProgress}
       error={sessionError}
       waveform={waveform}
-      onStartRecording={startRecording}
+      onStartRecording={handleStartRecording}
       onStopRecording={stopRecording}
       formatTime={formatTime}
       progress={progress}

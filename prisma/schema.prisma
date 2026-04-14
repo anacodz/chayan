@@ -129,6 +129,7 @@ model InterviewSession {
   inviteTokenHash   String          @unique
   inviteExpiresAt   DateTime
   consentAcceptedAt DateTime?
+  activeSecondsSpent Int             @default(0)
   completedAt       DateTime?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt

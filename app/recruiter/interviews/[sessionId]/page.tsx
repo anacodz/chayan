@@ -8,6 +8,78 @@ import Waveform from "../../../components/recruiter/Waveform";
 
 type Decision = "Move Forward" | "Hold" | "Decline" | null;
 
+const TranscriptEditor = ({ 
+  transcript, 
+  onSave 
+}: { 
+  transcript: { id: string; text: string; correctedText?: string | null };
+  onSave: (id: string, text: string) => Promise<boolean>
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedText, setEditedText] = useState(transcript.text);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const success = await onSave(transcript.id, editedText);
+    setIsSaving(false);
+    if (success) {
+      setIsEditing(false);
+    } else {
+      alert("Failed to save transcript.");
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="space-y-2 w-full mt-2">
+        <textarea 
+          className="w-full bg-white border border-outline-variant/30 rounded-lg p-3 text-sm min-h-[100px] focus:ring-1 focus:ring-primary shadow-inner"
+          value={editedText}
+          onChange={(e) => setEditedText(e.target.value)}
+        />
+        <div className="flex justify-end gap-2">
+          <button 
+            disabled={isSaving}
+            onClick={() => { setIsEditing(false); setEditedText(transcript.text); }} 
+            className="text-[10px] font-black uppercase px-3 py-1.5 rounded-lg border border-outline-variant/20 hover:bg-surface-container"
+          >
+            Cancel
+          </button>
+          <button 
+            disabled={isSaving}
+            onClick={handleSave} 
+            className="text-[10px] font-black uppercase px-3 py-1.5 rounded-lg bg-primary text-white hover:bg-primary/90 shadow-sm"
+          >
+            {isSaving ? "Saving..." : "Save Correction"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group relative">
+      <p className={`leading-relaxed text-sm ${transcript.correctedText ? "text-primary" : "text-on-secondary-fixed"}`}>
+        &quot;{editedText}&quot;
+      </p>
+      <button 
+        onClick={() => setIsEditing(true)}
+        className="absolute top-0 right-0 p-1 text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity hover:text-primary no-print"
+        title="Edit transcript"
+      >
+        <span className="material-symbols-outlined text-[18px]">edit_note</span>
+      </button>
+      {transcript.correctedText && (
+        <span className="inline-flex items-center gap-1 text-[9px] font-black text-primary/50 uppercase tracking-tighter mt-1">
+          <span className="material-symbols-outlined text-[10px]">verified</span>
+          Manually Corrected
+        </span>
+      )}
+    </div>
+  );
+};
+
 export default function RecruiterReportDetail() {
   const { sessionId } = useParams();
   const router = useRouter();
@@ -59,6 +131,46 @@ export default function RecruiterReportDetail() {
       alert("Error saving decision.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRequestRetry = async (questionId: string) => {
+    if (!confirm("Are you sure you want to request a retry for this answer? This will re-open the candidate session.")) return;
+
+    try {
+      const res = await fetch(`/api/recruiter/interviews/${sessionId}/retry-question`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ questionId }),
+      });
+      if (res.ok) {
+        alert("Retry requested! Candidate can now re-record this answer.");
+        // Refresh local state to show updated status if needed
+        window.location.reload();
+      } else {
+        alert("Failed to request retry.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error requesting retry.");
+    }
+  };
+
+  const handleUpdateTranscript = async (transcriptId: string, newText: string) => {
+    try {
+      const res = await fetch(`/api/transcripts/${transcriptId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: newText }),
+      });
+      if (res.ok) {
+        // Updated successfully
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error(error);
+      return false;
     }
   };
 
@@ -239,15 +351,28 @@ export default function RecruiterReportDetail() {
                         <p className="text-xs font-bold text-on-surface-variant uppercase tracking-tight">
                           Candidate Response • {new Date(answer.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
+                        <button 
+                          onClick={() => handleRequestRetry(answer.questionId)}
+                          className={`text-[10px] font-black uppercase px-2 py-1 rounded transition-colors ${answer.status === "NEEDS_RETRY" ? "bg-error/10 text-error" : "bg-primary/10 text-primary hover:bg-primary hover:text-white"}`}
+                        >
+                          {answer.status === "NEEDS_RETRY" ? "Retry Requested" : "Request Retry"}
+                        </button>
                       </div>
                       
                       <div className="mb-4 waveform-container">
                         <Waveform audioUrl={answer.audioObjectKey} />
                       </div>
                       
-                      <p className="text-on-secondary-fixed leading-relaxed text-sm">
-                        &quot;{answer.transcript?.text || "Processing transcript..."}&quot;
-                      </p>
+                      {answer.transcript ? (
+                        <TranscriptEditor 
+                          transcript={answer.transcript} 
+                          onSave={handleUpdateTranscript} 
+                        />
+                      ) : (
+                        <p className="text-on-secondary-fixed italic leading-relaxed text-sm animate-pulse">
+                          Processing transcript...
+                        </p>
+                      )}
                       
                       {answer.evaluation?.evidence && (
                         <div className="mt-4 flex gap-2 flex-wrap">

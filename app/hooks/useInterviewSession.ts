@@ -16,8 +16,9 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
-  const [status, setStatus] = useState<"idle" | "processing" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "processing" | "error" | "needs_retry">("idle");
   const [processingStep, setProcessingStep] = useState("");
+  const [processingProgress, setProcessingProgress] = useState(0);
   const [error, setError] = useState("");
   
   const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(null);
@@ -26,9 +27,11 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
   
   const globalTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const startGlobalTimer = useCallback((initialTime: number) => {
+  const startGlobalTimer = useCallback((initialTime: number, sessionId?: string) => {
     if (globalTimerRef.current) clearInterval(globalTimerRef.current);
     setTotalTimeLeft(initialTime);
+    
+    let tickCount = 0;
     globalTimerRef.current = setInterval(() => {
       setTotalTimeLeft((prev) => {
         if (prev <= 1) {
@@ -36,6 +39,18 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
           setPhase("complete");
           return 0;
         }
+
+        // Heartbeat every 10 seconds
+        tickCount++;
+        if (tickCount >= 10 && sessionId) {
+          fetch(`/api/interviews/${sessionId}/heartbeat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ secondsToAdd: 10 }),
+          }).catch(console.error);
+          tickCount = 0;
+        }
+
         return prev - 1;
       });
     }, 1000);
@@ -49,6 +64,8 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
         let restoredIndex = 0;
         let restoredPhase: Phase = "consent";
         let consentAcceptedAt: string | null = null;
+        let activeSecondsSpent = 0;
+        let currentSessionId = "";
         
         if (token) {
           const sRes = await fetch(`/api/invites/${token}`);
@@ -56,8 +73,10 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
             const sData = await sRes.json();
             if (sData.session) {
               setSession(sData.session);
+              currentSessionId = sData.session.id;
               qSetId = sData.session.questionSetId || "default";
               consentAcceptedAt = sData.session.consentAcceptedAt;
+              activeSecondsSpent = sData.session.activeSecondsSpent || 0;
               
               if (sData.session.status === "COMPLETED") {
                 restoredPhase = "complete";
@@ -129,15 +148,12 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
             setQuestionIndex(restoredIndex);
             
             if (consentAcceptedAt) {
-              const start = new Date(consentAcceptedAt).getTime();
-              const now = new Date().getTime();
-              const elapsedSeconds = Math.floor((now - start) / 1000);
               const totalDuration = (fetchedQuestions || []).reduce((acc: number, q: any) => acc + (q?.maxDurationSeconds || 90), 0);
-              const timeLeft = Math.max(0, totalDuration - elapsedSeconds);
+              const timeLeft = Math.max(0, totalDuration - activeSecondsSpent);
               
               setTotalTimeLeft(timeLeft);
               if (restoredPhase === "interview") {
-                startGlobalTimer(timeLeft);
+                startGlobalTimer(timeLeft, currentSessionId);
               }
             }
             setPhase(restoredPhase);
@@ -179,7 +195,7 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
     }
 
     const totalDuration = (questions || []).reduce((acc, q) => acc + (q?.maxDurationSeconds || 90), 0);
-    startGlobalTimer(totalDuration);
+    startGlobalTimer(totalDuration, session?.id);
     setPhase("interview");
   }, [questions, session?.id, startGlobalTimer]);
 
@@ -187,7 +203,8 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
     if (!currentQuestion) return;
     
     setStatus("processing");
-    setProcessingStep("Analyzing...");
+    setProcessingStep("Preparing upload...");
+    setProcessingProgress(5);
     setError("");
 
     try {
@@ -198,29 +215,60 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
       form.append("question", currentQuestion.prompt);
       form.append("competencyTags", JSON.stringify("competencyTags" in currentQuestion ? currentQuestion.competencyTags : []));
 
+      setProcessingStep("Uploading voice recording...");
+      setProcessingProgress(25);
       const uploadRes = await fetch("/api/answers/upload", { method: "POST", body: form });
+      if (!uploadRes.ok) throw new Error("Upload failed. Please try again.");
+      
       const uploadData = await uploadRes.json();
       const answerId = uploadData.answerId;
 
       let evaluation: AnswerEvaluation | null = null;
       let transcript = "";
       
-      // Polling for evaluation
+      setProcessingStep("Voice uploaded. Transcribing...");
+      setProcessingProgress(50);
+
+      // Polling for evaluation with progressive percentage updates
       for (let i = 0; i < 30; i++) {
         await new Promise(r => setTimeout(r, 2000));
         const statusRes = await fetch(`/api/answers/${answerId}/status`);
         const statusData = await statusRes.json();
         
-        if (statusData.status === "EVALUATED") {
+        if (statusData.status === "TRANSCRIBED") {
+          setProcessingStep("Evaluation in progress...");
+          setProcessingProgress(75);
+        } else if (statusData.status === "EVALUATED") {
+          setProcessingStep("Finished.");
+          setProcessingProgress(100);
           evaluation = statusData.evaluation;
           transcript = statusData.transcript;
           break;
         } else if (statusData.status === "NEEDS_RETRY") {
-          throw new Error("Answer too short or unclear. Please try again.");
+          setStatus("needs_retry" as any);
+          setError("Your response was too short or unclear. Please provide a more detailed explanation.");
+          return;
+        } else if (statusData.status === "FAILED") {
+          throw new Error("AI processing failed. Please try again.");
+        }
+        
+        // Minor incremental updates to keep it "alive" during long waits
+        if (statusData.status === "UPLOADED" && i > 5) {
+          const fakeProgress = Math.min(50 + (i * 1), 74);
+          setProcessingProgress(fakeProgress);
+          setProcessingStep("Transcribing voice...");
+        } else if (statusData.status === "TRANSCRIBED" && i > 5) {
+          const fakeProgress = Math.min(75 + (i * 0.5), 98);
+          setProcessingProgress(fakeProgress);
+          setProcessingStep("Running AI evaluation...");
         }
       }
 
-      if (!evaluation) throw new Error("Evaluation timed out. Please try again.");
+      if (!evaluation) {
+        setStatus("error");
+        setError("Evaluation timed out. Please try again.");
+        return;
+      }
 
       const nextAnswers = [...answers, { 
         questionId: currentQuestion.id, 
@@ -270,7 +318,7 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
       setError(err instanceof Error ? err.message : "Failed to process answer.");
       setStatus("error" as any);
     }
-  }, [currentQuestion, session, answers, hasAskedFollowUp, questionIndex, questions.length]);
+  }, [currentQuestion, session, answers, hasAskedFollowUp, questionIndex, questions.length, startGlobalTimer]);
 
   useEffect(() => {
     return () => {
@@ -288,6 +336,7 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
     answers,
     status,
     processingStep,
+    processingProgress,
     error,
     totalTimeLeft,
     startAssessment,

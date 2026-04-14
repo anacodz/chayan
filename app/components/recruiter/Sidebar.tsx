@@ -6,11 +6,11 @@ import CuemathLogo from "../CuemathLogo";
 import { signOut } from "next-auth/react";
 
 const NAV_ITEMS = [
-  { icon: "dashboard",         label: "Overview",        href: "/recruiter", active: true  },
-  { icon: "record_voice_over", label: "Live Sessions",   href: "/recruiter", active: false },
-  { icon: "settings_voice",    label: "Voice Quality",   href: "/recruiter", active: false },
-  { icon: "psychology",        label: "Scoring Models",  href: "/recruiter", active: false },
-  { icon: "group",             label: "Team",            href: "/recruiter", active: false },
+  { icon: "dashboard",         label: "Overview",        href: "/recruiter" },
+  { icon: "record_voice_over", label: "Live Sessions",   href: "/recruiter/live" },
+  { icon: "settings_voice",    label: "Voice Quality",   href: "/recruiter/quality" },
+  { icon: "psychology",        label: "Scoring Models",  href: "/admin/questions" },
+  { icon: "group",             label: "Team",            href: "/recruiter" },
 ] as const;
 
 export default function Sidebar() {

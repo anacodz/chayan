@@ -82,6 +82,11 @@
   - Added multi-question set support to the Invite Modal for targeted screening.
   - Refined print-only styles for high-quality PDF report generation.
 
+### Sprint 2 - Candidate Experience & UX Polish
+- **[BACKLOG-018] Candidate Retry UX Improvement**
+  - Replaced generic error message with a dedicated `needs_retry` visual state in `Interview.tsx`.
+  - Updated polling in `useInterviewSession` to gracefully handle `NEEDS_RETRY` responses from the backend without breaking the application flow.
+
 ## Technical Notes
 - **Security Patterns**: Prepped `lib/storage.ts` for time-limited signed URLs to protect candidate audio (Milestone 4b).
 - **Scalable Architecture**: Moved long-running AI tasks to background workers using Inngest.

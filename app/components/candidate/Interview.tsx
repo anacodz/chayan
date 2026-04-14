@@ -7,10 +7,11 @@ interface InterviewProps {
   questionIndex: number;
   totalQuestions: number;
   currentQuestion: Question | { id: string; prompt: string; guidance?: string; competencyTags?: string[] };
-  status: "idle" | "recording" | "processing" | "error";
+  status: "idle" | "recording" | "processing" | "error" | "needs_retry";
   elapsed: number; // This is now timeLeft from parent
   maxSeconds: number;
   processingStep: string;
+  processingProgress: number;
   error: string;
   waveform: number[];
   onStartRecording: () => void;
@@ -33,6 +34,7 @@ export default function Interview({
   status,
   elapsed,
   processingStep,
+  processingProgress,
   error,
   waveform,
   onStartRecording,
@@ -128,13 +130,45 @@ export default function Interview({
                   </div>
                   <p className="text-xs text-on-surface-variant font-medium">Capturing your voice response...</p>
                 </>
-              ) : status === "processing" ? (
+              ) : status === "needs_retry" ? (
                 <div className="flex flex-col items-center gap-4 py-8 text-center">
-                  <svg className="animate-spin w-10 h-10 text-primary" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                  </svg>
-                  <p className="text-sm font-bold text-on-surface">{processingStep}</p>
+                  <div className="w-16 h-16 rounded-full bg-error-container/50 flex items-center justify-center text-error">
+                    <span className="material-symbols-outlined text-3xl">replay</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-on-surface">Please try again</p>
+                    <p className="text-xs text-on-surface-variant max-w-[240px] mt-2 mx-auto leading-relaxed">{error || "We couldn't clearly hear your response. Please re-record your answer."}</p>
+                  </div>
+                </div>
+              ) : status === "processing" ? (
+                <div className="flex flex-col items-center gap-6 py-4 w-full text-center">
+                  <div className="relative w-20 h-20 flex items-center justify-center">
+                    <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r="45" fill="transparent" stroke="currentColor" strokeWidth="8" className="text-surface-container-high" />
+                      <circle cx="50" cy="50" r="45" fill="transparent" stroke="currentColor" strokeWidth="8" strokeDasharray={2 * Math.PI * 45} strokeDashoffset={2 * Math.PI * 45 * (1 - processingProgress / 100)} strokeLinecap="round" className="text-primary transition-all duration-500" />
+                    </svg>
+                    <span className="absolute text-sm font-black text-primary">{processingProgress}%</span>
+                  </div>
+                  <div className="space-y-2 w-full px-4">
+                    <p className="text-sm font-bold text-on-surface">{processingStep}</p>
+                    <div className="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+                      <div className="h-full bg-primary transition-all duration-500" style={{ width: `${processingProgress}%` }} />
+                    </div>
+                  </div>
+                  <div className="flex justify-between w-full px-8 mt-2">
+                    <div className={`flex flex-col items-center gap-1 ${processingProgress >= 25 ? 'text-primary' : 'text-on-surface-variant/30'}`}>
+                      <span className="material-symbols-outlined text-sm">{processingProgress >= 25 ? 'check_circle' : 'upload'}</span>
+                      <span className="text-[8px] font-bold uppercase">Upload</span>
+                    </div>
+                    <div className={`flex flex-col items-center gap-1 ${processingProgress >= 75 ? 'text-primary' : 'text-on-surface-variant/30'}`}>
+                      <span className="material-symbols-outlined text-sm">{processingProgress >= 75 ? 'check_circle' : 'text_fields'}</span>
+                      <span className="text-[8px] font-bold uppercase">Transcribe</span>
+                    </div>
+                    <div className={`flex flex-col items-center gap-1 ${processingProgress >= 100 ? 'text-primary' : 'text-on-surface-variant/30'}`}>
+                      <span className="material-symbols-outlined text-sm">{processingProgress >= 100 ? 'check_circle' : 'psychology'}</span>
+                      <span className="text-[8px] font-bold uppercase">Evaluate</span>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-4 py-8">
@@ -154,17 +188,17 @@ export default function Interview({
                 >
                   <span className="material-symbols-outlined">stop</span> Stop Recording
                 </button>
-              ) : (status === "idle" || status === "error") ? (
+              ) : (status === "idle" || status === "error" || status === "needs_retry") ? (
                 <button 
-                  onClick={startRecordingInternal} 
+                  onClick={onStartRecording} 
                   className="w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-5 premium-gradient rounded-2xl text-white font-bold text-base sm:text-lg shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all"
                 >
-                  <span className="material-symbols-outlined">mic</span> {status === "error" ? "Try Again" : "Start Recording"}
+                  <span className="material-symbols-outlined">mic</span> {status === "error" || status === "needs_retry" ? "Try Again" : "Start Recording"}
                 </button>
               ) : null}
             </div>
             
-            {error && (
+            {error && status !== "needs_retry" && (
               <div className="mt-6 bg-error-container text-on-error-container text-sm rounded-xl px-4 py-3 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px]">error</span>
                 {error}
@@ -190,8 +224,4 @@ export default function Interview({
       </main>
     </div>
   );
-
-  function startRecordingInternal() {
-    onStartRecording();
-  }
 }
