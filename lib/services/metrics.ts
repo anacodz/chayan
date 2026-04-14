@@ -6,6 +6,9 @@ export interface DashboardMetrics {
   avgTimeToReportMs: number;
   sttFallbackRate: number;
   avgConfidence: number;
+  totalCostUSD: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
   funnel: {
     invited: number;
     started: number;
@@ -18,14 +21,41 @@ export interface DashboardMetrics {
  * Service to calculate system KPIs as defined in PDD §16.
  */
 export async function getSystemMetrics(): Promise<DashboardMetrics> {
-  const [totalSessions, startedSessions, completedSessions, reviewedSessions, totalAnswers, fallbackAnswers] = await Promise.all([
+  const [
+    totalSessions, 
+    startedSessions, 
+    completedSessions, 
+    reviewedSessions, 
+    totalAnswers, 
+    fallbackAnswers,
+    evalUsage,
+    reportUsage
+  ] = await Promise.all([
     prisma.interviewSession.count(),
     prisma.interviewSession.count({ where: { status: { notIn: ["INVITED", "EXPIRED"] } } }),
     prisma.interviewSession.count({ where: { status: "COMPLETED" } }),
     prisma.recruiterDecision.count(),
     prisma.answer.count(),
     prisma.transcript.count({ where: { provider: "openai" } }), // OpenAI is our fallback
+    prisma.answerEvaluation.aggregate({
+      _sum: {
+        costUSD: true,
+        inputTokens: true,
+        outputTokens: true,
+      }
+    }),
+    prisma.finalReport.aggregate({
+      _sum: {
+        costUSD: true,
+        inputTokens: true,
+        outputTokens: true,
+      }
+    })
   ]);
+
+  const totalCostUSD = (evalUsage._sum.costUSD || 0) + (reportUsage._sum.costUSD || 0);
+  const totalInputTokens = (evalUsage._sum.inputTokens || 0) + (reportUsage._sum.inputTokens || 0);
+  const totalOutputTokens = (evalUsage._sum.outputTokens || 0) + (reportUsage._sum.outputTokens || 0);
 
   // Calculate completion rate
   const completionRate = totalSessions > 0 ? (completedSessions / totalSessions) : 0;
@@ -66,6 +96,9 @@ export async function getSystemMetrics(): Promise<DashboardMetrics> {
     avgTimeToReportMs,
     sttFallbackRate,
     avgConfidence: evaluations._avg.confidence || 0,
+    totalCostUSD,
+    totalInputTokens,
+    totalOutputTokens,
     funnel: {
       invited: totalSessions,
       started: startedSessions,

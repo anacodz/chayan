@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   const session = await auth();
 
   const isTokenValid = requiredAdminToken && providedAdminToken === requiredAdminToken;
-  const isSessionValid = !!session;
+  const isSessionValid = !!(session?.user && (session.user as { role?: string }).role === "ADMIN");
 
   if (!isTokenValid && !isSessionValid) {
     logger.warn({ requestId }, "Unauthorized metrics access attempt");
