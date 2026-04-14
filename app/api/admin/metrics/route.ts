@@ -4,6 +4,8 @@ import { logger } from "@/lib/logger";
 import { v4 as uuidv4 } from "uuid";
 import { auth } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   const requestId = uuidv4();
 

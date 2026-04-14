@@ -39,7 +39,15 @@ export default function AdminLayout({
             <span className="font-medium text-sm">System Metrics</span>
           </Link>
           <Link
-            href="/admin/data-privacy"
+            href="/admin/calibration"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:translate-x-1 text-secondary hover:bg-surface-container-high"
+          >
+            <span className="material-symbols-outlined">biotech</span>
+            <span className="font-medium text-sm">Model Calibration</span>
+          </Link>
+          <Link
+            href="/admin/deletion"
+
             className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:translate-x-1 text-secondary hover:bg-surface-container-high"
           >
             <span className="material-symbols-outlined">delete_forever</span>
