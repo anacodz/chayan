@@ -19,7 +19,6 @@ export async function GET(
     }
 
     // Don't return the sensitive hash
-    // @ts-ignore
     const { inviteTokenHash, ...safeSession } = session!;
 
     return NextResponse.json({ session: safeSession });

@@ -4,9 +4,10 @@ export async function withRetry<T>(
     maxRetries?: number;
     delayMs?: number;
     backoff?: boolean;
+    jitter?: boolean;
   } = {}
 ): Promise<T> {
-  const { maxRetries = 3, delayMs = 1000, backoff = true } = options;
+  const { maxRetries = 3, delayMs = 1000, backoff = true, jitter = true } = options;
   let lastError: unknown;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -15,7 +16,14 @@ export async function withRetry<T>(
     } catch (error) {
       lastError = error;
       if (attempt < maxRetries - 1) {
-        const delay = backoff ? delayMs * Math.pow(2, attempt) : delayMs;
+        let delay = backoff ? delayMs * Math.pow(2, attempt) : delayMs;
+        
+        if (jitter) {
+          // Add random jitter of +/- 20%
+          const jitterAmount = delay * 0.2;
+          delay = delay - jitterAmount + Math.random() * (jitterAmount * 2);
+        }
+
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }

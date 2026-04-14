@@ -63,6 +63,16 @@ export async function transcribeAudioService(audioFile: File | Blob): Promise<Tr
   throw new Error("No transcription provider configured.");
 }
 
+export interface EvaluationResult extends AnswerEvaluation {
+  model: string;
+  promptVersion: string;
+  schemaVersion: string;
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+  };
+}
+
 /**
  * Core evaluation logic using Gemini Flash with Zod validation and repair retry.
  */
@@ -70,12 +80,23 @@ export async function evaluateAnswerService(
   question: string,
   transcript: string,
   competencyTags: string[]
-): Promise<AnswerEvaluation> {
+): Promise<EvaluationResult> {
+  const modelName = "gemini-2.0-flash";
+  const promptVersion = "v1.2";
+  const schemaVersion = "v1";
+
   if (!env.GEMINI_API_KEY) {
-    return fallbackEvaluate(transcript) as any;
+    return {
+      ...(fallbackEvaluate(transcript) as any),
+      model: "fallback",
+      promptVersion,
+      schemaVersion,
+    };
   }
 
   const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+  const model = ai.getGenerativeModel({ model: modelName });
+  
   const prompt = `Evaluate this tutor screening answer.
 
 Question: ${question}
@@ -104,24 +125,21 @@ Scores must be 1 to 5. Confidence must be 0 to 1. Ground every judgment in the t
 If the answer is too short, vague, or missing key competency signals, provide a short, targeted follow-up question in "followUpQuestion". Otherwise, set it to null.`;
 
   try {
-    const response = await withRetry(async () => {
-      return await ai.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: prompt
-      });
+    const result = await withRetry(async () => {
+      return await model.generateContent(prompt);
     });
 
-    const text = response.text || "";
+    const response = await result.response;
+    const text = response.text() || "";
     const rawJson = extractJsonObject<any>(text);
     
+    let evaluation: AnswerEvaluation;
     try {
-      return AnswerEvaluationSchema.parse(rawJson);
+      evaluation = AnswerEvaluationSchema.parse(rawJson);
     } catch (parseError) {
       logger.warn({ error: parseError, text }, "Evaluation JSON schema mismatch, attempting repair");
       
-      const repairResponse = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: `The following JSON did not match the required schema:
+      const repairResult = await model.generateContent(`The following JSON did not match the required schema:
 ${JSON.stringify(rawJson)}
 
 Error: ${parseError instanceof Error ? parseError.message : String(parseError)}
@@ -129,15 +147,31 @@ Error: ${parseError instanceof Error ? parseError.message : String(parseError)}
 Please fix the JSON to strictly match this schema:
 ${JSON.stringify(AnswerEvaluationSchema.shape)}
 
-Return fixed JSON only.`
-      });
+Return fixed JSON only.`);
       
-      const repairedJson = extractJsonObject<any>(repairResponse.text || "");
-      return AnswerEvaluationSchema.parse(repairedJson);
+      const repairResponse = await repairResult.response;
+      const repairedJson = extractJsonObject<any>(repairResponse.text() || "");
+      evaluation = AnswerEvaluationSchema.parse(repairedJson);
     }
+
+    return {
+      ...evaluation,
+      model: modelName,
+      promptVersion,
+      schemaVersion,
+      usage: response.usageMetadata ? {
+        inputTokens: response.usageMetadata.promptTokenCount,
+        outputTokens: response.usageMetadata.candidatesTokenCount
+      } : undefined
+    };
   } catch (error) {
     logger.error({ error }, "Evaluation service failed after retries");
-    return fallbackEvaluate(transcript) as any;
+    return {
+      ...(fallbackEvaluate(transcript) as any),
+      model: modelName,
+      promptVersion,
+      schemaVersion,
+    };
   }
 }
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Answer, AnswerEvaluation, Question } from "@/lib/types";
+import { apiClient, ApiError } from "@/lib/api-client";
 
 export type Phase = "loading" | "invalid" | "consent" | "interview" | "complete" | "security_violation";
 
@@ -43,11 +44,7 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
         // Heartbeat every 10 seconds
         tickCount++;
         if (tickCount >= 10 && sessionId) {
-          fetch(`/api/interviews/${sessionId}/heartbeat`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ secondsToAdd: 10 }),
-          }).catch(console.error);
+          apiClient.interviews.postHeartbeat(sessionId, 10).catch(console.error);
           tickCount = 0;
         }
 
@@ -68,9 +65,8 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
         let currentSessionId = "";
         
         if (token) {
-          const sRes = await fetch(`/api/invites/${token}`);
-          if (sRes.ok) {
-            const sData = await sRes.json();
+          try {
+            const sData = await apiClient.interviews.getInvite(token);
             if (sData.session) {
               setSession(sData.session);
               currentSessionId = sData.session.id;
@@ -133,12 +129,13 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
                 restoredPhase = "interview";
               }
             }
+          } catch (e) {
+            console.warn("Invite token invalid or session not found", e);
           }
         }
         
-        const qRes = await fetch(`/api/questions?questionSetId=${qSetId}`);
-        if (qRes.ok) {
-          const qData = await qRes.json();
+        try {
+          const qData = await apiClient.questions.list(qSetId);
           const fetchedQuestions = qData.questions || [];
           setQuestions(fetchedQuestions);
           
@@ -158,7 +155,7 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
             }
             setPhase(restoredPhase);
           }
-        } else {
+        } catch (e) {
           setPhase("invalid");
         }
       } catch (err) {
@@ -185,13 +182,7 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
 
   const startAssessment = useCallback(async () => {
     if (session?.id) {
-      try {
-        await fetch(`/api/interviews/${session.id}/consent`, {
-          method: "POST",
-        });
-      } catch (err) {
-        console.error("Failed to record consent:", err);
-      }
+      apiClient.interviews.postConsent(session.id).catch(console.error);
     }
 
     const totalDuration = (questions || []).reduce((acc, q) => acc + (q?.maxDurationSeconds || 90), 0);
@@ -217,10 +208,8 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
 
       setProcessingStep("Uploading voice recording...");
       setProcessingProgress(25);
-      const uploadRes = await fetch("/api/answers/upload", { method: "POST", body: form });
-      if (!uploadRes.ok) throw new Error("Upload failed. Please try again.");
       
-      const uploadData = await uploadRes.json();
+      const uploadData = await apiClient.answers.upload(form);
       const answerId = uploadData.answerId;
 
       let evaluation: AnswerEvaluation | null = null;
@@ -229,38 +218,43 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
       setProcessingStep("Voice uploaded. Transcribing...");
       setProcessingProgress(50);
 
-      // Polling for evaluation with progressive percentage updates
-      for (let i = 0; i < 30; i++) {
+      // Robust polling for evaluation
+      const maxRetries = 45; // Increased timeout
+      for (let i = 0; i < maxRetries; i++) {
         await new Promise(r => setTimeout(r, 2000));
-        const statusRes = await fetch(`/api/answers/${answerId}/status`);
-        const statusData = await statusRes.json();
         
-        if (statusData.status === "TRANSCRIBED") {
-          setProcessingStep("Evaluation in progress...");
-          setProcessingProgress(75);
-        } else if (statusData.status === "EVALUATED") {
-          setProcessingStep("Finished.");
-          setProcessingProgress(100);
-          evaluation = statusData.evaluation;
-          transcript = statusData.transcript;
-          break;
-        } else if (statusData.status === "NEEDS_RETRY") {
-          setStatus("needs_retry" as any);
-          setError("Your response was too short or unclear. Please provide a more detailed explanation.");
-          return;
-        } else if (statusData.status === "FAILED") {
-          throw new Error("AI processing failed. Please try again.");
-        }
-        
-        // Minor incremental updates to keep it "alive" during long waits
-        if (statusData.status === "UPLOADED" && i > 5) {
-          const fakeProgress = Math.min(50 + (i * 1), 74);
-          setProcessingProgress(fakeProgress);
-          setProcessingStep("Transcribing voice...");
-        } else if (statusData.status === "TRANSCRIBED" && i > 5) {
-          const fakeProgress = Math.min(75 + (i * 0.5), 98);
-          setProcessingProgress(fakeProgress);
-          setProcessingStep("Running AI evaluation...");
+        try {
+          const statusData = await apiClient.answers.getStatus(answerId);
+          
+          if (statusData.status === "TRANSCRIBED") {
+            setProcessingStep("Evaluation in progress...");
+            setProcessingProgress(75);
+          } else if (statusData.status === "EVALUATED") {
+            setProcessingStep("Finished.");
+            setProcessingProgress(100);
+            evaluation = statusData.evaluation;
+            transcript = statusData.transcript || "";
+            break;
+          } else if (statusData.status === "NEEDS_RETRY") {
+            setStatus("needs_retry");
+            setError("Your response was too short or unclear. Please provide a more detailed explanation.");
+            return;
+          } else if (statusData.status === "FAILED") {
+            throw new Error("AI processing failed. Please try again.");
+          }
+          
+          // Minor incremental updates
+          if (statusData.status === "UPLOADED" && i > 5) {
+            const fakeProgress = Math.min(50 + (i * 0.8), 74);
+            setProcessingProgress(fakeProgress);
+            setProcessingStep("Transcribing voice...");
+          } else if (statusData.status === "TRANSCRIBED" && i > 5) {
+            const fakeProgress = Math.min(75 + (i * 0.4), 98);
+            setProcessingProgress(fakeProgress);
+            setProcessingStep("Running AI evaluation...");
+          }
+        } catch (e) {
+          console.error("Polling status error", e);
         }
       }
 
@@ -289,22 +283,13 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
       setHasAskedFollowUp(false);
 
       if (questionIndex === questions.length - 1) {
-        // Build final report
-        await fetch("/api/summarize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ answers: nextAnswers, sessionId: session?.id }),
-        });
+        setProcessingStep("Finalizing report...");
+        setProcessingProgress(90);
+        
+        await apiClient.reports.summarize(session?.id || "demo", nextAnswers);
 
-        // Mark interview as complete in database
         if (session?.id) {
-          try {
-            await fetch(`/api/interviews/${session.id}/complete`, {
-              method: "POST",
-            });
-          } catch (err) {
-            console.error("Failed to mark interview as complete:", err);
-          }
+          apiClient.interviews.postComplete(session.id).catch(console.error);
         }
 
         if (globalTimerRef.current) clearInterval(globalTimerRef.current);
@@ -315,8 +300,8 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
       }
     } catch (err) {
       console.error("Answer submission failed:", err);
-      setError(err instanceof Error ? err.message : "Failed to process answer.");
-      setStatus("error" as any);
+      setError(err instanceof ApiError ? err.message : "Failed to process answer.");
+      setStatus("error");
     }
   }, [currentQuestion, session, answers, hasAskedFollowUp, questionIndex, questions.length, startGlobalTimer]);
 

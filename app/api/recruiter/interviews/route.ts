@@ -43,6 +43,7 @@ export async function GET(req: Request) {
         include: {
           candidate: true,
           finalReport: true,
+          recruiterDecision: true,
         },
         orderBy: {
           createdAt: "desc",

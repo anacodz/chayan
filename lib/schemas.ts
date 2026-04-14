@@ -17,6 +17,10 @@ export const AnswerEvaluationSchema = z.object({
   dimensionScores: DimensionScoresSchema,
   confidence: z.number().min(0).max(1),
   followUpQuestion: z.string().nullable().optional(),
+  requiresHumanReview: z.boolean().optional(),
+  isHumanReviewed: z.boolean().optional(),
+  humanDimensionScores: DimensionScoresSchema.optional(),
+  humanReasoning: z.string().optional(),
 });
 
 export const FinalReportSchema = z.object({

@@ -41,9 +41,9 @@ export async function POST(request: Request) {
             },
             evaluation: {
               create: {
-                model: "gemini-2.0-flash",
-                promptVersion: "1.0",
-                schemaVersion: "1.0",
+                model: evaluation.model,
+                promptVersion: evaluation.promptVersion,
+                schemaVersion: evaluation.schemaVersion,
                 transcriptHash: "hash",
                 communicationClarity: evaluation.dimensionScores.communicationClarity,
                 conceptExplanation: evaluation.dimensionScores.conceptExplanation,

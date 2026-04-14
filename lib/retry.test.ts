@@ -33,12 +33,10 @@ describe("withRetry utility", () => {
 
   it("applies exponential backoff correctly", async () => {
     vi.useFakeTimers();
-    // Use an async function that throws instead of a returned rejected promise to avoid unhandled rejections
-    const fn = vi.fn(async () => {
-      throw new Error("failure");
-    });
+    const fn = vi.fn(async () => { throw new Error("failure"); });
     
-    const promise = withRetry(fn, { maxRetries: 3, delayMs: 100, backoff: true });
+    const promise = withRetry(fn, { maxRetries: 3, delayMs: 100, backoff: true, jitter: false });
+    promise.catch(() => {}); // Prevent unhandled rejection warning
     
     // Attempt 1: fails immediately
     await vi.advanceTimersByTimeAsync(0);
@@ -58,11 +56,10 @@ describe("withRetry utility", () => {
 
   it("uses constant delay if backoff is disabled", async () => {
     vi.useFakeTimers();
-    const fn = vi.fn(async () => {
-      throw new Error("failure");
-    });
+    const fn = vi.fn(async () => { throw new Error("failure"); });
     
-    const promise = withRetry(fn, { maxRetries: 3, delayMs: 100, backoff: false });
+    const promise = withRetry(fn, { maxRetries: 3, delayMs: 100, backoff: false, jitter: false });
+    promise.catch(() => {}); // Prevent unhandled rejection warning
     
     // Attempt 1
     await vi.advanceTimersByTimeAsync(0);
@@ -75,6 +72,30 @@ describe("withRetry utility", () => {
     // Attempt 3
     await vi.advanceTimersByTimeAsync(100);
     expect(fn).toHaveBeenCalledTimes(3);
+    
+    await expect(promise).rejects.toThrow("failure");
+    vi.useRealTimers();
+  });
+
+  it("applies jitter correctly", async () => {
+    vi.useFakeTimers();
+    const fn = vi.fn(async () => { throw new Error("failure"); });
+    
+    // With jitter=true, delay should be within +/- 20% of 1000ms
+    const promise = withRetry(fn, { maxRetries: 2, delayMs: 1000, jitter: true });
+    promise.catch(() => {});
+    
+    // Attempt 1
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fn).toHaveBeenCalledTimes(1);
+    
+    // 800ms to 1200ms
+    await vi.advanceTimersByTimeAsync(800);
+    // At 800ms, it might have triggered or not. Let's just check that it triggers eventually.
+    // This is hard to test with exact timers because of Math.random().
+    // But we can check it DOES trigger after 1200ms.
+    await vi.advanceTimersByTimeAsync(401);
+    expect(fn).toHaveBeenCalledTimes(2);
     
     await expect(promise).rejects.toThrow("failure");
     vi.useRealTimers();

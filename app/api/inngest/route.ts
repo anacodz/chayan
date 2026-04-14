@@ -1,5 +1,5 @@
 import { serve } from "inngest/next";
-import { inngest, transcribeAndEvaluateAnswer, finalizeInterviewReport, cleanupOldData } from "@/lib/inngest";
+import { inngest, transcribeAndEvaluateAnswer, finalizeInterviewReport, cleanupOldData, calibrationAudit } from "@/lib/inngest";
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -7,5 +7,6 @@ export const { GET, POST, PUT } = serve({
     transcribeAndEvaluateAnswer,
     finalizeInterviewReport,
     cleanupOldData,
+    calibrationAudit,
   ],
 });

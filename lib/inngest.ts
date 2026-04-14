@@ -107,45 +107,36 @@ export const transcribeAndEvaluateAnswer = inngest.createFunction(
           .update(transcriptionResult.text)
           .digest("hex");
 
+        const data = {
+          answerId,
+          modelProvider: "google",
+          model: evaluation.model,
+          promptVersion: evaluation.promptVersion,
+          schemaVersion: evaluation.schemaVersion,
+          transcriptHash,
+          communicationClarity: Math.round(evaluation.dimensionScores.communicationClarity),
+          conceptExplanation: Math.round(evaluation.dimensionScores.conceptExplanation),
+          empathyAndPatience: Math.round(evaluation.dimensionScores.empathyAndPatience),
+          adaptability: Math.round(evaluation.dimensionScores.adaptability),
+          professionalism: Math.round(evaluation.dimensionScores.professionalism),
+          englishFluency: Math.round(evaluation.dimensionScores.englishFluency),
+          confidence: evaluation.confidence,
+          evidence: evaluation.signals,
+          concerns: evaluation.redFlags,
+          followUpQuestion: evaluation.followUpQuestion ?? null,
+          requiresHumanReview: false,
+          inputTokens: evaluation.usage?.inputTokens,
+          outputTokens: evaluation.usage?.outputTokens,
+          // Estimate cost: Gemini 2.0 Flash is $0.10 / 1M input tokens, $0.40 / 1M output tokens
+          costUSD: evaluation.usage 
+            ? (evaluation.usage.inputTokens * 0.10 + evaluation.usage.outputTokens * 0.40) / 1_000_000
+            : null,
+        };
+
         await prisma.answerEvaluation.upsert({
           where: { answerId },
-          create: {
-            answerId,
-            modelProvider: "google",
-            model: "gemini-2.0-flash",
-            promptVersion: "v1",
-            schemaVersion: "v1",
-            transcriptHash,
-            communicationClarity: Math.round(evaluation.dimensionScores.communicationClarity),
-            conceptExplanation: Math.round(evaluation.dimensionScores.conceptExplanation),
-            empathyAndPatience: Math.round(evaluation.dimensionScores.empathyAndPatience),
-            adaptability: Math.round(evaluation.dimensionScores.adaptability),
-            professionalism: Math.round(evaluation.dimensionScores.professionalism),
-            englishFluency: Math.round(evaluation.dimensionScores.englishFluency),
-            confidence: evaluation.confidence,
-            evidence: evaluation.signals,
-            concerns: evaluation.redFlags,
-            followUpQuestion: evaluation.followUpQuestion ?? null,
-            requiresHumanReview: false,
-          },
-          update: {
-            modelProvider: "google",
-            model: "gemini-2.0-flash",
-            promptVersion: "v1",
-            schemaVersion: "v1",
-            transcriptHash,
-            communicationClarity: Math.round(evaluation.dimensionScores.communicationClarity),
-            conceptExplanation: Math.round(evaluation.dimensionScores.conceptExplanation),
-            empathyAndPatience: Math.round(evaluation.dimensionScores.empathyAndPatience),
-            adaptability: Math.round(evaluation.dimensionScores.adaptability),
-            professionalism: Math.round(evaluation.dimensionScores.professionalism),
-            englishFluency: Math.round(evaluation.dimensionScores.englishFluency),
-            confidence: evaluation.confidence,
-            evidence: evaluation.signals,
-            concerns: evaluation.redFlags,
-            followUpQuestion: evaluation.followUpQuestion ?? null,
-            requiresHumanReview: false,
-          },
+          create: data,
+          update: data,
         });
 
         await prisma.answer.update({
@@ -214,7 +205,7 @@ export const finalizeInterviewReport = inngest.createFunction(
       }));
     });
 
-    const report = await step.run("generate-final-report", async () => {
+    const reportData = await step.run("generate-final-report", async () => {
       const { GoogleGenAI } = await import("@google/genai");
       const { FinalReportSchema } = await import("./schemas");
       const { extractJsonObject } = await import("./json");
@@ -222,11 +213,12 @@ export const finalizeInterviewReport = inngest.createFunction(
       const { withRetry } = await import("./retry");
 
       if (!env.GEMINI_API_KEY) {
-        return fallbackSummarize(answers as any);
+        return { report: fallbackSummarize(answers as any), usage: undefined };
       }
 
       const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
       const modelName = "gemini-1.5-pro"; 
+      const model = ai.getGenerativeModel({ model: modelName });
 
       const prompt = `Create a high-fidelity final tutor screening report from these structured answers.
 
@@ -252,49 +244,59 @@ Return JSON only with this shape:
 
 Use only evidence from the transcripts. Scores should be 1-5. Confidence 0-1. Be critical but fair.`;
 
-      const response = await withRetry(async () => {
-        return await ai.models.generateContent({
-          model: modelName,
-          contents: prompt
-        });
+      const result = await withRetry(async () => {
+        return await model.generateContent(prompt);
       });
 
-      const text = response.text || "";
+      const response = await result.response;
+      const text = response.text() || "";
       const rawJson = extractJsonObject<any>(text);
-      return FinalReportSchema.parse(rawJson);
+      const report = FinalReportSchema.parse(rawJson);
+      
+      return {
+        report,
+        usage: response.usageMetadata ? {
+          inputTokens: response.usageMetadata.promptTokenCount,
+          outputTokens: response.usageMetadata.candidatesTokenCount
+        } : undefined
+      };
     });
 
     await step.run("save-final-report", async () => {
+      const { report, usage } = reportData;
       const averageScore = (scores: any) => {
         const vals = Object.values(scores) as number[];
         return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
       };
 
+      const data = {
+        sessionId,
+        recommendation: report.recommendation as any,
+        overallScore: averageScore(report.dimensionScores),
+        confidence: report.confidence || 0.8,
+        strengths: report.strengths,
+        risks: report.concerns,
+        suggestedFollowUps: [report.nextStep],
+        evidenceByQuestion: answers.map(a => ({
+          questionId: a.questionId,
+          transcriptExcerpt: a.transcript.slice(0, 100),
+          rationale: "Evaluated in context of whole interview."
+        })),
+        model: "gemini-1.5-pro",
+        promptVersion: "v1",
+        schemaVersion: "v1",
+        inputTokens: usage?.inputTokens,
+        outputTokens: usage?.outputTokens,
+        // Gemini 1.5 Pro: $1.25 / 1M input, $5.00 / 1M output (rough estimate for under 128k context)
+        costUSD: usage 
+          ? (usage.inputTokens * 1.25 + usage.outputTokens * 5.00) / 1_000_000
+          : null,
+      };
+
       await prisma.finalReport.upsert({
         where: { sessionId },
-        create: {
-          sessionId,
-          recommendation: report.recommendation as any,
-          overallScore: averageScore(report.dimensionScores),
-          confidence: report.confidence || 0.8,
-          strengths: report.strengths,
-          risks: report.concerns,
-          suggestedFollowUps: [report.nextStep],
-          evidenceByQuestion: answers.map(a => ({
-            questionId: a.questionId,
-            transcriptExcerpt: a.transcript.slice(0, 100),
-            rationale: "Evaluated in context of whole interview."
-          })),
-          model: "gemini-1.5-pro",
-          promptVersion: "v1",
-          schemaVersion: "v1",
-        },
-        update: {
-          recommendation: report.recommendation as any,
-          overallScore: averageScore(report.dimensionScores),
-          strengths: report.strengths,
-          risks: report.concerns,
-        }
+        create: data,
+        update: data
       });
 
       await prisma.interviewSession.update({
@@ -304,6 +306,81 @@ Use only evidence from the transcripts. Scores should be 1-5. Confidence 0-1. Be
     });
 
     return { sessionId, status: "completed" };
+  }
+);
+
+/**
+ * Automated cron job to audit AI model accuracy against calibration samples.
+ * Runs weekly on Sunday at 1 AM.
+ */
+export const calibrationAudit = inngest.createFunction(
+  {
+    id: "calibration-audit",
+    triggers: [{ cron: "0 1 * * 0" }],
+  },
+  async ({ step }) => {
+    const { getCalibrationSamples, updateCalibrationTimestamp } = await import("./services/calibration");
+    
+    const samples = await step.run("fetch-calibration-samples", async () => {
+      return await getCalibrationSamples();
+    });
+
+    if (samples.length === 0) {
+      return { audited: 0, message: "No calibration samples found" };
+    }
+
+    const auditResults = [];
+
+    for (const sample of samples) {
+      const result = await step.run(`audit-sample-${sample.id}`, async () => {
+        logger.info({ sampleId: sample.id }, "Auditing calibration sample");
+        
+        const evaluation = await evaluateAnswerService(
+          sample.question.prompt,
+          sample.transcript,
+          sample.question.competencyTags
+        );
+
+        const dimensions = [
+          "communicationClarity",
+          "conceptExplanation",
+          "empathyAndPatience",
+          "adaptability",
+          "professionalism",
+          "englishFluency",
+        ];
+
+        const variances = dimensions.map(dim => {
+          const expected = (sample as any)[dim] as number;
+          const actual = Math.round((evaluation.dimensionScores as any)[dim] as number);
+          const delta = Math.abs(expected - actual);
+          
+          if (delta > 1.5) {
+            logger.error(
+              { sampleId: sample.id, dimension: dim, expected, actual, delta },
+              "AI Calibration Drift Detected: Variance exceeds threshold"
+            );
+          }
+
+          return { dim, expected, actual, delta };
+        });
+
+        await updateCalibrationTimestamp(sample.id);
+
+        return {
+          sampleId: sample.id,
+          variances,
+          avgDelta: variances.reduce((acc, v) => acc + v.delta, 0) / variances.length,
+        };
+      });
+
+      auditResults.push(result);
+    }
+
+    return { 
+      audited: samples.length,
+      results: auditResults,
+    };
   }
 );
 
