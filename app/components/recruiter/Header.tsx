@@ -5,12 +5,36 @@ import { usePathname } from "next/navigation";
 import CuemathLogo from "../CuemathLogo";
 import InviteModal from "../InviteModal";
 import { useSession, signOut } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Header() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Check initial theme
+    const savedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    
+    if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+      setIsDarkMode(true);
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+    if (newDarkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  };
 
   const handleInviteSuccess = (url: string) => {
     alert(`Invitation email sent! \n\nFallback Link: ${url}`);
@@ -59,6 +83,17 @@ export default function Header() {
             <span className="material-symbols-outlined text-[18px]">add_circle</span>
             Invite Candidate
           </button>
+          
+          <button 
+            onClick={toggleTheme}
+            className="p-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors"
+            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            <span className="material-symbols-outlined">
+              {isDarkMode ? "light_mode" : "dark_mode"}
+            </span>
+          </button>
+
           <button className="p-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
             <span className="material-symbols-outlined">notifications</span>
           </button>
