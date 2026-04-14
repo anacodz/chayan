@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Link from "next/link";
 import CuemathLogo from "../CuemathLogo";
 
 interface WelcomeProps {
@@ -18,6 +19,16 @@ export default function Welcome({ onAccept, onDecline, session }: WelcomeProps) 
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden bg-background">
+      <div className="absolute top-6 right-6 md:top-8 md:right-10 z-50">
+        <Link 
+          href="/recruiter" 
+          className="px-5 py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant font-bold text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 group border border-outline-variant/10 shadow-sm"
+        >
+          <span className="material-symbols-outlined text-lg group-hover:translate-x-0.5 transition-transform">login</span>
+          Recruiter Login
+        </Link>
+      </div>
+
       <div className="absolute inset-y-0 right-0 w-[38%] bg-[#f0f4f8]/70 pointer-events-none hidden lg:block" />
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>

@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import CuemathLogo from "../CuemathLogo";
+import { signOut } from "next-auth/react";
 
 const NAV_ITEMS = [
   { icon: "dashboard",         label: "Overview",        href: "/recruiter", active: true  },
@@ -45,9 +48,12 @@ export default function Sidebar() {
         <Link href="#" className="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-xl transition-all text-sm font-bold">
           <span className="material-symbols-outlined">help</span>Support
         </Link>
-        <Link href="#" className="flex items-center gap-3 px-4 py-3 text-error hover:bg-error/5 rounded-xl transition-all text-sm font-bold">
+        <button 
+          onClick={() => signOut({ callbackUrl: "/" })}
+          className="w-full flex items-center gap-3 px-4 py-3 text-error hover:bg-error/5 rounded-xl transition-all text-sm font-bold"
+        >
           <span className="material-symbols-outlined">logout</span>Logout
-        </Link>
+        </button>
       </div>
     </aside>
   );

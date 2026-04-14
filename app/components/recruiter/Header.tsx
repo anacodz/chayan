@@ -1,9 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import CuemathLogo from "../CuemathLogo";
+import { useSession } from "next-auth/react";
 
 export default function Header() {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   return (
     <header className="bg-surface/80 backdrop-blur-md sticky top-0 z-40 shadow-[0_4px_20px_rgba(0,46,110,0.04)] border-b border-outline-variant/10">
@@ -46,11 +50,21 @@ export default function Header() {
           <button className="p-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
             <span className="material-symbols-outlined">notifications</span>
           </button>
-          <button className="p-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors hidden md:block">
-            <span className="material-symbols-outlined">settings</span>
-          </button>
-          <div className="w-10 h-10 rounded-full border-2 border-primary/20 p-0.5">
-            <img alt="Recruiter Profile" className="w-full h-full rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9GUYn9C5MP5yXNGUL4LKLq3y0L8f29YPYXlf4sfafldpBoxjsA9r0np-GKF-Zs6qSjnjkGH_nvhhT7kUVdkI0g6a40FOt0raXZ_RD3pLrqdF_ydeDLQWKYYpEnvw8ZD-K9imjQUt3TKj--D_HOrbTOAb2rKH-q9etGx8sx-SVpqybHff2gtUXgk0foZ7wrS436sbwCf4pBz030Z8uus_Ut894b7pYqA0yDRO9DbimQTWRhD2RsVOwIrCbj0mKYFIKeU4LyqyTrVCg" />
+          
+          <div className="flex items-center gap-3 ml-2 border-l border-outline-variant/15 pl-4">
+            <div className="text-right hidden sm:block">
+              <p className="text-xs font-black text-on-surface leading-none">{session?.user?.name || "Recruiter"}</p>
+              <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-tighter mt-1">{session?.user?.email?.split('@')[0] || "Staff"}</p>
+            </div>
+            <div className="w-10 h-10 rounded-full border-2 border-primary/20 p-0.5">
+              {session?.user?.image ? (
+                <img alt="Recruiter Profile" className="w-full h-full rounded-full object-cover" src={session.user.image} />
+              ) : (
+                <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs uppercase">
+                  {session?.user?.name ? session.user.name[0] : "R"}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
