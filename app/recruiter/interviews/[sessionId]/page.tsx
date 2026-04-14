@@ -232,7 +232,7 @@ export default function RecruiterReportDetail() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <div className="max-w-[1920px] mx-auto p-6 md:p-8 lg:p-12">
+      <div id="report-content" className="max-w-[1920px] mx-auto p-6 md:p-8 lg:p-12">
         {/* ── Header ── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 md:mb-12">
           <div>
@@ -245,7 +245,10 @@ export default function RecruiterReportDetail() {
             <p className="text-on-surface-variant text-base md:text-lg max-w-xl">AI-generated evaluation report for screening.</p>
           </div>
           <div className="flex gap-3 flex-shrink-0 no-print">
-            <button onClick={() => window.print()} className="px-5 py-3 rounded-xl bg-surface-container-high text-primary font-bold text-sm flex items-center gap-2 active:scale-95 transition-all">
+            <button 
+              onClick={() => exportToPDF("report-content", `Report-${CANDIDATE_DATA.name.replace(/\s+/g, '-')}.pdf`)} 
+              className="px-5 py-3 rounded-xl bg-surface-container-high text-primary font-bold text-sm flex items-center gap-2 active:scale-95 transition-all"
+            >
               <span className="material-symbols-outlined text-[18px]">download</span><span className="hidden sm:inline">Export PDF</span>
             </button>
             <button 

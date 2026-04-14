@@ -6,14 +6,24 @@ test.describe('Recruiter Flow (Mocked API)', () => {
     await context.addCookies([{
       name: 'next-auth.session-token',
       value: 'mock-token',
-      domain: 'localhost',
-      path: '/',
+      url: 'http://localhost:3000',
     }]);
   });
 
   test('should view candidate and save decision', async ({ page }) => {
     // 1. Mock the interviews list
-    await page.route('/api/recruiter/interviews?skip=0&take=10&search=', async (route) => {
+    await page.route('**/api/auth/session', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          user: { name: 'Admin', email: 'admin@cuemath.com', role: 'ADMIN' },
+          expires: new Date(Date.now() + 86400000).toISOString()
+        }),
+      });
+    });
+
+    await page.route('**/api/recruiter/interviews?*', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -36,7 +46,7 @@ test.describe('Recruiter Flow (Mocked API)', () => {
     });
 
     // 2. Mock the metrics
-    await page.route('/api/admin/metrics', async (route) => {
+    await page.route('**/api/admin/metrics', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -50,7 +60,12 @@ test.describe('Recruiter Flow (Mocked API)', () => {
     });
 
     // 3. Mock the specific interview detail
-    await page.route('/api/recruiter/interviews/session-123', async (route) => {
+    await page.route('**/api/recruiter/interviews/session-123', async (route) => {
+      if (route.request().method() === 'POST') {
+        await route.fulfill({ status: 200 });
+        return;
+      }
+      
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -95,18 +110,11 @@ test.describe('Recruiter Flow (Mocked API)', () => {
       });
     });
 
-    // 4. Mock the decision saving
-    await page.route('/api/recruiter/interviews/session-123', async (route) => {
-      if (route.request().method() === 'POST') {
-        await route.fulfill({ status: 200 });
-      }
-    });
-
     // ─── Execution ───
 
     // Login and view dashboard
     await page.goto('/recruiter');
-    await expect(page.getByText(/Bob/i)).toBeVisible();
+    await expect(page.getByText(/Bob/i).first()).toBeVisible();
     
     // Go to detail
     await page.getByRole('link').filter({ hasText: /visibility/i }).first().click();
@@ -121,7 +129,7 @@ test.describe('Recruiter Flow (Mocked API)', () => {
     
     // Listen for alert
     page.on('dialog', async dialog => {
-      expect(dialog.message()).toContain('success');
+      expect(dialog.message()).toContain('successfully');
       await dialog.dismiss();
     });
 
