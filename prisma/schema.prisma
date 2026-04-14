@@ -136,6 +136,9 @@ model InterviewSession {
   answers            Answer[]
   finalReport        FinalReport?
   recruiterDecision  RecruiterDecision?
+
+  @@index([status])
+  @@index([candidateId])
 }
 
 model Question {
@@ -151,6 +154,9 @@ model Question {
   active             Boolean             @default(true)
   answers            Answer[]
   calibrationSamples CalibrationSample[]
+
+  @@index([questionSetId])
+  @@index([active])
 }
 
 model Answer {
@@ -167,6 +173,9 @@ model Answer {
   updatedAt            DateTime          @updatedAt
   transcript           Transcript?
   evaluation           AnswerEvaluation?
+
+  @@index([sessionId])
+  @@index([status])
 }
 
 model Transcript {
@@ -204,7 +213,18 @@ model AnswerEvaluation {
   concerns                String[]
   followUpQuestion        String?
   requiresHumanReview     Boolean  @default(false)
+  isHumanReviewed         Boolean  @default(false)
+  humanCommunicationClarity Int?
+  humanConceptExplanation   Int?
+  humanEmpathyAndPatience   Int?
+  humanAdaptability         Int?
+  humanProfessionalism      Int?
+  humanEnglishFluency       Int?
+  humanReasoning            String?
   rawModelOutputObjectKey String?
+  inputTokens             Int?
+  outputTokens            Int?
+  costUSD                 Float?
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 }
@@ -224,6 +244,9 @@ model FinalReport {
   promptVersion       String
   schemaVersion       String
   requiresHumanReview Boolean          @default(false)
+  inputTokens         Int?
+  outputTokens        Int?
+  costUSD             Float?
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
 }
@@ -251,6 +274,7 @@ model CalibrationSample {
   professionalism      Int
   englishFluency       Int
   reasoning            String?
+  lastTestedAt         DateTime?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }

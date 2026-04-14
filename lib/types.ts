@@ -31,6 +31,12 @@ export type AnswerEvaluation = {
   followUpQuestion?: string | null;
   /** Set to true when the transcript is too short or unclear to evaluate reliably */
   requiresHumanReview?: boolean;
+  /** Set to true when a human has reviewed the AI evaluation */
+  isHumanReviewed?: boolean;
+  /** Human-provided dimension scores */
+  humanDimensionScores?: DimensionScores;
+  /** Human-provided reasoning */
+  humanReasoning?: string;
 };
 
 export type Question = {
