@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSystemMetrics } from "@/lib/services/metrics";
 import { logger } from "@/lib/logger";
 import { v4 as uuidv4 } from "uuid";
+import { auth } from "@/lib/auth";
 
 export async function GET(req: Request) {
   const requestId = uuidv4();
@@ -9,7 +10,13 @@ export async function GET(req: Request) {
   const requiredAdminToken = process.env.ADMIN_API_TOKEN;
   const providedAdminToken = req.headers.get("x-admin-token");
 
-  if (requiredAdminToken && providedAdminToken !== requiredAdminToken) {
+  // Check for either a valid static token OR an active session
+  const session = await auth();
+
+  const isTokenValid = requiredAdminToken && providedAdminToken === requiredAdminToken;
+  const isSessionValid = !!session;
+
+  if (!isTokenValid && !isSessionValid) {
     logger.warn({ requestId }, "Unauthorized metrics access attempt");
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }

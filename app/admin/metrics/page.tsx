@@ -8,6 +8,12 @@ type DashboardMetrics = {
   avgTimeToReportMs: number;
   sttFallbackRate: number;
   avgConfidence: number;
+  funnel: {
+    invited: number;
+    started: number;
+    completed: number;
+    reviewed: number;
+  };
 };
 
 export default function MetricsDashboard() {
@@ -60,6 +66,13 @@ export default function MetricsDashboard() {
     );
   }
 
+  const funnelData = [
+    { label: "Invited", value: metrics.funnel.invited, color: "bg-outline-variant/20" },
+    { label: "Started", value: metrics.funnel.started, color: "bg-primary/40" },
+    { label: "Completed", value: metrics.funnel.completed, color: "bg-primary" },
+    { label: "Reviewed", value: metrics.funnel.reviewed, color: "bg-tertiary" },
+  ];
+
   return (
     <div className="space-y-8">
       <header className="flex justify-between items-end">
@@ -76,20 +89,52 @@ export default function MetricsDashboard() {
         </button>
       </header>
 
+      {/* Conversion Funnel */}
+      <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm border border-outline-variant/5">
+        <h3 className="text-sm font-bold text-on-surface-variant uppercase tracking-widest mb-8">Candidate Conversion Funnel</h3>
+        <div className="flex flex-col md:flex-row items-end gap-1 min-h-[200px]">
+          {funnelData.map((stage, i) => {
+            const height = metrics.funnel.invited > 0 ? (stage.value / metrics.funnel.invited) * 100 : 0;
+            return (
+              <div key={stage.label} className="flex-1 flex flex-col items-center gap-4 w-full">
+                <div className="w-full flex flex-col justify-end items-center flex-1">
+                   <div 
+                    className={`w-full rounded-t-2xl transition-all duration-700 ${stage.color}`} 
+                    style={{ height: `${Math.max(height, 5)}%` }}
+                   >
+                     <div className="p-4 text-center">
+                        <p className="text-xl font-black text-on-surface">{stage.value}</p>
+                     </div>
+                   </div>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] font-black uppercase text-on-surface-variant tracking-tighter">{stage.label}</p>
+                  {i > 0 && stage.value > 0 && (
+                    <p className="text-[10px] text-tertiary font-bold">
+                      {Math.round((stage.value / funnelData[i-1].value) * 100)}% conv
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Core Funnel */}
+        {/* Core Funnel (Mini) */}
         <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm border border-outline-variant/5">
           <div className="flex justify-between items-start mb-6">
             <div className="p-3 bg-primary/10 rounded-2xl text-primary">
               <span className="material-symbols-outlined">analytics</span>
             </div>
           </div>
-          <p className="text-on-surface-variant font-bold text-xs uppercase tracking-widest">Completion Rate</p>
+          <p className="text-on-surface-variant font-bold text-xs uppercase tracking-widest">Final Completion Rate</p>
           <p className="text-4xl font-black text-on-surface mt-1">{Math.round(metrics.completionRate * 100)}%</p>
           <div className="mt-6 space-y-2">
             <div className="flex justify-between text-xs font-bold text-on-surface-variant uppercase">
-              <span>Invited</span>
-              <span>{metrics.totalInvites}</span>
+              <span>Invited vs Completed</span>
+              <span>{metrics.funnel.completed} / {metrics.funnel.invited}</span>
             </div>
             <div className="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
               <div className="h-full bg-primary" style={{ width: `${metrics.completionRate * 100}%` }} />

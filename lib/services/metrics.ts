@@ -6,15 +6,23 @@ export interface DashboardMetrics {
   avgTimeToReportMs: number;
   sttFallbackRate: number;
   avgConfidence: number;
+  funnel: {
+    invited: number;
+    started: number;
+    completed: number;
+    reviewed: number;
+  };
 }
 
 /**
  * Service to calculate system KPIs as defined in PDD §16.
  */
 export async function getSystemMetrics(): Promise<DashboardMetrics> {
-  const [totalSessions, completedSessions, totalAnswers, fallbackAnswers] = await Promise.all([
+  const [totalSessions, startedSessions, completedSessions, reviewedSessions, totalAnswers, fallbackAnswers] = await Promise.all([
     prisma.interviewSession.count(),
+    prisma.interviewSession.count({ where: { status: { notIn: ["INVITED", "EXPIRED"] } } }),
     prisma.interviewSession.count({ where: { status: "COMPLETED" } }),
+    prisma.recruiterDecision.count(),
     prisma.answer.count(),
     prisma.transcript.count({ where: { provider: "openai" } }), // OpenAI is our fallback
   ]);
@@ -58,5 +66,11 @@ export async function getSystemMetrics(): Promise<DashboardMetrics> {
     avgTimeToReportMs,
     sttFallbackRate,
     avgConfidence: evaluations._avg.confidence || 0,
+    funnel: {
+      invited: totalSessions,
+      started: startedSessions,
+      completed: completedSessions,
+      reviewed: reviewedSessions,
+    },
   };
 }
