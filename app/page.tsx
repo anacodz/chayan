@@ -1,141 +1,56 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Welcome from "./components/candidate/Welcome";
-import Interview from "./components/candidate/Interview";
-import Complete from "./components/candidate/Complete";
-import { useAssessmentSecurity } from "./hooks/useAssessmentSecurity";
-import { useInterviewSession } from "./hooks/useInterviewSession";
-import { useMediaRecorder } from "./hooks/useMediaRecorder";
-import { useInterviewAudio } from "./hooks/useInterviewAudio";
+import { useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function Home() {
-  const [token, setToken] = useState<string | null>(null);
+function HomeContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get("invite");
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    setToken(urlParams.get("invite"));
-  }, []);
-
-  const {
-    phase,
-    setPhase,
-    session,
-    questions,
-    questionIndex,
-    currentQuestion,
-    answers,
-    status: sessionStatus,
-    processingStep,
-    error: sessionError,
-    totalTimeLeft,
-    startAssessment,
-    submitAnswer,
-    setError: setSessionError,
-  } = useInterviewSession({
-    token,
-    onSecurityViolation: (type) => {
-      console.warn("Security violation:", type);
-      setPhase("security_violation");
+    if (inviteToken) {
+      router.replace(`/interview/${inviteToken}`);
     }
-  });
-
-  const {
-    status: recordStatus,
-    waveform,
-    startRecording,
-    stopRecording,
-  } = useMediaRecorder({
-    onStop: (blob) => submitAnswer(blob),
-    onError: (err) => setSessionError(err),
-  });
-
-  const { isTtsLoading, playTTS } = useInterviewAudio();
-
-  /* Security Logic */
-  const { enterFullscreen } = useAssessmentSecurity({
-    enabled: phase === "interview",
-    onViolation: (type) => {
-      console.warn("Security violation:", type);
-      setPhase("security_violation");
-    }
-  });
-
-  const handleStartAssessment = async () => {
-    await enterFullscreen();
-    await startAssessment();
-  };
-
-  /* Auto-play question on change */
-  useEffect(() => {
-    if (phase === "interview" && currentQuestion?.prompt) {
-      const timer = setTimeout(() => {
-        playTTS(currentQuestion.prompt);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [phase, currentQuestion?.prompt, playTTS]);
-
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-  };
-
-  const progress = (questions && questions.length > 0) 
-    ? Math.round(((questionIndex) / questions.length) * 100) 
-    : 0;
-
-  if (phase === "loading") {
-    return <div className="min-h-screen flex items-center justify-center text-on-surface-variant font-medium">Validating invitation...</div>;
-  }
-
-  if (phase === "security_violation") {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-error-container text-on-error-container text-center">
-        <h1 className="text-4xl font-black mb-4 tracking-tighter uppercase">Assessment Locked</h1>
-        <p className="max-w-md mb-8">A security violation was detected (tab switch or dev-tool access). This attempt has been flagged and your recruiter has been notified.</p>
-        <button onClick={() => window.location.href = "/"} className="px-8 py-3 bg-error text-white rounded-xl font-bold shadow-lg">Return Home</button>
-      </div>
-    );
-  }
-
-  if (phase === "consent") {
-    return <Welcome onAccept={handleStartAssessment} onDecline={() => window.location.href = "https://cuemath.com"} session={session} />;
-  }
-
-  if (phase === "complete") {
-    return <Complete answersCount={answers.length} />;
-  }
-
-  if (phase === "invalid") {
-    return <div className="min-h-screen flex items-center justify-center text-error font-bold">Invalid or expired invitation.</div>;
-  }
-
-  if (!questions || questions.length === 0) return null;
-
-  const combinedStatus = sessionStatus === "idle" 
-    ? (recordStatus === "recording" ? "recording" : "idle") 
-    : sessionStatus;
+  }, [inviteToken, router]);
 
   return (
-    <Interview 
-      questionIndex={questionIndex}
-      totalQuestions={questions.length}
-      currentQuestion={currentQuestion!}
-      status={combinedStatus as any}
-      elapsed={totalTimeLeft}
-      maxSeconds={0}
-      processingStep={processingStep}
-      error={sessionError}
-      waveform={waveform}
-      onStartRecording={startRecording}
-      onStopRecording={stopRecording}
-      formatTime={formatTime}
-      progress={progress}
-      session={session}
-      onPlayTts={() => playTTS(currentQuestion!.prompt)}
-      isTtsLoading={isTtsLoading}
-    />
+    <main className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <div className="max-w-md w-full text-center space-y-8">
+        <div className="flex justify-center">
+          <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center">
+            <span className="material-symbols-outlined text-primary text-5xl">mic</span>
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <h1 className="text-5xl font-black text-primary tracking-tighter">Chayan</h1>
+          <p className="text-on-surface-variant font-bold text-lg">
+            AI-Driven Voice Screening
+          </p>
+        </div>
+
+        <div className="p-10 bg-surface-container-lowest rounded-[2rem] border border-outline-variant/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+          <p className="text-sm md:text-base text-on-surface-variant font-medium leading-relaxed mb-6">
+            If you have been invited to a Cuemath tutor screening, please click the unique interview link provided in your email.
+          </p>
+          <div className="h-1.5 w-12 bg-primary/20 mx-auto rounded-full" />
+        </div>
+        
+        <footer className="pt-8">
+          <p className="text-[10px] uppercase tracking-[0.2em] font-black text-on-surface-variant/40">
+            Powered by Cuemath Engineering
+          </p>
+        </footer>
+      </div>
+    </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
   );
 }
