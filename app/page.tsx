@@ -58,17 +58,31 @@ export default function Home() {
   });
 
   const handleStartAssessment = async () => {
+    if (session?.id) {
+      try {
+        await fetch(`/api/interviews/${session.id}/consent`, {
+          method: "POST",
+        });
+      } catch (err) {
+        console.error("Failed to record consent:", err);
+      }
+    }
+    
     await enterFullscreen();
     setPhase("interview");
     
-    // Start global timer (sum of all question durations + buffer)
+    // Start global timer
     const totalDuration = (questions || []).reduce((acc, q) => acc + (q?.maxDurationSeconds || 90), 0);
     setTotalTimeLeft(totalDuration);
+    startGlobalTimer(totalDuration);
+  };
+
+  const startGlobalTimer = (initialDuration: number) => {
+    if (globalTimerRef.current) clearInterval(globalTimerRef.current);
     globalTimerRef.current = setInterval(() => {
       setTotalTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(globalTimerRef.current!);
-          // Auto-submit if time runs out
           if (phase === "interview") setPhase("complete");
           return 0;
         }
@@ -141,6 +155,9 @@ export default function Home() {
 
       try {
         let qSetId = "default";
+        let restoredAnswers: Answer[] = [];
+        let restoredIndex = 0;
+        let restoredPhase: Phase = "consent";
         
         if (token) {
           const sRes = await fetch(`/api/invites/${token}`);
@@ -149,6 +166,66 @@ export default function Home() {
             if (sData.session) {
               setSession(sData.session);
               qSetId = sData.session.questionSetId || "default";
+              
+              if (sData.session.status === "COMPLETED") {
+                restoredPhase = "complete";
+              } else if (sData.session.answers?.length > 0) {
+                restoredAnswers = sData.session.answers.map((a: any) => ({
+                  questionId: a.questionId,
+                  question: a.question.prompt,
+                  transcript: a.transcript?.text || "",
+                  evaluation: a.evaluation ? {
+                    score: (a.evaluation.communicationClarity + a.evaluation.conceptExplanation + a.evaluation.empathyAndPatience) / 3,
+                    reasoning: "Restored from database.",
+                    signals: a.evaluation.evidence,
+                    redFlags: a.evaluation.concerns,
+                    dimensionScores: {
+                      communicationClarity: a.evaluation.communicationClarity,
+                      conceptExplanation: a.evaluation.conceptExplanation,
+                      empathyAndPatience: a.evaluation.empathyAndPatience,
+                      adaptability: a.evaluation.adaptability,
+                      professionalism: a.evaluation.professionalism,
+                      englishFluency: a.evaluation.englishFluency,
+                    },
+                    confidence: a.evaluation.confidence,
+                    followUpQuestion: a.evaluation.followUpQuestion,
+                  } : null
+                })).filter((a: any) => a.evaluation !== null);
+
+                setAnswers(restoredAnswers);
+                
+                // Group answers by their base question ID (removing 'follow-up-' prefix)
+                const mainQuestionIdsDone = new Set();
+                let lastEvaluation = null;
+                
+                restoredAnswers.forEach(a => {
+                  const baseId = a.questionId.startsWith("follow-up-") 
+                    ? a.questionId.replace("follow-up-", "") 
+                    : a.questionId;
+                  
+                  if (!a.questionId.startsWith("follow-up-")) {
+                    mainQuestionIdsDone.add(baseId);
+                    lastEvaluation = a.evaluation;
+                  } else {
+                    // It's a follow-up, so the main question is definitely done
+                    mainQuestionIdsDone.add(baseId);
+                    lastEvaluation = null; // Follow-up answered, no more follow-ups for this question
+                  }
+                });
+
+                restoredIndex = mainQuestionIdsDone.size;
+                
+                // If the last answer was a main question and it suggested a follow-up, 
+                // but no follow-up answer exists yet, we should stay on this index and show follow-up.
+                if (lastEvaluation?.followUpQuestion) {
+                  setFollowUpQuestion(lastEvaluation.followUpQuestion);
+                  setHasAskedFollowUp(true);
+                  restoredIndex = restoredIndex - 1; // Stay on the current question index
+                }
+
+                // If we've done all questions, move to complete phase or build report
+                restoredPhase = "interview"; 
+              }
             }
           }
         }
@@ -156,13 +233,35 @@ export default function Home() {
         const qRes = await fetch(`/api/questions?questionSetId=${qSetId}`);
         if (qRes.ok) {
           const qData = await qRes.json();
-          setQuestions(qData.questions || []);
-        } else {
+          const fetchedQuestions = qData.questions || [];
+          setQuestions(fetchedQuestions);
+
+          if (restoredIndex >= fetchedQuestions.length && fetchedQuestions.length > 0) {
+            setPhase("complete");
+          } else {
+            setQuestionIndex(restoredIndex);
+
+            // Calculate time left if consent was accepted
+            if (sData.session?.consentAcceptedAt) {
+              const start = new Date(sData.session.consentAcceptedAt).getTime();
+              const now = new Date().getTime();
+              const elapsedSeconds = Math.floor((now - start) / 1000);
+              const totalDuration = (fetchedQuestions || []).reduce((acc: number, q: any) => acc + (q?.maxDurationSeconds || 90), 0);
+              const timeLeft = Math.max(0, totalDuration - elapsedSeconds);
+
+              setTotalTimeLeft(timeLeft);
+              if (restoredPhase === "interview") {
+                startGlobalTimer(timeLeft);
+              }
+            }
+
+            setPhase(restoredPhase);
+          }
+        }
+ else {
           setPhase("invalid");
           return;
         }
-        
-        setPhase("consent");
       } catch (err) {
         console.error("Initialization failed:", err);
         setPhase("invalid");
@@ -271,7 +370,7 @@ export default function Home() {
       setHasAskedFollowUp(false);
 
       if (questionIndex === (questions?.length || 0) - 1) {
-        await buildReport(nextAnswers);
+        await buildReport();
         return;
       }
       setQuestionIndex((i) => i + 1);
@@ -282,12 +381,17 @@ export default function Home() {
     }
   }
 
-  async function buildReport(done: Answer[]) {
-    await fetch("/api/summarize", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ answers: done, sessionId: session?.id }),
-    });
+  async function buildReport() {
+    if (!session?.id) return;
+    
+    try {
+      await fetch(`/api/interviews/${session.id}/complete`, {
+        method: "POST",
+      });
+    } catch (err) {
+      console.error("Failed to mark interview as complete:", err);
+    }
+    
     if (globalTimerRef.current) clearInterval(globalTimerRef.current);
     setPhase("complete");
   }

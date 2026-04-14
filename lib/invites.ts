@@ -46,7 +46,18 @@ export async function validateInvite(token: string) {
   const hash = hashToken(token);
   const session = await prisma.interviewSession.findUnique({
     where: { inviteTokenHash: hash },
-    include: { candidate: true },
+    include: { 
+      candidate: true,
+      answers: {
+        include: {
+          transcript: true,
+          evaluation: true,
+          question: true,
+        },
+        orderBy: { createdAt: "asc" },
+      },
+      finalReport: true,
+    },
   });
 
   if (!session) {

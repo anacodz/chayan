@@ -154,12 +154,12 @@ export default function Interview({
                 >
                   <span className="material-symbols-outlined">stop</span> Stop Recording
                 </button>
-              ) : status === "idle" ? (
+              ) : (status === "idle" || status === "error") ? (
                 <button 
                   onClick={startRecordingInternal} 
                   className="w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-5 premium-gradient rounded-2xl text-white font-bold text-base sm:text-lg shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all"
                 >
-                  <span className="material-symbols-outlined">mic</span> Start Recording
+                  <span className="material-symbols-outlined">mic</span> {status === "error" ? "Try Again" : "Start Recording"}
                 </button>
               ) : null}
             </div>
