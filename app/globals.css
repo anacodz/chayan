@@ -71,11 +71,54 @@
   --color-inverse-primary:            #ffbb11;
 }
 
+/* ── Dark Mode MD3 Overrides ───────────────────────────────── */
+.dark {
+  --color-primary:                    #b1c7f2;
+  --color-primary-container:          #004494;
+  --color-on-primary:                 #002e6e;
+  --color-on-primary-container:       #d6e3ff;
+
+  --color-secondary:                  #b1c7f2;
+  --color-secondary-container:        #004494;
+  --color-on-secondary:               #002e6e;
+  --color-on-secondary-container:     #d6e3ff;
+
+  --color-tertiary:                   #ffbb11;
+  --color-tertiary-container:         #5d4200;
+  --color-on-tertiary:                #422c00;
+  --color-on-tertiary-container:      #ffdea6;
+
+  --color-surface:                    #1a1c1e;
+  --color-surface-dim:                #0e1012;
+  --color-surface-bright:             #3b3e41;
+  --color-surface-variant:            #44474e;
+  --color-surface-container-lowest:   #090b0d;
+  --color-surface-container-low:      #1c1e21;
+  --color-surface-container:          #202226;
+  --color-surface-container-high:     #2a2c31;
+  --color-surface-container-highest:  #35383d;
+  --color-on-surface:                 #e2e2e5;
+  --color-on-surface-variant:         #c4c6cf;
+
+  --color-outline:                    #8e9199;
+  --color-outline-variant:            #44474e;
+
+  --color-background:                 #1a1c1e;
+  --color-on-background:              #e2e2e5;
+
+  --color-error:                      #ffb4ab;
+  --color-error-container:            #93000a;
+  --color-on-error:                   #690005;
+  --color-on-error-container:         #ffdad6;
+
+  color-scheme: dark;
+}
+
 /* ── Base ──────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
 html {
-  color-scheme: light;
+  color-scheme: light dark;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   scroll-behavior: smooth;
@@ -84,8 +127,8 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: #f9f9fc;
-  color: #1a1c1e;
+  background-color: var(--color-background);
+  color: var(--color-on-background);
   line-height: 1.6;
 }
 
@@ -110,19 +153,23 @@ button, input, label, select, textarea { font: inherit; }
 
 /* ── Utility classes ───────────────────────────────────────── */
 .glass-header {
-  background: rgba(249, 249, 252, 0.85);
+  background: rgba(var(--color-surface), 0.85);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
 }
 
 .glass-panel {
-  background: rgba(249, 249, 252, 0.8);
+  background: rgba(var(--color-surface), 0.8);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
 }
 
 .premium-gradient {
   background: linear-gradient(135deg, #002e6e 0%, #0070ff 100%);
+}
+
+.dark .premium-gradient {
+  background: linear-gradient(135deg, #004494 0%, #0070ff 100%);
 }
 
 /* ── Recording pulse ───────────────────────────────────────── */
@@ -149,16 +196,22 @@ button, input, label, select, textarea { font: inherit; }
     0 12px 40px rgba(0, 46, 110, 0.08);
 }
 
+.dark .ambient-shadow {
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.3),
+    0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
 /* ── Scrollbar ─────────────────────────────────────────────── */
 ::-webkit-scrollbar       { width: 6px; }
-::-webkit-scrollbar-track { background: #f3f3f6; }
-::-webkit-scrollbar-thumb { background: #c4c6cf; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #a4a6af; }
+::-webkit-scrollbar-track { background: var(--color-surface-container-low); }
+::-webkit-scrollbar-thumb { background: var(--color-outline-variant); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-outline); }
 
 /* ── Selection ─────────────────────────────────────────────── */
 ::selection {
-  background: #d6e3ff;
-  color: #001b3d;
+  background: var(--color-primary-container);
+  color: var(--color-on-primary-container);
 }
 
 /* ── Print Styles ──────────────────────────────────────────── */
