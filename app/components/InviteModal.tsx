@@ -1,6 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+interface QuestionSet {
+  id: string;
+  count: number;
+}
 
 interface InviteModalProps {
   isOpen: boolean;
@@ -11,8 +16,27 @@ interface InviteModalProps {
 export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [questionSets, setQuestionSets] = useState<QuestionSet[]>([]);
+  const [selectedSetId, setSelectedSetId] = useState("default");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      async function fetchSets() {
+        try {
+          const res = await fetch("/api/admin/question-sets");
+          if (res.ok) {
+            const data = await res.json();
+            setQuestionSets(data.sets);
+          }
+        } catch (err) {
+          console.error("Failed to fetch question sets:", err);
+        }
+      }
+      fetchSets();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -25,7 +49,7 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
       const res = await fetch("/api/invites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify({ name, email, questionSetId: selectedSetId }),
       });
 
       const data = await res.json();
@@ -74,6 +98,22 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
               placeholder="candidate@example.com"
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Question Set</label>
+            <select
+              value={selectedSetId}
+              onChange={(e) => setSelectedSetId(e.target.value)}
+              className="w-full h-12 bg-surface-container-low rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none"
+            >
+              {questionSets.map((set) => (
+                <option key={set.id} value={set.id}>
+                  {set.id === "default" ? "Standard Assessment" : set.id} ({set.count} questions)
+                </option>
+              ))}
+              {questionSets.length === 0 && <option value="default">Standard Assessment</option>}
+            </select>
           </div>
 
           {error && (

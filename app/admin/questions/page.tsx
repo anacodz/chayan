@@ -23,6 +23,11 @@ const CATEGORIES = [
 
 export default function QuestionSetManager() {
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [questionSets, setQuestionSets] = useState<{ id: string; count: number }[]>([]);
+  const [currentSetId, setCurrentSetId] = useState("default");
+  const [isAddingSet, setIsAddingSet] = useState(false);
+  const [newSetName, setNewSetName] = useState("");
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   
@@ -35,9 +40,22 @@ export default function QuestionSetManager() {
   const [editTags, setEditTags] = useState("");
   const [editCategory, setEditCategory] = useState("");
 
-  const fetchQuestions = async () => {
+  const fetchSets = async () => {
     try {
-      const res = await fetch("/api/admin/questions?questionSetId=default");
+      const res = await fetch("/api/admin/question-sets");
+      if (res.ok) {
+        const data = await res.json();
+        setQuestionSets(data.sets);
+      }
+    } catch (err) {
+      console.error("Failed to fetch sets:", err);
+    }
+  };
+
+  const fetchQuestions = async (setId: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/questions?questionSetId=${setId}`);
       if (res.ok) {
         const data = await res.json();
         setQuestions(data.questions);
@@ -52,8 +70,22 @@ export default function QuestionSetManager() {
   };
 
   useEffect(() => {
-    fetchQuestions();
-  }, []);
+    fetchSets();
+    fetchQuestions(currentSetId);
+  }, [currentSetId]);
+
+  const handleCreateSet = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSetName.trim()) return;
+    
+    // In this implementation, a set exists if it has questions. 
+    // So we just switch to the new name and let the user add the first question.
+    const slug = newSetName.toLowerCase().trim().replace(/\s+/g, '-');
+    setCurrentSetId(slug);
+    setNewSetName("");
+    setIsAddingSet(false);
+    setQuestions([]);
+  };
 
   const handleAddQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,14 +100,16 @@ export default function QuestionSetManager() {
         body: JSON.stringify({ 
           prompt: newPrompt, 
           competencyTags: tags,
-          category: newCategory 
+          category: newCategory,
+          questionSetId: currentSetId
         }),
       });
 
       if (res.ok) {
         setNewPrompt("");
         setNewTags("");
-        fetchQuestions();
+        fetchQuestions(currentSetId);
+        fetchSets();
       } else {
         setError("Failed to add question");
       }
@@ -111,7 +145,8 @@ export default function QuestionSetManager() {
 
       if (res.ok) {
         setEditingId(null);
-        fetchQuestions();
+        fetchQuestions(currentSetId);
+        fetchSets();
       } else {
         setError("Failed to update question");
       }
@@ -129,7 +164,8 @@ export default function QuestionSetManager() {
       });
 
       if (res.ok) {
-        fetchQuestions();
+        fetchQuestions(currentSetId);
+        fetchSets();
       } else {
         setError("Failed to delete question");
       }
@@ -140,10 +176,55 @@ export default function QuestionSetManager() {
 
   return (
     <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-extrabold text-on-secondary-fixed mb-2">Question Set Manager</h1>
-        <p className="text-on-surface-variant font-medium">Manage screening questions and competency tagging.</p>
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h1 className="text-3xl font-extrabold text-on-secondary-fixed mb-2">Question Set Manager</h1>
+          <p className="text-on-surface-variant font-medium">Manage screening questions and competency tagging.</p>
+        </div>
+        
+        <div className="flex flex-col gap-2 min-w-[240px]">
+          <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Active Question Set</label>
+          <div className="flex gap-2">
+            <select
+              value={currentSetId}
+              onChange={(e) => setCurrentSetId(e.target.value)}
+              className="flex-1 bg-surface-container-high rounded-xl px-4 py-2 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none"
+            >
+              {questionSets.map(set => (
+                <option key={set.id} value={set.id}>
+                  {set.id === "default" ? "Standard Set" : set.id} ({set.count} Qs)
+                </option>
+              ))}
+              {!questionSets.some(s => s.id === currentSetId) && (
+                <option value={currentSetId}>{currentSetId} (New)</option>
+              )}
+            </select>
+            <button 
+              onClick={() => setIsAddingSet(!isAddingSet)}
+              className="w-10 h-10 flex items-center justify-center bg-primary text-white rounded-xl shadow-lg hover:scale-105 transition-all"
+            >
+              <span className="material-symbols-outlined">{isAddingSet ? 'close' : 'add'}</span>
+            </button>
+          </div>
+        </div>
       </header>
+
+      {isAddingSet && (
+        <div className="bg-primary/5 p-6 rounded-3xl border border-primary/20 animate-in slide-in-from-top-4 duration-300">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-4">Create New Question Set</h3>
+          <form onSubmit={handleCreateSet} className="flex gap-3">
+            <input
+              type="text"
+              value={newSetName}
+              onChange={(e) => setNewSetName(e.target.value)}
+              placeholder="Set name (e.g. Senior Math, Physics)"
+              className="flex-1 bg-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 border border-outline-variant/10"
+              required
+            />
+            <button type="submit" className="px-6 py-3 bg-primary text-white font-bold rounded-xl shadow-md">Create</button>
+          </form>
+        </div>
+      )}
 
       {error && (
         <div className="bg-error-container text-on-error-container p-4 rounded-xl">
@@ -152,7 +233,7 @@ export default function QuestionSetManager() {
       )}
 
       <div className="bg-surface-container-lowest rounded-3xl p-6 md:p-8 shadow-sm border border-outline-variant/10">
-        <h2 className="text-xl font-bold mb-6">Add New Question</h2>
+        <h2 className="text-xl font-bold mb-6">Add Question to <span className="text-primary">{currentSetId === 'default' ? 'Standard Set' : currentSetId}</span></h2>
         <form onSubmit={handleAddQuestion} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
@@ -199,7 +280,7 @@ export default function QuestionSetManager() {
       </div>
 
       <div className="bg-surface-container-lowest rounded-3xl p-6 md:p-8 shadow-sm border border-outline-variant/10">
-        <h2 className="text-xl font-bold mb-6">Current Questions (Default Set)</h2>
+        <h2 className="text-xl font-bold mb-6">Questions in <span className="text-primary">{currentSetId === 'default' ? 'Standard Set' : currentSetId}</span></h2>
         
         {loading ? (
           <p className="text-on-surface-variant">Loading questions...</p>
