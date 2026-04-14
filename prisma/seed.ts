@@ -2,9 +2,12 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
 
-const connectionString = "postgresql://neondb_owner:npg_cpe2TotuVjh6@ep-spring-sunset-a1yqwe7l.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+const connectionString = process.env.DATABASE_URL
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set")
+}
 const pool = new pg.Pool({ connectionString })
-const adapter = new PrismaPg(pool)
+const adapter = new PrismaPg(pool as any)
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
