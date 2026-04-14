@@ -2,38 +2,68 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const requiredAdminToken = process.env.ADMIN_API_TOKEN;
+  const providedAdminToken = req.headers.get("x-admin-token");
+
+  if (requiredAdminToken && providedAdminToken !== requiredAdminToken) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
   try {
-    const evaluations = await prisma.answerEvaluation.findMany({
-      take: 50,
-      orderBy: {
-        createdAt: "desc",
-      },
+    const samples = await prisma.calibrationSample.findMany({
       include: {
-        answer: {
-          include: {
-            question: true,
-            transcript: true,
-          }
-        }
-      }
+        question: true,
+      },
+      orderBy: { createdAt: "desc" },
     });
 
-    const formattedEvaluations = evaluations.map(evalRecord => ({
-      id: evalRecord.id,
-      promptVersion: evalRecord.promptVersion,
-      model: evalRecord.modelProvider + "/" + evalRecord.model,
-      score: evalRecord.communicationClarity, // Representing general score with communicationClarity for now
-      humanCorrected: !!evalRecord.answer.transcript?.correctedText,
-      originalTranscript: evalRecord.answer.transcript?.text,
-      correctedTranscript: evalRecord.answer.transcript?.correctedText,
-      question: evalRecord.answer.question.prompt,
-      createdAt: evalRecord.createdAt,
-    }));
-
-    return NextResponse.json({ evaluations: formattedEvaluations });
+    return NextResponse.json({ samples });
   } catch (error) {
-    logger.error({ error }, "Failed to fetch calibration data");
+    logger.error({ error }, "Failed to fetch calibration samples");
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  const requiredAdminToken = process.env.ADMIN_API_TOKEN;
+  const providedAdminToken = req.headers.get("x-admin-token");
+
+  if (requiredAdminToken && providedAdminToken !== requiredAdminToken) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
+  try {
+    const body = await req.json();
+    const { 
+      questionId, 
+      transcript, 
+      communicationClarity, 
+      conceptExplanation, 
+      empathyAndPatience, 
+      adaptability, 
+      professionalism, 
+      englishFluency,
+      reasoning 
+    } = body;
+
+    const sample = await prisma.calibrationSample.create({
+      data: {
+        questionId,
+        transcript,
+        communicationClarity,
+        conceptExplanation,
+        empathyAndPatience,
+        adaptability,
+        professionalism,
+        englishFluency,
+        reasoning,
+      },
+    });
+
+    return NextResponse.json({ sample });
+  } catch (error) {
+    logger.error({ error }, "Failed to create calibration sample");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

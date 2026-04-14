@@ -73,18 +73,18 @@ model User {
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -108,64 +108,65 @@ model VerificationToken {
 }
 
 model Candidate {
-  id               String             @id @default(uuid())
-  name             String
-  email            String             @unique
-  phone            String?
-  source           String?
-  subject          String?
-  experienceLevel  String?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  id                String             @id @default(uuid())
+  name              String
+  email             String             @unique
+  phone             String?
+  source            String?
+  subject           String?
+  experienceLevel   String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
   interviewSessions InterviewSession[]
 }
 
 model InterviewSession {
-  id                String          @id @default(uuid())
-  candidateId       String
-  candidate         Candidate       @relation(fields: [candidateId], references: [id])
-  status            InterviewStatus @default(INVITED)
-  questionSetId     String
-  inviteTokenHash   String          @unique
-  inviteExpiresAt   DateTime
-  consentAcceptedAt DateTime?
-  activeSecondsSpent Int             @default(0)
-  completedAt       DateTime?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  answers           Answer[]
-  finalReport       FinalReport?
-  recruiterDecision RecruiterDecision?
+  id                 String             @id @default(uuid())
+  candidateId        String
+  candidate          Candidate          @relation(fields: [candidateId], references: [id])
+  status             InterviewStatus    @default(INVITED)
+  questionSetId      String
+  inviteTokenHash    String             @unique
+  inviteExpiresAt    DateTime
+  consentAcceptedAt  DateTime?
+  activeSecondsSpent Int                @default(0)
+  completedAt        DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  answers            Answer[]
+  finalReport        FinalReport?
+  recruiterDecision  RecruiterDecision?
 }
 
 model Question {
-  id                 String   @id @default(uuid())
+  id                 String              @id @default(uuid())
   questionSetId      String
   category           String?
   prompt             String
   competencyTags     String[]
   subject            String?
   experienceLevel    String?
-  maxDurationSeconds Int      @default(90)
+  maxDurationSeconds Int                 @default(90)
   order              Int
-  active             Boolean  @default(true)
+  active             Boolean             @default(true)
   answers            Answer[]
+  calibrationSamples CalibrationSample[]
 }
 
 model Answer {
-  id                    String        @id @default(uuid())
-  sessionId             String
-  session               InterviewSession @relation(fields: [sessionId], references: [id])
-  questionId            String
-  question              Question      @relation(fields: [questionId], references: [id])
-  attemptNumber         Int           @default(1)
-  audioObjectKey        String
-  audioDurationSeconds  Float?
-  status                AnswerStatus  @default(UPLOADED)
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
-  transcript            Transcript?
-  evaluation            AnswerEvaluation?
+  id                   String            @id @default(uuid())
+  sessionId            String
+  session              InterviewSession  @relation(fields: [sessionId], references: [id])
+  questionId           String
+  question             Question          @relation(fields: [questionId], references: [id])
+  attemptNumber        Int               @default(1)
+  audioObjectKey       String
+  audioDurationSeconds Float?
+  status               AnswerStatus      @default(UPLOADED)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  transcript           Transcript?
+  evaluation           AnswerEvaluation?
 }
 
 model Transcript {
@@ -209,8 +210,8 @@ model AnswerEvaluation {
 }
 
 model FinalReport {
-  id                  String         @id @default(uuid())
-  sessionId           String         @unique
+  id                  String           @id @default(uuid())
+  sessionId           String           @unique
   session             InterviewSession @relation(fields: [sessionId], references: [id])
   recommendation      Recommendation
   overallScore        Float
@@ -222,9 +223,9 @@ model FinalReport {
   model               String
   promptVersion       String
   schemaVersion       String
-  requiresHumanReview Boolean        @default(false)
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  requiresHumanReview Boolean          @default(false)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 }
 
 model RecruiterDecision {
@@ -236,4 +237,20 @@ model RecruiterDecision {
   notes      String?
   createdAt  DateTime              @default(now())
   updatedAt  DateTime              @updatedAt
+}
+
+model CalibrationSample {
+  id                   String   @id @default(uuid())
+  questionId           String
+  question             Question @relation(fields: [questionId], references: [id])
+  transcript           String
+  communicationClarity Int
+  conceptExplanation   Int
+  empathyAndPatience   Int
+  adaptability         Int
+  professionalism      Int
+  englishFluency       Int
+  reasoning            String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
