@@ -53,6 +53,19 @@
 - Implemented **Metrics Service** (`lib/services/metrics.ts`) to calculate conversion funnels, STT fallback rates, and processing latency.
 - Added protected `/api/admin/metrics` endpoint for real-time system health monitoring.
 
+### Sprint 1 - Production Readiness & Analytics
+- **[BACKLOG-012] Recruiter Dashboard Data Integration**
+  - Implemented server-side pagination and candidate search in `/api/recruiter/interviews`.
+  - Updated recruiter dashboard to refetch on search and page changes.
+  - Enabled authenticated recruiter access to system metrics.
+- **[BACKLOG-013] Audio Waveform Playback**
+  - Integrated `wavesurfer.js` for high-fidelity audio visualization in recruiter reports.
+  - Created a reusable `Waveform` component for candidate responses.
+- **[BACKLOG-014] Automated Quality Assurance (E2E)**
+  - Configured Playwright with fake media stream support for CI-ready audio testing.
+  - Implemented mocked E2E test for the full candidate "Happy Path" flow.
+  - Implemented mocked E2E test for the recruiter dashboard and decision workflow.
+
 ## Technical Notes
 - **Security Patterns**: Prepped `lib/storage.ts` for time-limited signed URLs to protect candidate audio (Milestone 4b).
 - **Scalable Architecture**: Moved long-running AI tasks to background workers using Inngest.

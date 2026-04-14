@@ -3,6 +3,7 @@ import { transcribeAudioService, evaluateAnswerService } from "./services/ai";
 import prisma from "./prisma";
 import { logger } from "./logger";
 import { createHash } from "node:crypto";
+import { env } from "./env";
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "chayan" });
@@ -148,6 +149,7 @@ export const transcribeAndEvaluateAnswer = inngest.createFunction(
     return { answerId, status: "completed" };
   }
 );
+
 /**
  * Background job to synthesize final assessment report.
  * Triggers on 'interview/completed' event.
@@ -159,9 +161,11 @@ export const finalizeInterviewReport = inngest.createFunction(
   },
   async ({ event, step }) => {
     const { sessionId } = event.data;
+    
+    logger.info({ sessionId }, "Starting background report generation");
 
     const answers = await step.run("fetch-all-answers", async () => {
-      return await prisma.answer.findMany({
+      const answersData = await prisma.answer.findMany({
         where: { sessionId },
         include: {
           transcript: true,
@@ -170,32 +174,42 @@ export const finalizeInterviewReport = inngest.createFunction(
         },
         orderBy: { createdAt: "asc" },
       });
+      
+      return answersData.map(a => ({
+        questionId: a.questionId,
+        question: a.question.prompt,
+        transcript: a.transcript?.text || "",
+        evaluation: a.evaluation ? {
+          reasoning: a.evaluation.evidence.join(". "),
+          dimensionScores: {
+            communicationClarity: a.evaluation.communicationClarity,
+            conceptExplanation: a.evaluation.conceptExplanation,
+            empathyAndPatience: a.evaluation.empathyAndPatience,
+            adaptability: a.evaluation.adaptability,
+            professionalism: a.evaluation.professionalism,
+            englishFluency: a.evaluation.englishFluency,
+          }
+        } : null
+      }));
     });
 
     const report = await step.run("generate-final-report", async () => {
       const { GoogleGenAI } = await import("@google/genai");
       const { FinalReportSchema } = await import("./schemas");
       const { extractJsonObject } = await import("./json");
+      const { fallbackSummarize } = await import("./evaluation");
+      const { withRetry } = await import("./retry");
 
-      const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY! });
-      // Use a more reasoning-heavy model for the final report
+      if (!env.GEMINI_API_KEY) {
+        return fallbackSummarize(answers as any);
+      }
+
+      const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
       const modelName = "gemini-1.5-pro"; 
-
-      const formattedAnswers = answers.map(a => ({
-        questionId: a.questionId,
-        question: a.question.prompt,
-        transcript: a.transcript?.text || "",
-        evaluation: a.evaluation ? {
-          score: (a.evaluation.communicationClarity + a.evaluation.conceptExplanation + a.evaluation.empathyAndPatience) / 3,
-          reasoning: "Answer evaluated.",
-          signals: a.evaluation.evidence,
-          redFlags: a.evaluation.concerns,
-        } : null
-      }));
 
       const prompt = `Create a high-fidelity final tutor screening report from these structured answers.
 
-Candidate Data: ${JSON.stringify(formattedAnswers, null, 2)}
+Candidate Data: ${JSON.stringify(answers, null, 2)}
 
 Return JSON only with this shape:
 {
@@ -217,9 +231,11 @@ Return JSON only with this shape:
 
 Use only evidence from the transcripts. Scores should be 1-5. Confidence 0-1. Be critical but fair.`;
 
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: prompt
+      const response = await withRetry(async () => {
+        return await ai.models.generateContent({
+          model: modelName,
+          contents: prompt
+        });
       });
 
       const text = response.text || "";
@@ -228,30 +244,33 @@ Use only evidence from the transcripts. Scores should be 1-5. Confidence 0-1. Be
     });
 
     await step.run("save-final-report", async () => {
-      const overallScore = Object.values(report.dimensionScores as any).reduce((a: any, b: any) => a + b, 0) as number / 6;
+      const averageScore = (scores: any) => {
+        const vals = Object.values(scores) as number[];
+        return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
+      };
 
       await prisma.finalReport.upsert({
         where: { sessionId },
         create: {
           sessionId,
-          recommendation: report.recommendation,
-          overallScore,
+          recommendation: report.recommendation as any,
+          overallScore: averageScore(report.dimensionScores),
           confidence: report.confidence || 0.8,
           strengths: report.strengths,
           risks: report.concerns,
           suggestedFollowUps: [report.nextStep],
           evidenceByQuestion: answers.map(a => ({
             questionId: a.questionId,
-            transcriptExcerpt: a.transcript?.text?.slice(0, 100) || "",
+            transcriptExcerpt: a.transcript.slice(0, 100),
             rationale: "Evaluated in context of whole interview."
           })),
           model: "gemini-1.5-pro",
-          promptVersion: "v2",
+          promptVersion: "v1",
           schemaVersion: "v1",
         },
         update: {
-          recommendation: report.recommendation,
-          overallScore,
+          recommendation: report.recommendation as any,
+          overallScore: averageScore(report.dimensionScores),
           strengths: report.strengths,
           risks: report.concerns,
         }
@@ -269,8 +288,6 @@ Use only evidence from the transcripts. Scores should be 1-5. Confidence 0-1. Be
 
 /**
  * Automated cron job to clean up old data.
-...
-
  * Runs daily at midnight.
  */
 export const cleanupOldData = inngest.createFunction(

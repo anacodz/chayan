@@ -33,6 +33,21 @@ export type AnswerEvaluation = {
   requiresHumanReview?: boolean;
 };
 
+export type Question = {
+  id: string;
+  prompt: string;
+  guidance?: string;
+  competencyTags: string[];
+  maxDurationSeconds: number;
+};
+
+export type Answer = {
+  questionId: string;
+  question: string;
+  transcript: string;
+  evaluation: AnswerEvaluation;
+};
+
 /** Final assessment report produced by Gemini Pro model (PDD §11) */
 export type FinalReport = {
   /** Recruiter-facing hiring recommendation */
