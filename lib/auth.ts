@@ -28,16 +28,15 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, user, token }) {
       if (session.user) {
-        // @ts-ignore -- session user type extension
+        // @ts-expect-error -- session user type extension
         session.user.id = user?.id || token?.sub;
-        // @ts-ignore -- session user type extension
+        // @ts-expect-error -- session user type extension
         session.user.role = user?.role || (token as any)?.role || "RECRUITER";
       }
       return session;
     },
     async jwt({ token, user }) {
       if (user) {
-        // @ts-ignore -- session user type extension
         token.role = (user as unknown as any).role;
       }
       return token;
