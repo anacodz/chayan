@@ -40,7 +40,7 @@ function HomeContent() {
         
         <footer className="pt-8">
           <p className="text-[10px] uppercase tracking-[0.2em] font-black text-on-surface-variant/40">
-            Powered by Cuemath Engineering
+            Built for <Link href="https://cuemath.com">Cuemath</Link> by <Link href="https://anacodz.vercel.app">Ananya Singh</Link>
           </p>
         </footer>
       </div>
