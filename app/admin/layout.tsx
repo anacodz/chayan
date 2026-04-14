@@ -25,11 +25,25 @@ export default function AdminLayout({
             <span className="font-medium text-sm">Question Sets</span>
           </Link>
           <Link
+            href="/admin/calibration"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:translate-x-1 text-secondary hover:bg-surface-container-high"
+          >
+            <span className="material-symbols-outlined">tune</span>
+            <span className="font-medium text-sm">Calibration</span>
+          </Link>
+          <Link
             href="/admin/metrics"
             className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:translate-x-1 text-secondary hover:bg-surface-container-high"
           >
             <span className="material-symbols-outlined">analytics</span>
             <span className="font-medium text-sm">System Metrics</span>
+          </Link>
+          <Link
+            href="/admin/data-privacy"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:translate-x-1 text-secondary hover:bg-surface-container-high"
+          >
+            <span className="material-symbols-outlined">delete_forever</span>
+            <span className="font-medium text-sm">Data Privacy</span>
           </Link>
         </nav>
 

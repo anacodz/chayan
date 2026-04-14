@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Header from "../../../components/recruiter/Header";
 import Waveform from "../../../components/recruiter/Waveform";
+import { exportToPDF } from "@/lib/pdf";
 
 type Decision = "Move Forward" | "Hold" | "Decline" | null;
 

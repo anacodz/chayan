@@ -5,8 +5,14 @@ import { Pool } from "pg";
 
 const prismaClientSingleton = () => {
   const connectionString = process.env.DATABASE_URL;
+  
+  // During Vercel build, DATABASE_URL might be missing. 
+  // We return a dummy client or handle it gracefully to allow the build to finish.
   if (!connectionString) {
-    throw new Error("DATABASE_URL is not set");
+    if (process.env.NEXT_PHASE === "phase-production-build" || process.env.NODE_ENV === "test") {
+      return new PrismaClient();
+    }
+    throw new Error("DATABASE_URL is not set. Please check your environment variables.");
   }
 
   const pool = new Pool({ connectionString });

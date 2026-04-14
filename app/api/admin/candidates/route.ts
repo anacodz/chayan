@@ -22,7 +22,7 @@ export async function GET(req: Request) {
         ]
       } : undefined,
       include: {
-        sessions: {
+        interviewSessions: {
           select: {
             id: true,
             status: true,
