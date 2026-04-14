@@ -26,6 +26,10 @@ type Session = {
     recommendation: string;
     overallScore: number;
   } | null;
+  recruiterDecision?: {
+    decision: string;
+    notes?: string | null;
+  } | null;
 };
 
 export default function RecruiterDashboard() {
@@ -79,6 +83,8 @@ export default function RecruiterDashboard() {
       case "COMPLETED": return "bg-tertiary/10 text-tertiary";
       case "IN_PROGRESS": return "bg-secondary/10 text-secondary";
       case "NEEDS_CANDIDATE_RETRY": return "bg-error/10 text-error";
+      case "NEEDS_HUMAN_REVIEW": return "bg-warning/10 text-warning";
+      case "ABANDONED": return "bg-surface-container-highest text-on-surface-variant";
       default: return "bg-primary-container text-on-primary-fixed";
     }
   };
@@ -87,7 +93,20 @@ export default function RecruiterDashboard() {
     switch (rec) {
       case "MOVE_FORWARD": return "text-tertiary";
       case "DECLINE": return "text-error";
+      case "HOLD": return "text-secondary";
+      case "NEEDS_REVIEW": return "text-warning";
       default: return "text-on-surface-variant";
+    }
+  };
+
+  const getDecisionBadge = (decision?: string) => {
+    if (!decision) return "";
+    switch (decision) {
+      case "MOVE_FORWARD": return "bg-tertiary text-white";
+      case "DECLINE": return "bg-error text-white";
+      case "HOLD": return "bg-secondary text-white";
+      case "NEEDS_REVIEW": return "bg-tertiary/20 text-tertiary border border-tertiary/20";
+      default: return "bg-surface-container-highest text-on-surface-variant";
     }
   };
 
@@ -201,9 +220,15 @@ export default function RecruiterDashboard() {
                             </span>
                           </td>
                           <td className="px-6 md:px-8 py-5">
-                            <span className={`px-3 py-1 text-[11px] font-bold rounded-full uppercase tracking-tight ${getStatusClass(s.status)}`}>
-                              {s.status.replace(/_/g, " ")}
-                            </span>
+                            {s.recruiterDecision ? (
+                              <span className={`px-2 py-0.5 text-[9px] font-black rounded uppercase tracking-widest ${getDecisionBadge(s.recruiterDecision.decision)}`}>
+                                {s.recruiterDecision.decision.replace(/_/g, " ")}
+                              </span>
+                            ) : (
+                              <span className={`px-3 py-1 text-[11px] font-bold rounded-full uppercase tracking-tight ${getStatusClass(s.status)}`}>
+                                {s.status.replace(/_/g, " ")}
+                              </span>
+                            )}
                           </td>
                           <td className="px-6 md:px-8 py-5">
                             <div className="flex items-center gap-3">
@@ -214,9 +239,16 @@ export default function RecruiterDashboard() {
                                   <div className="h-full bg-primary/30 w-0" />
                                 )}
                               </div>
-                              <span className={`text-sm font-black ${getRecommendationColor(s.finalReport?.recommendation)}`}>
-                                {s.finalReport ? `${Math.round(s.finalReport.overallScore * 20)}%` : "--"}
-                              </span>
+                              <div className="flex flex-col items-end">
+                                <span className={`text-sm font-black ${getRecommendationColor(s.finalReport?.recommendation)}`}>
+                                  {s.finalReport ? `${Math.round(s.finalReport.overallScore * 20)}%` : "--"}
+                                </span>
+                                {s.finalReport && (
+                                  <span className="text-[8px] font-bold uppercase tracking-tighter text-on-surface-variant">
+                                    AI: {s.finalReport.recommendation.replace(/_/g, " ")}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </td>
                           <td className="px-6 md:px-8 py-5 text-right">

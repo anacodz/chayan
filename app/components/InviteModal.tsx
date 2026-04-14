@@ -133,9 +133,12 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
               disabled={loading}
               className="flex-1 h-14 premium-gradient text-white font-bold rounded-xl shadow-lg active:scale-[0.98] transition-all disabled:opacity-50"
             >
-              {loading ? "Generating..." : "Generate Link"}
+              {loading ? "Sending..." : "Send Invite"}
             </button>
           </div>
+          <p className="text-[10px] text-center text-on-surface-variant font-medium mt-4">
+            An invitation email will be sent automatically to the candidate.
+          </p>
         </form>
       </div>
     </div>

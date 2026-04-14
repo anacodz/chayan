@@ -39,8 +39,8 @@ function HomeContent() {
         </div>
         
         <footer className="pt-8">
-          <p className="text-[10px] uppercase tracking-[0.2em] font-black text-on-surface-variant/40">
-            Built for <Link href="https://cuemath.com">Cuemath</Link> by <Link href="https://anacodz.vercel.app">Ananya Singh</Link>
+          <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-on-surface-variant/40">
+            Built for <Link color="#1b3fc3ff" href="https://cuemath.com">CUEMATH</Link> by <u><Link color="#ff8383ff" href="https://anacodz.vercel.app">Ananya Singh</Link></u>
           </p>
         </footer>
       </div>

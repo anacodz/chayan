@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "@/app/globals.css";
 import { Providers } from "./components/providers";
-import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "Cuemath — Tutor Screener",
@@ -26,7 +25,6 @@ export default function RootLayout({
       <body className="bg-background text-on-surface antialiased">
         <Providers>
           {children}
-          <Analytics />
         </Providers>
       </body>
     </html>
