@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Header from "../../../components/recruiter/Header";
+import Waveform from "../../../components/recruiter/Waveform";
 
 type Decision = "Move Forward" | "Hold" | "Decline" | null;
 
@@ -16,9 +17,6 @@ export default function RecruiterReportDetail() {
   const [decision, setDecision] = useState<Decision>("Move Forward");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
-  
-  const [playingId, setPlayingId] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     async function fetchSession() {
@@ -64,25 +62,7 @@ export default function RecruiterReportDetail() {
     }
   };
 
-  const togglePlay = (id: string, url: string) => {
-    if (playingId === id) {
-      audioRef.current?.pause();
-      setPlayingId(null);
-    } else {
-      if (audioRef.current) {
-        audioRef.current.src = url;
-        audioRef.current.play();
-      } else {
-        const audio = new Audio(url);
-        audio.onended = () => setPlayingId(null);
-        audioRef.current = audio;
-        audio.play();
-      }
-      setPlayingId(id);
-    }
-  };
-
-  if (loading) {
+  if (loading || (session?.status === "FINALIZING" && !session?.finalReport)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -90,7 +70,17 @@ export default function RecruiterReportDetail() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
           </svg>
-          <p className="text-on-surface-variant font-medium">Loading report data...</p>
+          <p className="text-on-surface-variant font-medium">
+            {session?.status === "FINALIZING" ? "AI is generating the final report..." : "Loading report data..."}
+          </p>
+          {session?.status === "FINALIZING" && (
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-surface-container-high text-primary rounded-lg text-sm font-bold"
+            >
+              Refresh Status
+            </button>
+          )}
         </div>
       </div>
     );
@@ -249,12 +239,10 @@ export default function RecruiterReportDetail() {
                         <p className="text-xs font-bold text-on-surface-variant uppercase tracking-tight">
                           Candidate Response • {new Date(answer.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
-                        <button 
-                          onClick={() => togglePlay(answer.id, answer.audioObjectKey)}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${playingId === answer.id ? 'bg-primary text-white scale-110 shadow-lg' : 'bg-white/50 text-primary hover:bg-white hover:scale-105'}`}
-                        >
-                          <span className="material-symbols-outlined text-[18px]">{playingId === answer.id ? 'pause' : 'play_arrow'}</span>
-                        </button>
+                      </div>
+                      
+                      <div className="mb-4">
+                        <Waveform audioUrl={answer.audioObjectKey} />
                       </div>
                       
                       <p className="text-on-secondary-fixed leading-relaxed text-sm">

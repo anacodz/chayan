@@ -40,12 +40,16 @@ export default function RecruiterDashboard() {
   const itemsPerPage = 10;
 
   useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  useEffect(() => {
     async function fetchData() {
       setLoading(true);
       const skip = (currentPage - 1) * itemsPerPage;
       try {
         const [sessionsRes, metricsRes] = await Promise.all([
-          fetch(`/api/recruiter/interviews?skip=${skip}&take=${itemsPerPage}`),
+          fetch(`/api/recruiter/interviews?skip=${skip}&take=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}`),
           fetch("/api/admin/metrics")
         ]);
 
@@ -66,12 +70,7 @@ export default function RecruiterDashboard() {
       }
     }
     fetchData();
-  }, [currentPage]);
-
-  const filteredSessions = sessions.filter(s => 
-    s.candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.candidate.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  }, [currentPage, searchQuery]);
 
   const totalPages = Math.ceil(totalSessions / itemsPerPage);
 
@@ -183,7 +182,7 @@ export default function RecruiterDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-surface-container">
-                      {filteredSessions.map((s) => (
+                      {sessions.map((s) => (
                         <tr key={s.id} className="hover:bg-surface-container-low/30 transition-colors">
                           <td className="px-6 md:px-8 py-5">
                             <div className="flex items-center gap-4">
@@ -227,7 +226,7 @@ export default function RecruiterDashboard() {
                           </td>
                         </tr>
                       ))}
-                      {filteredSessions.length === 0 && (
+                      {sessions.length === 0 && (
                         <tr>
                           <td colSpan={5} className="px-6 md:px-8 py-10 text-center text-on-surface-variant italic">
                             No candidates found.

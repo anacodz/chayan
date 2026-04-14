@@ -8,11 +8,36 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const skip = parseInt(searchParams.get("skip") || "0");
   const take = parseInt(searchParams.get("take") || "10");
+  const search = searchParams.get("search") || "";
 
   try {
-    logger.info({ requestId, skip, take }, "Fetching interview sessions");
+    logger.info({ requestId, skip, take, search }, "Fetching interview sessions");
+
+    const where: any = {};
+    if (search) {
+      where.OR = [
+        {
+          candidate: {
+            name: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        },
+        {
+          candidate: {
+            email: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        },
+      ];
+    }
+
     const [sessions, total] = await Promise.all([
       prisma.interviewSession.findMany({
+        where,
         skip,
         take,
         include: {
@@ -23,7 +48,7 @@ export async function GET(req: Request) {
           createdAt: "desc",
         },
       }),
-      prisma.interviewSession.count()
+      prisma.interviewSession.count({ where }),
     ]);
 
     logger.info({ requestId, count: sessions.length, total }, "Interview sessions fetched successfully");
