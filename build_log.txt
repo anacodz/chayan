@@ -1,0 +1,83 @@
+
+> chayan@0.1.0 build
+> prisma generate && next build
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+
+✔ Generated Prisma Client (v7.7.0) to ./node_modules/@prisma/client in 73ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+
+   ▲ Next.js 15.5.15
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 1299ms
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/29) ...
+   Generating static pages (7/29) 
+   Generating static pages (14/29) 
+   Generating static pages (21/29) 
+ ✓ Generating static pages (29/29)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                                  Size  First Load JS
+┌ ○ /                                                     1.12 kB         107 kB
+├ ○ /_not-found                                             212 B         102 kB
+├ ○ /admin/calibration                                    2.58 kB         105 kB
+├ ○ /admin/data-privacy                                   2.13 kB         104 kB
+├ ○ /admin/metrics                                        2.24 kB         104 kB
+├ ○ /admin/questions                                      2.82 kB         105 kB
+├ ƒ /api/admin/calibration                                  212 B         102 kB
+├ ƒ /api/admin/calibration/test                             212 B         102 kB
+├ ƒ /api/admin/data-privacy                                 212 B         102 kB
+├ ƒ /api/admin/evaluations                                  212 B         102 kB
+├ ƒ /api/admin/metrics                                      212 B         102 kB
+├ ƒ /api/admin/question-sets                                212 B         102 kB
+├ ƒ /api/admin/questions                                    212 B         102 kB
+├ ƒ /api/admin/questions/[id]                               212 B         102 kB
+├ ƒ /api/answers/[answerId]/status                          212 B         102 kB
+├ ƒ /api/answers/upload                                     212 B         102 kB
+├ ƒ /api/audio/[...pathname]                                212 B         102 kB
+├ ƒ /api/auth/[...nextauth]                                 212 B         102 kB
+├ ƒ /api/evaluate                                           212 B         102 kB
+├ ƒ /api/health                                             212 B         102 kB
+├ ƒ /api/inngest                                            212 B         102 kB
+├ ƒ /api/interviews/[sessionId]/complete                    212 B         102 kB
+├ ƒ /api/interviews/[sessionId]/consent                     212 B         102 kB
+├ ƒ /api/interviews/[sessionId]/heartbeat                   212 B         102 kB
+├ ƒ /api/invites                                            212 B         102 kB
+├ ƒ /api/invites/[token]                                    212 B         102 kB
+├ ƒ /api/questions                                          212 B         102 kB
+├ ƒ /api/recruiter/interviews                               212 B         102 kB
+├ ƒ /api/recruiter/interviews/[sessionId]                   212 B         102 kB
+├ ƒ /api/recruiter/interviews/[sessionId]/retry-question    212 B         102 kB
+├ ƒ /api/recruiter/team                                     212 B         102 kB
+├ ƒ /api/summarize                                          212 B         102 kB
+├ ƒ /api/transcribe                                         212 B         102 kB
+├ ƒ /api/transcripts/[id]                                   212 B         102 kB
+├ ƒ /api/tts                                                212 B         102 kB
+├ ○ /auth/signin                                          1.75 kB         113 kB
+├ ƒ /interview/[token]                                    10.3 kB         116 kB
+├ ○ /recruiter                                            3.97 kB         121 kB
+├ ƒ /recruiter/interviews/[sessionId]                      190 kB         308 kB
+├ ○ /recruiter/live                                       2.02 kB         120 kB
+├ ○ /recruiter/quality                                    2.06 kB         120 kB
+└ ○ /recruiter/team                                       2.72 kB         120 kB
++ First Load JS shared by all                              102 kB
+  ├ chunks/1255-55f5611cfd370a3f.js                       45.8 kB
+  ├ chunks/4bd1b696-100b9d70ed4e49c1.js                   54.2 kB
+  └ other shared chunks (total)                           2.04 kB
+
+
+ƒ Middleware                                              59.6 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

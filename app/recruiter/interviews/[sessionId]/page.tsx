@@ -325,7 +325,9 @@ export default function RecruiterReportDetail() {
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-5xl font-black text-on-secondary-fixed print:text-3xl">{CANDIDATE_DATA.matchScore}%</span>
-                  <span className="text-xs font-bold text-tertiary">{CANDIDATE_DATA.matchScore >= 80 ? 'EXCEPTIONAL' : CANDIDATE_DATA.matchScore >= 60 ? 'STRONG' : 'NEEDS REVIEW'}</span>
+                  <span className={`text-xs font-bold ${CANDIDATE_DATA.matchScore >= 80 ? 'text-tertiary' : CANDIDATE_DATA.matchScore >= 60 ? 'text-secondary' : 'text-error'}`}>
+                    {CANDIDATE_DATA.matchScore >= 80 ? 'EXCEPTIONAL' : CANDIDATE_DATA.matchScore >= 60 ? 'STRONG' : 'NEEDS REVIEW'}
+                  </span>
                 </div>
               </div>
             </div>
