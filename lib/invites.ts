@@ -1,18 +1,35 @@
-import { randomBytes, createHash } from "crypto";
+import { createHash } from "crypto";
+import { SignJWT, jwtVerify } from "jose";
 import prisma from "./prisma";
+import { env } from "./env";
+
+const SECRET = new TextEncoder().encode(env.INVITE_TOKEN_SECRET);
 
 /**
- * Generate a random token for an invite.
- * Returns both the raw token (to be sent to the candidate) and its SHA-256 hash (to be stored in the DB).
+ * Generate a signed JWT for an invite.
  */
-export function generateInviteToken(): { token: string; hash: string } {
-  const token = randomBytes(32).toString("hex");
-  const hash = hashToken(token);
-  return { token, hash };
+export async function createInviteToken(payload: { candidateId: string; sessionId: string }) {
+  return await new SignJWT(payload)
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("7d")
+    .sign(SECRET);
 }
 
 /**
- * Hash a token using SHA-256.
+ * Verify a signed JWT.
+ */
+export async function verifyInviteToken(token: string) {
+  try {
+    const { payload } = await jwtVerify(token, SECRET);
+    return { valid: true, payload: payload as { candidateId: string; sessionId: string } };
+  } catch (error) {
+    return { valid: false, error };
+  }
+}
+
+/**
+ * Hash a token (JWT) using SHA-256 for storage in the DB.
  */
 export function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -20,29 +37,46 @@ export function hashToken(token: string): string {
 
 /**
  * Create a new interview session for a candidate.
+ * Returns the session and the raw signed JWT.
  */
 export async function createInvite(candidateId: string, questionSetId: string, expiresDays: number = 7) {
-  const { token, hash } = generateInviteToken();
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + expiresDays);
 
+  // We need the session ID for the JWT payload, so we create the session first with a placeholder hash
   const session = await prisma.interviewSession.create({
     data: {
       candidateId,
       questionSetId,
-      inviteTokenHash: hash,
+      inviteTokenHash: "temp-" + Math.random().toString(36).substring(7),
       inviteExpiresAt: expiresAt,
       status: "INVITED",
     },
   });
 
-  return { session, token };
+  const token = await createInviteToken({ candidateId, sessionId: session.id });
+  const hash = hashToken(token);
+
+  // Update session with the actual hash of the JWT
+  const updatedSession = await prisma.interviewSession.update({
+    where: { id: session.id },
+    data: { inviteTokenHash: hash },
+  });
+
+  return { session: updatedSession, token };
 }
 
 /**
- * Validate an invite token and return the associated session.
+ * Validate an invite token (JWT) and return the associated session.
  */
 export async function validateInvite(token: string) {
+  // 1. Verify JWT signature and expiration
+  const verification = await verifyInviteToken(token);
+  if (!verification.valid) {
+    return { valid: false, error: "Invalid or expired token signature" };
+  }
+
+  // 2. Check if the hash exists in the database
   const hash = hashToken(token);
   const session = await prisma.interviewSession.findUnique({
     where: { inviteTokenHash: hash },
@@ -61,9 +95,10 @@ export async function validateInvite(token: string) {
   });
 
   if (!session) {
-    return { valid: false, error: "Invite not found" };
+    return { valid: false, error: "Invite session not found in database" };
   }
 
+  // Double check expiration from DB just in case it differs from JWT
   if (new Date() > session.inviteExpiresAt) {
     return { valid: false, error: "Invite has expired", session };
   }
