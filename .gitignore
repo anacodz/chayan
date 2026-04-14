@@ -27,11 +27,6 @@ BACKLOG.txt
 *.swo
 .opencode/
 opencode.jsonc
-# Private / local planning docs
-docs/TODO.md
-docs/plan.md
-docs/ROADMAP.md
-docs/Git_Rules.md
 
 # Build artifacts
 dist/
@@ -45,11 +40,11 @@ __pycache__/
 .venv
 .python-version
 
-# Figma assets and product documents
+# Figma assets
 Figma/
-PRODUCT.md
 
-Figma/
-PRODUCT.md
+# Ignore all markdown files except README
+*.md
+!README.md
 
 /lib/generated/prisma

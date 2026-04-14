@@ -66,6 +66,21 @@
   - Implemented mocked E2E test for the full candidate "Happy Path" flow.
   - Implemented mocked E2E test for the recruiter dashboard and decision workflow.
 
+### Sprint 1 (Parallel) - Frontend Refactor & Metrics Enhancement
+- **[BACKLOG-015] Frontend Logic Decoupling (Domain Hooks)**
+  - Extracted core recording, audio, and session logic from `app/page.tsx` into reusable hooks.
+  - `useMediaRecorder`: Handles browser audio capture and live waveform visualization.
+  - `useInterviewAudio`: Manages TTS playback and audio feedback.
+  - `useInterviewSession`: Manages state restoration, timers, and assessment progress.
+- **[BACKLOG-016] Advanced Analytics & KPI Dashboard**
+  - Enhanced metrics service with a full conversion funnel (Invited -> Started -> Completed -> Reviewed).
+  - Built a visual bar chart funnel on the Admin Metrics dashboard.
+  - Integrated STT fallback tracking and AI confidence trends.
+- **[BACKLOG-017] Recruiter Experience Polish**
+  - Implemented server-side debounced search and pagination on the candidate list.
+  - Added multi-question set support to the Invite Modal for targeted screening.
+  - Refined print-only styles for high-quality PDF report generation.
+
 ## Technical Notes
 - **Security Patterns**: Prepped `lib/storage.ts` for time-limited signed URLs to protect candidate audio (Milestone 4b).
 - **Scalable Architecture**: Moved long-running AI tasks to background workers using Inngest.
