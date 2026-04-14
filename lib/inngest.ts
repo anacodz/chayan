@@ -148,9 +148,129 @@ export const transcribeAndEvaluateAnswer = inngest.createFunction(
     return { answerId, status: "completed" };
   }
 );
+/**
+ * Background job to synthesize final assessment report.
+ * Triggers on 'interview/completed' event.
+ */
+export const finalizeInterviewReport = inngest.createFunction(
+  {
+    id: "finalize-interview-report",
+    triggers: [{ event: "interview/completed" }],
+  },
+  async ({ event, step }) => {
+    const { sessionId } = event.data;
+
+    const answers = await step.run("fetch-all-answers", async () => {
+      return await prisma.answer.findMany({
+        where: { sessionId },
+        include: {
+          transcript: true,
+          evaluation: true,
+          question: true,
+        },
+        orderBy: { createdAt: "asc" },
+      });
+    });
+
+    const report = await step.run("generate-final-report", async () => {
+      const { GoogleGenAI } = await import("@google/genai");
+      const { FinalReportSchema } = await import("./schemas");
+      const { extractJsonObject } = await import("./json");
+
+      const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY! });
+      // Use a more reasoning-heavy model for the final report
+      const modelName = "gemini-1.5-pro"; 
+
+      const formattedAnswers = answers.map(a => ({
+        questionId: a.questionId,
+        question: a.question.prompt,
+        transcript: a.transcript?.text || "",
+        evaluation: a.evaluation ? {
+          score: (a.evaluation.communicationClarity + a.evaluation.conceptExplanation + a.evaluation.empathyAndPatience) / 3,
+          reasoning: "Answer evaluated.",
+          signals: a.evaluation.evidence,
+          redFlags: a.evaluation.concerns,
+        } : null
+      }));
+
+      const prompt = `Create a high-fidelity final tutor screening report from these structured answers.
+
+Candidate Data: ${JSON.stringify(formattedAnswers, null, 2)}
+
+Return JSON only with this shape:
+{
+  "recommendation": "MOVE_FORWARD" | "HOLD" | "DECLINE",
+  "summary": string,
+  "dimensionScores": {
+    "communicationClarity": number,
+    "conceptExplanation": number,
+    "empathyAndPatience": number,
+    "adaptability": number,
+    "professionalism": number,
+    "englishFluency": number
+  },
+  "strengths": string[],
+  "concerns": string[],
+  "nextStep": string,
+  "confidence": number
+}
+
+Use only evidence from the transcripts. Scores should be 1-5. Confidence 0-1. Be critical but fair.`;
+
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt
+      });
+
+      const text = response.text || "";
+      const rawJson = extractJsonObject<any>(text);
+      return FinalReportSchema.parse(rawJson);
+    });
+
+    await step.run("save-final-report", async () => {
+      const overallScore = Object.values(report.dimensionScores as any).reduce((a: any, b: any) => a + b, 0) as number / 6;
+
+      await prisma.finalReport.upsert({
+        where: { sessionId },
+        create: {
+          sessionId,
+          recommendation: report.recommendation,
+          overallScore,
+          confidence: report.confidence || 0.8,
+          strengths: report.strengths,
+          risks: report.concerns,
+          suggestedFollowUps: [report.nextStep],
+          evidenceByQuestion: answers.map(a => ({
+            questionId: a.questionId,
+            transcriptExcerpt: a.transcript?.text?.slice(0, 100) || "",
+            rationale: "Evaluated in context of whole interview."
+          })),
+          model: "gemini-1.5-pro",
+          promptVersion: "v2",
+          schemaVersion: "v1",
+        },
+        update: {
+          recommendation: report.recommendation,
+          overallScore,
+          strengths: report.strengths,
+          risks: report.concerns,
+        }
+      });
+
+      await prisma.interviewSession.update({
+        where: { id: sessionId },
+        data: { status: "COMPLETED", completedAt: new Date() }
+      });
+    });
+
+    return { sessionId, status: "completed" };
+  }
+);
 
 /**
  * Automated cron job to clean up old data.
+...
+
  * Runs daily at midnight.
  */
 export const cleanupOldData = inngest.createFunction(
