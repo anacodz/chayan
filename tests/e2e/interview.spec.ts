@@ -136,7 +136,7 @@ test.describe('Candidate Interview Flow', () => {
     await stopBtn.click();
 
     // 7. Completion Screen
-    await expect(page.getByText(/Assessment Complete/i)).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(/Thank you for your time/i)).toBeVisible();
+    await expect(page.getByText(/Interview Complete/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Thanks for your time/i)).toBeVisible();
   });
 });
