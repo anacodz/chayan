@@ -49,7 +49,7 @@ export default function TeamPage() {
       <Sidebar />
 
       <div className="flex-1 flex flex-col">
-        <Header />
+        <Header onInviteClick={() => {}} />
 
         <main className="flex-1 p-4 md:p-8 overflow-y-auto">
           <header className="mb-8 md:mb-10">
@@ -70,18 +70,6 @@ export default function TeamPage() {
             <div className="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm border border-outline-variant/5">
               <div className="p-6 md:p-8 border-b border-surface-container flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white">
                 <h3 className="text-xl font-bold text-on-surface">Registered Recruiters</h3>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <div className="relative flex-1 sm:w-64">
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
-                    <input 
-                      type="text" 
-                      placeholder="Search team members..." 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-surface-container-low rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                    />
-                  </div>
-                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left min-w-[640px]">
@@ -137,12 +125,6 @@ export default function TeamPage() {
           <div className="h-16" />
         </main>
       </div>
-
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-surface-container p-4 flex justify-around items-center z-50">
-        <Link href="/recruiter" className="flex flex-col items-center gap-1 text-on-surface-variant"><span className="material-symbols-outlined">dashboard</span><span className="text-[10px] font-bold">Dashboard</span></Link>
-        <Link href="/recruiter/team" className="flex flex-col items-center gap-1 text-primary"><span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>groups</span><span className="text-[10px] font-bold">Team</span></Link>
-        <Link href="#" className="flex flex-col items-center gap-1 text-on-surface-variant"><span className="material-symbols-outlined">person</span><span className="text-[10px] font-bold">Profile</span></Link>
-      </nav>
     </div>
   );
 }
