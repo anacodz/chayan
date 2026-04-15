@@ -30,7 +30,7 @@ test.describe('Recruiter Review Flow', () => {
     });
 
     // 2. Mock the interviews list API
-    await page.route(/\/api\/recruiter\/interviews\?.*$/, async (route) => {
+    await page.route('**/api/recruiter/interviews*', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -54,7 +54,7 @@ test.describe('Recruiter Review Flow', () => {
     });
 
     // 3. Mock the metrics API
-    await page.route('**/api/admin/metrics', async (route) => {
+    await page.route('**/api/admin/metrics*', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
