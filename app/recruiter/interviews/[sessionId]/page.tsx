@@ -276,7 +276,7 @@ export default function RecruiterReportDetail() {
 
   return (
     <div className="min-h-screen bg-background print:bg-white">
-      <Header />
+      <Header onInviteClick={() => {}} />
 
       <div id="report-content" className="max-w-[1920px] mx-auto p-6 md:p-8 lg:p-12 print:p-0 print:max-w-none">
         {/* ── Header ── */}
