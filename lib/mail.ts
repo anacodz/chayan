@@ -13,7 +13,6 @@ export type InviteEmailFailureCode =
   | "MISSING_VERIFIED_SENDER"
   | "INVALID_INVITE_URL"
   | "RESEND_API_ERROR"
-  | "TESTMAIL_API_ERROR"
   | "TRANSIENT_RETRY_EXHAUSTED"
   | "SEND_EXCEPTION";
 
@@ -59,36 +58,26 @@ function isTransientFailure(value: unknown): boolean {
 }
 
 /**
- * Sends an invitation email using either Resend or testmail.app.
+ * Sends an invitation email using the Resend API.
  */
 export async function sendInviteEmail({ to, name, inviteUrl }: SendInviteEmailParams) {
-  const resendKey = env.RESEND_API_KEY;
-  const testmailKey = env.TESTMAIL_API_KEY;
+  const apiKey = env.RESEND_API_KEY;
   const fallbackFrom = "hiring@cuemath.com";
-  const from = env.RESEND_FROM?.trim() || fallbackFrom;
+  const from = env.RESEND_FROM?.trim() || "onboarding@resend.dev";
   const maxAttempts = env.NODE_ENV === "production" ? 3 : 2;
   
-  if (!resendKey && !testmailKey) {
-    logger.error("No email API key found. Please set RESEND_API_KEY or TESTMAIL_API_KEY in .env");
+  if (!apiKey || apiKey === "re_xxxxxxxxx") {
+    logger.error("RESEND_API_KEY is missing or using placeholder. Please set a real key in .env");
     return {
       ok: false,
       attempts: 0,
       failureCode: "MISSING_API_KEY",
-      failureReason: "No email provider configured",
+      failureReason: "RESEND_API_KEY is missing or placeholder",
     } satisfies SendInviteEmailResult;
   }
 
-  if (env.NODE_ENV === "production" && !env.RESEND_FROM && !testmailKey) {
-    logger.error(
-      { from, fallbackFrom },
-      "RESEND_FROM is required in production when using Resend."
-    );
-    return {
-      ok: false,
-      attempts: 0,
-      failureCode: "MISSING_VERIFIED_SENDER",
-      failureReason: "RESEND_FROM is not configured for production",
-    } satisfies SendInviteEmailResult;
+  if (env.NODE_ENV === "production" && !env.RESEND_FROM) {
+    logger.warn("RESEND_FROM not set in production, using default onboarding address.");
   }
 
   if (!inviteUrl.startsWith("http://") && !inviteUrl.startsWith("https://")) {
@@ -101,6 +90,13 @@ export async function sendInviteEmail({ to, name, inviteUrl }: SendInviteEmailPa
     } satisfies SendInviteEmailResult;
   }
 
+  logger.info({ 
+    to, 
+    from,
+    keyPrefix: apiKey.substring(0, 5) 
+  }, "Attempting to send email via Resend");
+
+  const resend = new Resend(apiKey);
   const subject = "Invitation: Cuemath AI Tutor Screening";
 
   const html = `
@@ -125,120 +121,11 @@ export async function sendInviteEmail({ to, name, inviteUrl }: SendInviteEmailPa
     </div>
   `;
 
-  if (testmailKey) {
-    return sendViaTestmail({ to, subject, html, apiKey: testmailKey, from, maxAttempts });
-  }
-
-  return sendViaResend({ to, subject, html, apiKey: resendKey!, from, maxAttempts });
-}
-
-async function sendViaTestmail({ 
-  to, 
-  subject, 
-  html, 
-  apiKey, 
-  from, 
-  maxAttempts 
-}: { 
-  to: string, 
-  subject: string, 
-  html: string, 
-  apiKey: string, 
-  from: string, 
-  maxAttempts: number 
-}): Promise<SendInviteEmailResult> {
-  let lastFailureReason = "testmail.app API error";
-  let retryableFailure = false;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      logger.info({ to, attempt }, "Attempting to send email via testmail.app");
-      
-      const response = await fetch("https://api.testmail.app/api/json/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          apikey: apiKey,
-          from,
-          to,
-          subject,
-          html,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        lastFailureReason = errorData.message || `HTTP ${response.status}`;
-        retryableFailure = isTransientFailure(lastFailureReason);
-
-        logger.error({ error: lastFailureReason, to, attempt, maxAttempts }, "testmail.app API error");
-
-        if (retryableFailure && attempt < maxAttempts) {
-          await sleep(150 * Math.pow(2, attempt - 1));
-          continue;
-        }
-
-        return {
-          ok: false,
-          attempts: attempt,
-          failureCode: "TESTMAIL_API_ERROR",
-          failureReason: lastFailureReason,
-        };
-      }
-
-      logger.info({ to, attempt }, "Invite email sent successfully via testmail.app");
-      return { ok: true, attempts: attempt };
-    } catch (error) {
-      lastFailureReason = error instanceof Error ? error.message : "Unknown error";
-      retryableFailure = isTransientFailure(lastFailureReason);
-
-      logger.error({ error: lastFailureReason, to, attempt, maxAttempts }, "testmail.app exception");
-
-      if (retryableFailure && attempt < maxAttempts) {
-        await sleep(150 * Math.pow(2, attempt - 1));
-        continue;
-      }
-
-      return {
-        ok: false,
-        attempts: attempt,
-        failureCode: "SEND_EXCEPTION",
-        failureReason: lastFailureReason,
-      };
-    }
-  }
-
-  return {
-    ok: false,
-    attempts: maxAttempts,
-    failureCode: "TRANSIENT_RETRY_EXHAUSTED",
-    failureReason: lastFailureReason,
-  };
-}
-
-async function sendViaResend({ 
-  to, 
-  subject, 
-  html, 
-  apiKey, 
-  from, 
-  maxAttempts 
-}: { 
-  to: string, 
-  subject: string, 
-  html: string, 
-  apiKey: string, 
-  from: string, 
-  maxAttempts: number 
-}): Promise<SendInviteEmailResult> {
-  const resend = new Resend(apiKey);
   let lastFailureReason = "Resend API error";
   let retryableFailure = false;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      logger.info({ to, attempt }, "Attempting to send email via Resend");
-      
       const { data, error } = await resend.emails.send({
         from,
         to: [to],
@@ -262,16 +149,16 @@ async function sendViaResend({
           attempts: attempt,
           failureCode: retryableFailure ? "TRANSIENT_RETRY_EXHAUSTED" : "RESEND_API_ERROR",
           failureReason: lastFailureReason,
-        };
+        } satisfies SendInviteEmailResult;
       }
 
       logger.info({ id: data?.id, to, attempt }, "Invite email sent successfully via Resend");
-      return { ok: true, attempts: attempt };
+      return { ok: true, attempts: attempt } satisfies SendInviteEmailResult;
     } catch (error) {
       lastFailureReason = error instanceof Error ? error.message : "Unknown error";
-      retryableFailure = isTransientFailure(lastFailureReason);
+      retryableFailure = isTransientFailure(error);
 
-      logger.error({ error: lastFailureReason, to, from, attempt, maxAttempts }, "Resend exception");
+      logger.error({ error: lastFailureReason, to, from, attempt, maxAttempts }, "Failed to send email");
 
       if (retryableFailure && attempt < maxAttempts) {
         await sleep(150 * Math.pow(2, attempt - 1));
@@ -283,14 +170,14 @@ async function sendViaResend({
         attempts: attempt,
         failureCode: retryableFailure ? "TRANSIENT_RETRY_EXHAUSTED" : "SEND_EXCEPTION",
         failureReason: lastFailureReason,
-      };
+      } satisfies SendInviteEmailResult;
     }
   }
 
   return {
     ok: false,
     attempts: maxAttempts,
-    failureCode: "TRANSIENT_RETRY_EXHAUSTED",
+    failureCode: retryableFailure ? "TRANSIENT_RETRY_EXHAUSTED" : "SEND_EXCEPTION",
     failureReason: lastFailureReason,
-  };
+  } satisfies SendInviteEmailResult;
 }
