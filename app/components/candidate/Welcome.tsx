@@ -18,6 +18,22 @@ interface WelcomeProps {
 
 export default function Welcome({ onAccept, onDecline, session }: WelcomeProps) {
   const [consented, setConsented] = useState(false);
+  const [audioPermission, setAudioPermission] = useState<"pending" | "granted" | "denied">("pending");
+  const [isRequesting, setIsRequesting] = useState(false);
+
+  const requestMicPermission = async () => {
+    setIsRequesting(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+      setAudioPermission("granted");
+    } catch (err) {
+      console.error("Mic permission denied:", err);
+      setAudioPermission("denied");
+    } finally {
+      setIsRequesting(false);
+    }
+  };
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden bg-background">
@@ -133,7 +149,32 @@ export default function Welcome({ onAccept, onDecline, session }: WelcomeProps) 
                   </ul>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-surface-container-low border border-outline-variant/10">
+                <div className="p-5 rounded-2xl bg-surface-container-low border border-outline-variant/10 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${audioPermission === "granted" ? "bg-tertiary/10 text-tertiary" : audioPermission === "denied" ? "bg-error/10 text-error" : "bg-primary/10 text-primary"}`}>
+                        <span className="material-symbols-outlined text-[18px]">
+                          {audioPermission === "granted" ? "mic" : audioPermission === "denied" ? "mic_off" : "mic_none"}
+                        </span>
+                      </div>
+                      <span className="text-xs font-bold text-on-surface">Microphone Access</span>
+                    </div>
+                    {audioPermission !== "granted" ? (
+                      <button 
+                        onClick={requestMicPermission}
+                        disabled={isRequesting}
+                        className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline disabled:opacity-50"
+                      >
+                        {isRequesting ? "Requesting..." : "Enable Mic"}
+                      </button>
+                    ) : (
+                      <span className="text-[10px] font-black uppercase tracking-widest text-tertiary flex items-center gap-1">
+                        <span className="material-symbols-outlined text-xs">check_circle</span>
+                        Ready
+                      </span>
+                    )}
+                  </div>
+
                   <label className="flex items-start gap-3 cursor-pointer group">
                     <input 
                       className="mt-1 w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary/20 transition-all cursor-pointer" 
@@ -142,7 +183,7 @@ export default function Welcome({ onAccept, onDecline, session }: WelcomeProps) 
                       onChange={(e) => setConsented(e.target.checked)}
                     />
                     <span className="text-xs text-on-surface-variant leading-relaxed select-none group-hover:text-on-surface transition-colors">
-                      I consent to the recording of this session and agree to Cuemath&apos;s <span className="text-primary font-semibold underline decoration-primary/30">Candidate Terms</span> and <span className="text-primary font-semibold underline decoration-primary/30">Privacy Policy</span>.
+                      I consent to the recording of this session and agree to Cuemath&apos;s <span className="text-primary font-semibold underline decoration-primary/30">Candidate Terms</span>.
                     </span>
                   </label>
                 </div>
@@ -150,7 +191,7 @@ export default function Welcome({ onAccept, onDecline, session }: WelcomeProps) 
               
               <div className="flex flex-col gap-4">
                 <button 
-                  disabled={!consented}
+                  disabled={!consented || audioPermission !== "granted"}
                   onClick={onAccept}
                   className="w-full h-16 premium-gradient rounded-2xl text-white font-bold text-lg shadow-xl active:scale-[0.98] hover:shadow-2xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                 >
