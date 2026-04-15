@@ -9,6 +9,20 @@ export interface DashboardMetrics {
   totalCostUSD: number;
   totalInputTokens: number;
   totalOutputTokens: number;
+  llmVoiceResponses: {
+    total: number;
+    evaluated: number;
+    avgDurationSeconds: number;
+    recent: Array<{
+      answerId: string;
+      sessionId: string;
+      candidateName: string;
+      questionPrompt: string;
+      transcript: string;
+      confidence: number;
+      createdAt: Date;
+    }>;
+  };
   funnel: {
     invited: number;
     started: number;
@@ -28,6 +42,9 @@ export async function getSystemMetrics(): Promise<DashboardMetrics> {
     reviewedSessions, 
     totalAnswers, 
     fallbackAnswers,
+    evaluatedAnswers,
+    answerDuration,
+    recentVoiceResponses,
     evalUsage,
     reportUsage
   ] = await Promise.all([
@@ -37,6 +54,38 @@ export async function getSystemMetrics(): Promise<DashboardMetrics> {
     prisma.recruiterDecision.count(),
     prisma.answer.count(),
     prisma.transcript.count({ where: { provider: "openai" } }), // OpenAI is our fallback
+    prisma.answerEvaluation.count(),
+    prisma.answer.aggregate({
+      _avg: {
+        audioDurationSeconds: true,
+      },
+      where: {
+        status: { in: ["TRANSCRIBED", "EVALUATED"] },
+      },
+    }),
+    prisma.answerEvaluation.findMany({
+      take: 8,
+      orderBy: { createdAt: "desc" },
+      include: {
+        answer: {
+          include: {
+            question: {
+              select: { prompt: true },
+            },
+            transcript: {
+              select: { text: true, correctedText: true },
+            },
+            session: {
+              include: {
+                candidate: {
+                  select: { name: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
     prisma.answerEvaluation.aggregate({
       _sum: {
         costUSD: true,
@@ -56,6 +105,16 @@ export async function getSystemMetrics(): Promise<DashboardMetrics> {
   const totalCostUSD = (evalUsage._sum.costUSD || 0) + (reportUsage._sum.costUSD || 0);
   const totalInputTokens = (evalUsage._sum.inputTokens || 0) + (reportUsage._sum.inputTokens || 0);
   const totalOutputTokens = (evalUsage._sum.outputTokens || 0) + (reportUsage._sum.outputTokens || 0);
+  const avgDurationSeconds = answerDuration._avg.audioDurationSeconds || 0;
+  const llmVoiceResponses = recentVoiceResponses.map((item) => ({
+    answerId: item.answerId,
+    sessionId: item.answer.sessionId,
+    candidateName: item.answer.session.candidate.name,
+    questionPrompt: item.answer.question.prompt,
+    transcript: (item.answer.transcript?.correctedText || item.answer.transcript?.text || "").slice(0, 400),
+    confidence: item.confidence,
+    createdAt: item.createdAt,
+  }));
 
   // Calculate completion rate
   const completionRate = totalSessions > 0 ? (completedSessions / totalSessions) : 0;
@@ -99,6 +158,12 @@ export async function getSystemMetrics(): Promise<DashboardMetrics> {
     totalCostUSD,
     totalInputTokens,
     totalOutputTokens,
+    llmVoiceResponses: {
+      total: totalAnswers,
+      evaluated: evaluatedAnswers,
+      avgDurationSeconds,
+      recent: llmVoiceResponses,
+    },
     funnel: {
       invited: totalSessions,
       started: startedSessions,

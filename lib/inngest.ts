@@ -199,7 +199,6 @@ export const finalizeInterviewReport = inngest.createFunction(
 
         const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
         const modelName = "gemini-1.5-pro"; 
-        const model = ai.getGenerativeModel({ model: modelName });
 
         const prompt = `Create a high-fidelity final tutor screening report from these structured answers.
 
@@ -226,19 +225,22 @@ Return JSON only with this shape:
 Use only evidence from the transcripts. Scores should be 1-5. Confidence 0-1. Be critical but fair.`;
 
         const result = await withRetry(async () => {
-          return await model.generateContent(prompt);
+          return await ai.models.generateContent({
+            model: modelName,
+            contents: [{ role: "user", parts: [{ text: prompt }] }]
+          });
         });
 
-        const response = await result.response;
-        const text = response.text() || "";
+        const response = result;
+        const text = response.text || "";
         const rawJson = extractJsonObject<any>(text);
         const report = FinalReportSchema.parse(rawJson);
         
         return {
           report,
           usage: response.usageMetadata ? {
-            inputTokens: response.usageMetadata.promptTokenCount,
-            outputTokens: response.usageMetadata.candidatesTokenCount
+            inputTokens: response.usageMetadata.promptTokenCount as number,
+            outputTokens: response.usageMetadata.candidatesTokenCount as number
           } : undefined
         };
       } catch (error) {
@@ -257,7 +259,6 @@ Use only evidence from the transcripts. Scores should be 1-5. Confidence 0-1. Be
         };
 
         const data = {
-          sessionId,
           recommendation: report.recommendation as any,
           overallScore: averageScore(report.dimensionScores),
           confidence: report.confidence || 0.8,
@@ -272,12 +273,13 @@ Use only evidence from the transcripts. Scores should be 1-5. Confidence 0-1. Be
           model: "gemini-1.5-pro",
           promptVersion: "v1",
           schemaVersion: "v1",
-          inputTokens: usage?.inputTokens,
-          outputTokens: usage?.outputTokens,
+          inputTokens: (usage as any)?.inputTokens,
+          outputTokens: (usage as any)?.outputTokens,
           // Gemini 1.5 Pro: $1.25 / 1M input, $5.00 / 1M output (rough estimate for under 128k context)
           costUSD: usage 
-            ? (usage.inputTokens * 1.25 + usage.outputTokens * 5.00) / 1_000_000
+            ? ((usage as any).inputTokens * 1.25 + (usage as any).outputTokens * 5.00) / 1_000_000
             : null,
+          session: { connect: { id: sessionId } }
         };
 
         await prisma.finalReport.upsert({

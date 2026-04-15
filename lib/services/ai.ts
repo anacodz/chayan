@@ -96,7 +96,6 @@ export async function evaluateAnswerService(
   }
 
   const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
-  const model = ai.getGenerativeModel({ model: modelName });
   
   const prompt = `Evaluate this tutor screening answer.
 
@@ -127,11 +126,14 @@ If the answer is too short, vague, or missing key competency signals, provide a 
 
   try {
     const result = await withRetry(async () => {
-      return await model.generateContent(prompt);
+      return await ai.models.generateContent({
+        model: modelName,
+        contents: [{ role: "user", parts: [{ text: prompt }] }]
+      });
     });
 
-    const response = await result.response;
-    const text = response.text() || "";
+    const response = result; // result is already GenerateContentResponse from ai.models.generateContent
+    const text = response.text || "";
     const rawJson = extractJsonObject<any>(text);
     
     let evaluation: AnswerEvaluation;
@@ -140,7 +142,11 @@ If the answer is too short, vague, or missing key competency signals, provide a 
     } catch (parseError) {
       logger.warn({ error: parseError, text }, "Evaluation JSON schema mismatch, attempting repair");
       
-      const repairResult = await model.generateContent(`The following JSON did not match the required schema:
+      const repairResult = await ai.models.generateContent({
+        model: modelName,
+        contents: [{
+          role: "user",
+          parts: [{ text: `The following JSON did not match the required schema:
 ${JSON.stringify(rawJson)}
 
 Error: ${parseError instanceof Error ? parseError.message : String(parseError)}
@@ -148,10 +154,12 @@ Error: ${parseError instanceof Error ? parseError.message : String(parseError)}
 Please fix the JSON to strictly match this schema:
 ${JSON.stringify(AnswerEvaluationSchema.shape)}
 
-Return fixed JSON only.`);
+Return fixed JSON only.` }]
+        }]
+      });
       
-      const repairResponse = await repairResult.response;
-      const repairedJson = extractJsonObject<any>(repairResponse.text() || "");
+      const repairResponse = repairResult;
+      const repairedJson = extractJsonObject<any>(repairResponse.text || "");
       evaluation = AnswerEvaluationSchema.parse(repairedJson);
     }
 
@@ -161,8 +169,8 @@ Return fixed JSON only.`);
       promptVersion,
       schemaVersion,
       usage: response.usageMetadata ? {
-        inputTokens: response.usageMetadata.promptTokenCount,
-        outputTokens: response.usageMetadata.candidatesTokenCount
+        inputTokens: response.usageMetadata.promptTokenCount as number,
+        outputTokens: response.usageMetadata.candidatesTokenCount as number
       } : undefined
     };
   } catch (error) {

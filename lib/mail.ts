@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { logger } from "./logger";
+import { env } from "./env";
 
 interface SendInviteEmailParams {
   to: string;
@@ -11,15 +12,26 @@ interface SendInviteEmailParams {
  * Sends an invitation email using the Resend API.
  */
 export async function sendInviteEmail({ to, name, inviteUrl }: SendInviteEmailParams) {
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = env.RESEND_API_KEY;
   
   if (!apiKey || apiKey === "re_xxxxxxxxx") {
     logger.error("RESEND_API_KEY is missing or using placeholder. Please set a real key in .env");
     return false;
   }
 
+  if (!inviteUrl.startsWith("http://") && !inviteUrl.startsWith("https://")) {
+    logger.error({ inviteUrl }, "Invite email skipped: invite URL must be absolute");
+    return false;
+  }
+
+  logger.info({ 
+    to, 
+    from: env.RESEND_FROM || "onboarding@resend.dev",
+    keyPrefix: apiKey.substring(0, 5) 
+  }, "Attempting to send email via Resend");
+
   const resend = new Resend(apiKey);
-  const from = process.env.RESEND_FROM || "onboarding@resend.dev";
+  const from = env.RESEND_FROM || "onboarding@resend.dev";
   const subject = "Invitation: Cuemath AI Tutor Screening";
 
   const html = `

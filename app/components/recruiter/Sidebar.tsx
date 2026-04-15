@@ -6,9 +6,9 @@ import CuemathLogo from "../CuemathLogo";
 import { signOut, useSession } from "next-auth/react";
 
 const NAV_ITEMS = [
-  { icon: "dashboard",         label: "Overview",        href: "/recruiter" },
-  { icon: "record_voice_over", label: "Live Sessions",   href: "/recruiter/live" },
-  { icon: "settings_voice",    label: "Voice Quality",   href: "/recruiter/quality" },
+  { icon: "dashboard",         label: "Overview",        href: "/recruiter",        isAdmin: false },
+  { icon: "record_voice_over", label: "Live Sessions",   href: "/recruiter/live",   isAdmin: false },
+  { icon: "settings_voice",    label: "Voice Quality",   href: "/recruiter/quality", isAdmin: false },
   { icon: "psychology",        label: "Scoring Models",  href: "/admin/questions", isAdmin: true },
   { icon: "group",             label: "Team",            href: "/recruiter/team",  isAdmin: true },
 ] as const;

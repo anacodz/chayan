@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSignedAudioUrl } from "@/lib/storage";
+import { normalizeRecruiterDecision, recruiterDecisionSchema } from "@/lib/recruiter-decision";
 
 export async function GET(
   request: Request,
@@ -20,6 +21,7 @@ export async function GET(
           },
         },
         finalReport: true,
+        recruiterDecision: true,
       },
     });
 
@@ -56,20 +58,27 @@ export async function POST(
 ) {
   const { sessionId } = await params;
   const body = await request.json();
-  const { decision, notes, reviewerId } = body;
+
+  const parsed = recruiterDecisionSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid decision payload" }, { status: 400 });
+  }
+
+  const { decision, notes, reviewerId } = parsed.data;
+  const normalizedDecision = normalizeRecruiterDecision(decision);
 
   try {
     const recruiterDecision = await prisma.recruiterDecision.upsert({
       where: { sessionId },
       update: {
-        decision: decision.replace(" ", "_").toUpperCase(),
-        notes,
+        decision: normalizedDecision,
+        notes: notes ?? null,
         reviewerId: reviewerId || "system",
       },
       create: {
         sessionId,
-        decision: decision.replace(" ", "_").toUpperCase(),
-        notes,
+        decision: normalizedDecision,
+        notes: notes ?? null,
         reviewerId: reviewerId || "system",
       },
     });

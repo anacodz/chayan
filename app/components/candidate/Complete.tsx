@@ -13,11 +13,11 @@ export default function Complete({ answersCount }: CompleteProps) {
 
       <div className="w-full max-w-[1040px] relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
         <section className="lg:col-span-7 space-y-5">
-          <p className="text-xs font-bold tracking-[0.18em] text-primary uppercase">Interview Complete</p>
+          <p className="text-xs font-bold tracking-[0.18em] text-primary uppercase">Assessment Complete</p>
           <h1 className="text-5xl leading-[1.08] font-black tracking-tight text-on-secondary-fixed">
             You&rsquo;re all set.
             <br />
-            <span className="italic font-semibold text-primary">Thanks for your time.</span>
+            <span className="italic font-semibold text-primary">Thank you for your time.</span>
           </h1>
           <p className="text-lg text-on-surface-variant max-w-xl leading-relaxed">
             Your responses have been securely submitted to the Cuemath hiring team for evaluation.
