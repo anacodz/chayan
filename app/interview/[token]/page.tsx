@@ -31,7 +31,6 @@ export default function InterviewPage({ params }: { params: Promise<{ token: str
   } = useInterviewSession({
     token,
     onSecurityViolation: (type) => {
-      console.warn("Security violation:", type);
       setPhase("security_violation");
     }
   });
