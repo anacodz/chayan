@@ -16,12 +16,13 @@ export class ApiError extends Error {
  */
 export async function safeFetch<T>(
   path: string, 
-  options: RequestInit = {}, 
+  options: RequestInit & { skipRedirect?: boolean } = {}, 
   fallback?: T
 ): Promise<T> {
+  const { skipRedirect, ...fetchOptions } = options;
   try {
     const response = await fetch(path, {
-      ...options,
+      ...fetchOptions,
       headers: {
         "Content-Type": "application/json",
         ...options.headers,
@@ -33,7 +34,7 @@ export async function safeFetch<T>(
 
     if (!response.ok) {
       // Handle Unauthorized or Forbidden
-      if (response.status === 401 || response.status === 403) {
+      if ((response.status === 401 || response.status === 403) && !skipRedirect) {
         if (typeof window !== "undefined" && !window.location.pathname.startsWith("/auth/signin")) {
           const signInUrl = `/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
           window.location.href = signInUrl;
@@ -71,31 +72,32 @@ export async function safeFetch<T>(
 /**
  * Legacy request function for compatibility, now using safeFetch internally.
  */
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, options: RequestInit & { skipRedirect?: boolean } = {}): Promise<T> {
   return safeFetch<T>(path, options);
 }
 
 export const apiClient = {
   interviews: {
     getInvite: (token: string) => 
-      request<{ session: any }>(`/api/invites/${token}`),
+      request<{ session: any }>(`/api/invites/${token}`, { skipRedirect: true }),
     
     postConsent: (sessionId: string) =>
-      request(`/api/interviews/${sessionId}/consent`, { method: "POST" }),
+      request(`/api/interviews/${sessionId}/consent`, { method: "POST", skipRedirect: true }),
     
     postHeartbeat: (sessionId: string, secondsToAdd: number) =>
       request(`/api/interviews/${sessionId}/heartbeat`, {
         method: "POST",
         body: JSON.stringify({ secondsToAdd }),
+        skipRedirect: true
       }),
     
     postComplete: (sessionId: string) =>
-      request(`/api/interviews/${sessionId}/complete`, { method: "POST" }),
+      request(`/api/interviews/${sessionId}/complete`, { method: "POST", skipRedirect: true }),
   },
   
   questions: {
     list: (questionSetId: string = "default") =>
-      request<{ questions: any[] }>(`/api/questions?questionSetId=${questionSetId}`),
+      request<{ questions: any[] }>(`/api/questions?questionSetId=${questionSetId}`, { skipRedirect: true }),
   },
   
   answers: {
@@ -128,9 +130,7 @@ export const apiClient = {
               reject(new ApiError(xhr.status, "Expected JSON response but received different content type."));
             }
           } else {
-            if (xhr.status === 401 || xhr.status === 403) {
-              if (typeof window !== "undefined") window.location.href = "/auth/signin";
-            }
+            // Don't redirect candidates to sign-in on upload failure
             
             let message = "Upload failed";
             if (isJson) {
@@ -153,7 +153,7 @@ export const apiClient = {
         status: string; 
         evaluation?: any; 
         transcript?: string 
-      }>(`/api/answers/${answerId}/status`),
+      }>(`/api/answers/${answerId}/status`, { skipRedirect: true }),
   },
   
   reports: {
