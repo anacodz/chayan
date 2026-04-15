@@ -352,13 +352,6 @@ export default function RecruiterDashboard() {
         </main>
       </div>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-surface-container p-4 flex justify-around items-center z-50">
-        <Link href="/recruiter" className="flex flex-col items-center gap-1 text-primary"><span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>dashboard</span><span className="text-[10px] font-bold">Dashboard</span></Link>
-        <Link href="#" className="flex flex-col items-center gap-1 text-on-surface-variant"><span className="material-symbols-outlined">groups</span><span className="text-[10px] font-bold">Candidates</span></Link>
-        <Link href="#" className="flex flex-col items-center gap-1 text-on-surface-variant"><span className="material-symbols-outlined">assignment</span><span className="text-[10px] font-bold">Assessments</span></Link>
-        <Link href="#" className="flex flex-col items-center gap-1 text-on-surface-variant"><span className="material-symbols-outlined">person</span><span className="text-[10px] font-bold">Profile</span></Link>
-      </nav>
-
       <InviteModal 
         isOpen={isInviteModalOpen} 
         onClose={() => setIsInviteModalOpen(false)} 
