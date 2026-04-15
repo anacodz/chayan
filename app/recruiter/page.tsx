@@ -123,12 +123,17 @@ export default function RecruiterDashboard() {
     }
   };
 
+  const handleInviteSuccess = (url: string) => {
+    alert(`Invitation email sent! \n\nFallback Link: ${url}`);
+    window.location.reload();
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
 
-      <div className="flex-1 flex flex-col">
-        <Header />
+      <div className="flex-1 flex flex-col relative">
+        <Header onInviteClick={() => setIsInviteModalOpen(true)} />
 
         <main className="flex-1 p-4 md:p-8 overflow-y-auto">
           <header className="mb-8 md:mb-10">
@@ -322,6 +327,12 @@ export default function RecruiterDashboard() {
         <Link href="#" className="flex flex-col items-center gap-1 text-on-surface-variant"><span className="material-symbols-outlined">assignment</span><span className="text-[10px] font-bold">Assessments</span></Link>
         <Link href="#" className="flex flex-col items-center gap-1 text-on-surface-variant"><span className="material-symbols-outlined">person</span><span className="text-[10px] font-bold">Profile</span></Link>
       </nav>
+
+      <InviteModal 
+        isOpen={isInviteModalOpen} 
+        onClose={() => setIsInviteModalOpen(false)} 
+        onSuccess={handleInviteSuccess} 
+      />
     </div>
   );
 }
