@@ -315,17 +315,17 @@ export default function RecruiterReportDetail() {
         {/* ── Bento grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 print:flex print:flex-col">
           {/* Score */}
-          <div className="lg:col-span-4 bg-surface-container-lowest p-8 rounded-xl shadow-[0_4px_20px_rgba(73,95,132,0.04)] flex flex-col justify-between items-center text-center print:shadow-none print:border print:p-6 print:mb-6">
+          <div className="lg:col-span-4 bg-surface-container-lowest p-6 md:p-8 rounded-xl shadow-[0_4px_20px_rgba(73,95,132,0.04)] flex flex-col justify-between items-center text-center print:shadow-none print:border print:p-6 print:mb-6">
             <div className="mb-6 w-full">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant block mb-8 print:mb-4">Overall Match Score</span>
-              <div className="relative w-48 h-48 flex items-center justify-center mx-auto print:w-32 print:h-32">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant block mb-6 md:mb-8 print:mb-4">Overall Match Score</span>
+              <div className="relative w-36 h-36 md:w-48 md:h-48 flex items-center justify-center mx-auto print:w-32 print:h-32">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 192 192">
                   <circle cx="96" cy="96" r="88" fill="transparent" stroke="currentColor" strokeWidth="12" className="text-surface-container-low print:text-gray-100" />
                   <circle cx="96" cy="96" r="88" fill="transparent" stroke="currentColor" strokeWidth="12" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="text-primary-container transition-all duration-1000 print:text-primary" />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-5xl font-black text-on-secondary-fixed print:text-3xl">{CANDIDATE_DATA.matchScore}%</span>
-                  <span className={`text-xs font-bold ${CANDIDATE_DATA.matchScore >= 80 ? 'text-tertiary' : CANDIDATE_DATA.matchScore >= 60 ? 'text-secondary' : 'text-error'}`}>
+                  <span className="text-3xl md:text-5xl font-black text-on-secondary-fixed print:text-3xl">{CANDIDATE_DATA.matchScore}%</span>
+                  <span className={`text-[10px] md:text-xs font-bold ${CANDIDATE_DATA.matchScore >= 80 ? 'text-tertiary' : CANDIDATE_DATA.matchScore >= 60 ? 'text-secondary' : 'text-error'}`}>
                     {CANDIDATE_DATA.matchScore >= 80 ? 'EXCEPTIONAL' : CANDIDATE_DATA.matchScore >= 60 ? 'STRONG' : 'NEEDS REVIEW'}
                   </span>
                 </div>
