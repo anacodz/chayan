@@ -27,10 +27,12 @@ export async function exportToPDF(elementId: string, filename: string) {
     let heightLeft = imgHeight;
     let position = 0;
 
+    // First page
     pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
     heightLeft -= pdfHeight;
 
-    while (heightLeft >= 0) {
+    // Subsequent pages
+    while (heightLeft > 0) {
       position = heightLeft - imgHeight;
       pdf.addPage();
       pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
