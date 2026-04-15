@@ -20,7 +20,8 @@ export async function GET(
     }
 
     // Don't return the secret hash to the client
-    const { inviteTokenHash, ...safeSession } = session as any;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { inviteTokenHash: _, ...safeSession } = session;
 
     return NextResponse.json({ 
       valid: true, 

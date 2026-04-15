@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   try {
     logger.info({ requestId, skip, take, search }, "Fetching interview sessions");
 
-    const where: any = {};
+    const where: { OR?: Array<Record<string, unknown>> } = {};
     if (search) {
       where.OR = [
         {

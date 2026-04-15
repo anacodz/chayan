@@ -16,7 +16,7 @@ const NAV_ITEMS = [
 export default function Sidebar({ onInviteClick }: { onInviteClick?: () => void }) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const isRecruiter = (session?.user as any)?.role === "RECRUITER";
+  const isRecruiter = (session?.user as { role?: string })?.role === "RECRUITER";
 
   return (
     <aside className="hidden lg:flex flex-col w-72 h-screen sticky top-0 bg-surface-container-low p-6 gap-2 border-r border-outline-variant/10">
