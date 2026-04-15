@@ -41,7 +41,7 @@ export default function RecruiterDashboard() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [totalSessions, setTotalSessions] = useState(0);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [loading, setLoading] = useState(false); // Default to false for testing
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -88,6 +88,22 @@ export default function RecruiterDashboard() {
     }
     fetchData();
   }, [currentPage]);
+
+  const handleInvalidate = async (sessionId: string) => {
+    if (!confirm("Are you sure you want to invalidate this link? The candidate will no longer be able to use it.")) return;
+    
+    try {
+      const res = await fetch(`/api/recruiter/interviews/${sessionId}/invalidate`, { method: "POST" });
+      if (res.ok) {
+        // Refresh data
+        window.location.reload();
+      } else {
+        alert("Failed to invalidate link");
+      }
+    } catch (err) {
+      alert("An error occurred");
+    }
+  };
 
   const totalPages = Math.ceil(totalSessions / itemsPerPage);
 
@@ -266,9 +282,20 @@ export default function RecruiterDashboard() {
                             </div>
                           </td>
                           <td className="px-6 md:px-8 py-5 text-right">
-                            <Link href={`/recruiter/interviews/${s.id}`} className="p-2 text-secondary hover:text-primary transition-colors inline-flex">
-                              <span className="material-symbols-outlined">visibility</span>
-                            </Link>
+                            <div className="flex items-center justify-end gap-2">
+                              {(s.status === "INVITED" || s.status === "IN_PROGRESS") && (
+                                <button 
+                                  onClick={() => handleInvalidate(s.id)}
+                                  className="p-2 text-on-surface-variant hover:text-error transition-colors"
+                                  title="Invalidate Link"
+                                >
+                                  <span className="material-symbols-outlined text-[20px]">link_off</span>
+                                </button>
+                              )}
+                              <Link href={`/recruiter/interviews/${s.id}`} className="p-2 text-secondary hover:text-primary transition-colors inline-flex">
+                                <span className="material-symbols-outlined">visibility</span>
+                              </Link>
+                            </div>
                           </td>
                         </tr>
                       ))}
