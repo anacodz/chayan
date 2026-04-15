@@ -14,10 +14,15 @@ export default withAuth({
       if (!token) return false;
 
       // Restrict /admin, /api/admin, and /recruiter/team to ADMIN role
-      const isAdminRoute = req.nextUrl.pathname.startsWith("/admin") || 
+      const isMetricsApi = req.nextUrl.pathname === "/api/admin/metrics";
+      const isAdminRoute = (req.nextUrl.pathname.startsWith("/admin") || 
                           req.nextUrl.pathname.startsWith("/api/admin") ||
-                          req.nextUrl.pathname === "/recruiter/team";
+                          req.nextUrl.pathname === "/recruiter/team") && !isMetricsApi;
       
+      if (isMetricsApi) {
+        return token.role === "ADMIN" || token.role === "RECRUITER";
+      }
+
       if (isAdminRoute) {
         return token.role === "ADMIN";
       }
