@@ -111,6 +111,28 @@ export default function Welcome({ onAccept, onDecline, session }: WelcomeProps) 
                     <p className="text-xs text-on-surface-variant leading-relaxed mt-1">We use standardized rubrics to ensure an equitable screening for every educator.</p>
                   </div>
                 </div>
+
+                <div className="bg-primary/5 rounded-2xl p-5 border border-primary/10 space-y-3 mt-2">
+                  <div className="flex items-center gap-2 text-primary">
+                    <span className="material-symbols-outlined text-[18px]">mic_external_on</span>
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.15em]">Recording Quality Guide</h4>
+                  </div>
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-2 text-[11px] text-on-surface-variant font-medium leading-tight">
+                      <span className="material-symbols-outlined text-[14px] text-tertiary mt-0.5">check_circle</span>
+                      <span>Find a quiet room with minimal background noise.</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-[11px] text-on-surface-variant font-medium leading-tight">
+                      <span className="material-symbols-outlined text-[14px] text-tertiary mt-0.5">check_circle</span>
+                      <span>Use a headset or external mic for best results.</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-[11px] text-on-surface-variant font-medium leading-tight">
+                      <span className="material-symbols-outlined text-[14px] text-tertiary mt-0.5">check_circle</span>
+                      <span>Speak clearly at a natural, moderate pace.</span>
+                    </li>
+                  </ul>
+                </div>
+
                 <div className="p-5 rounded-2xl bg-surface-container-low border border-outline-variant/10">
                   <label className="flex items-start gap-3 cursor-pointer group">
                     <input 

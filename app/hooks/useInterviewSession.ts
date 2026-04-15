@@ -56,84 +56,94 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
   // Initialize and Restore Session
   useEffect(() => {
     async function init() {
+      if (!token) {
+        setPhase("invalid");
+        return;
+      }
+
       try {
-        let qSetId = "default";
+        let qSetId: string | null = null;
         let restoredIndex = 0;
         let restoredPhase: Phase = "consent";
         let consentAcceptedAt: string | null = null;
         let activeSecondsSpent = 0;
         let currentSessionId = "";
         
-        if (token) {
-          try {
-            const sData = await apiClient.interviews.getInvite(token);
-            if (sData.session) {
-              setSession(sData.session);
-              currentSessionId = sData.session.id;
-              qSetId = sData.session.questionSetId || "default";
-              consentAcceptedAt = sData.session.consentAcceptedAt;
-              activeSecondsSpent = sData.session.activeSecondsSpent || 0;
+        try {
+          const sData = await apiClient.interviews.getInvite(token);
+          if (sData.session) {
+            setSession(sData.session);
+            currentSessionId = sData.session.id;
+            qSetId = sData.session.questionSetId;
+            consentAcceptedAt = sData.session.consentAcceptedAt;
+            activeSecondsSpent = sData.session.activeSecondsSpent || 0;
+            
+            if (sData.session.status === "COMPLETED") {
+              restoredPhase = "complete";
+            } else if (sData.session.answers?.length > 0) {
+              const restoredAnswers = sData.session.answers.map((a: any) => ({
+                questionId: a.questionId,
+                question: a.question.prompt,
+                transcript: a.transcript?.text || "",
+                evaluation: a.evaluation ? {
+                  score: (a.evaluation.communicationClarity + a.evaluation.conceptExplanation + a.evaluation.empathyAndPatience) / 3,
+                  reasoning: "Restored from database.",
+                  signals: a.evaluation.evidence,
+                  redFlags: a.evaluation.concerns,
+                  dimensionScores: {
+                    communicationClarity: a.evaluation.communicationClarity,
+                    conceptExplanation: a.evaluation.conceptExplanation,
+                    empathyAndPatience: a.evaluation.empathyAndPatience,
+                    adaptability: a.evaluation.adaptability,
+                    professionalism: a.evaluation.professionalism,
+                    englishFluency: a.evaluation.englishFluency,
+                  },
+                  confidence: a.evaluation.confidence,
+                  followUpQuestion: a.evaluation.followUpQuestion,
+                } : null
+              })).filter((a: any) => a.evaluation !== null);
+
+              setAnswers(restoredAnswers);
               
-              if (sData.session.status === "COMPLETED") {
-                restoredPhase = "complete";
-              } else if (sData.session.answers?.length > 0) {
-                const restoredAnswers = sData.session.answers.map((a: any) => ({
-                  questionId: a.questionId,
-                  question: a.question.prompt,
-                  transcript: a.transcript?.text || "",
-                  evaluation: a.evaluation ? {
-                    score: (a.evaluation.communicationClarity + a.evaluation.conceptExplanation + a.evaluation.empathyAndPatience) / 3,
-                    reasoning: "Restored from database.",
-                    signals: a.evaluation.evidence,
-                    redFlags: a.evaluation.concerns,
-                    dimensionScores: {
-                      communicationClarity: a.evaluation.communicationClarity,
-                      conceptExplanation: a.evaluation.conceptExplanation,
-                      empathyAndPatience: a.evaluation.empathyAndPatience,
-                      adaptability: a.evaluation.adaptability,
-                      professionalism: a.evaluation.professionalism,
-                      englishFluency: a.evaluation.englishFluency,
-                    },
-                    confidence: a.evaluation.confidence,
-                    followUpQuestion: a.evaluation.followUpQuestion,
-                  } : null
-                })).filter((a: any) => a.evaluation !== null);
-
-                setAnswers(restoredAnswers);
+              const mainQuestionIdsDone = new Set();
+              let lastEvaluation: any = null;
+              
+              restoredAnswers.forEach((a: any) => {
+                const baseId = a.questionId.startsWith("follow-up-") 
+                  ? a.questionId.replace("follow-up-", "") 
+                  : a.questionId;
                 
-                const mainQuestionIdsDone = new Set();
-                let lastEvaluation: any = null;
-                
-                restoredAnswers.forEach((a: any) => {
-                  const baseId = a.questionId.startsWith("follow-up-") 
-                    ? a.questionId.replace("follow-up-", "") 
-                    : a.questionId;
-                  
-                  if (!a.questionId.startsWith("follow-up-")) {
-                    mainQuestionIdsDone.add(baseId);
-                    lastEvaluation = a.evaluation;
-                  } else {
-                    mainQuestionIdsDone.add(baseId);
-                    lastEvaluation = null; 
-                  }
-                });
-
-                restoredIndex = mainQuestionIdsDone.size;
-                
-                if (lastEvaluation?.followUpQuestion) {
-                  setFollowUpQuestion(lastEvaluation.followUpQuestion);
-                  setHasAskedFollowUp(true);
-                  restoredIndex = Math.max(0, restoredIndex - 1);
+                if (!a.questionId.startsWith("follow-up-")) {
+                  mainQuestionIdsDone.add(baseId);
+                  lastEvaluation = a.evaluation;
+                } else {
+                  mainQuestionIdsDone.add(baseId);
+                  lastEvaluation = null; 
                 }
+              });
 
-                restoredPhase = "interview";
+              restoredIndex = mainQuestionIdsDone.size;
+              
+              if (lastEvaluation?.followUpQuestion) {
+                setFollowUpQuestion(lastEvaluation.followUpQuestion);
+                setHasAskedFollowUp(true);
+                restoredIndex = Math.max(0, restoredIndex - 1);
               }
+
+              restoredPhase = "interview";
             }
-          } catch (e) {
-            console.warn("Invite token invalid or session not found", e);
           }
+        } catch (e) {
+          console.warn("Invite token invalid or session not found", e);
+          setPhase("invalid");
+          return;
         }
         
+        if (!qSetId) {
+          setPhase("invalid");
+          return;
+        }
+
         try {
           const qData = await apiClient.questions.list(qSetId);
           const fetchedQuestions = qData.questions || [];
@@ -191,7 +201,7 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
   }, [questions, session?.id, startGlobalTimer]);
 
   const submitAnswer = useCallback(async (audioBlob: Blob) => {
-    if (!currentQuestion) return;
+    if (!currentQuestion || !session?.id) return;
     
     setStatus("processing");
     setProcessingStep("Preparing upload...");
@@ -201,7 +211,7 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
     try {
       const form = new FormData();
       form.append("audio", audioBlob, "answer.webm");
-      form.append("sessionId", session?.id || "demo");
+      form.append("sessionId", session.id);
       form.append("questionId", currentQuestion.id);
       form.append("question", currentQuestion.prompt);
       form.append("competencyTags", JSON.stringify("competencyTags" in currentQuestion ? currentQuestion.competencyTags : []));
@@ -286,9 +296,9 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
         setProcessingStep("Finalizing report...");
         setProcessingProgress(90);
         
-        await apiClient.reports.summarize(session?.id || "demo", nextAnswers);
+        await apiClient.reports.summarize(session.id, nextAnswers);
 
-        if (session?.id) {
+        if (session.id) {
           apiClient.interviews.postComplete(session.id).catch(console.error);
         }
 

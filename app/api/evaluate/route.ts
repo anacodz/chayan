@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { evaluateAnswerService } from "@/lib/services/ai";
+import { orchestrateEvaluation } from "@/lib/services/ai";
 import prisma from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { v4 as uuidv4 } from "uuid";
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     logger.info({ requestId, sessionId, questionId }, "Processing evaluation request");
 
-    const evaluation = await evaluateAnswerService(question, transcript, competencyTags);
+    const { evaluation, dbPayload } = await orchestrateEvaluation(question, transcript, competencyTags);
 
     // Save to database if sessionId and questionId are provided
     if (sessionId && questionId) {
@@ -40,22 +40,7 @@ export async function POST(request: Request) {
               }
             },
             evaluation: {
-              create: {
-                model: evaluation.model,
-                promptVersion: evaluation.promptVersion,
-                schemaVersion: evaluation.schemaVersion,
-                transcriptHash: "hash",
-                communicationClarity: evaluation.dimensionScores.communicationClarity,
-                conceptExplanation: evaluation.dimensionScores.conceptExplanation,
-                empathyAndPatience: evaluation.dimensionScores.empathyAndPatience,
-                adaptability: evaluation.dimensionScores.adaptability,
-                professionalism: evaluation.dimensionScores.professionalism,
-                englishFluency: evaluation.dimensionScores.englishFluency,
-                confidence: evaluation.confidence,
-                evidence: evaluation.signals,
-                concerns: evaluation.redFlags,
-                followUpQuestion: evaluation.followUpQuestion,
-              }
+              create: dbPayload
             }
           }
         });
