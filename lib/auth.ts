@@ -25,6 +25,16 @@ export const authOptions: NextAuthOptions = {
             role: "ADMIN" 
           };
         }
+        
+        if (credentials?.email === "recruiter@cuemath.com" && credentials?.password === "recruiter123") {
+          return {
+            id: "recruiter-static",
+            name: "Cuemath Recruiter",
+            email: "recruiter@cuemath.com",
+            role: "RECRUITER"
+          };
+        }
+
         return null;
       },
     }),
