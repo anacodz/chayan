@@ -35,9 +35,12 @@ export async function GET(
       }))
     );
 
+    // Filter out sensitive fields
+    const { inviteTokenHash, ...safeSession } = session;
+
     return NextResponse.json({ 
       session: {
-        ...session,
+        ...safeSession,
         answers: signedAnswers
       } 
     });
