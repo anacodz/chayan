@@ -30,7 +30,7 @@ export default function VoiceQualityPage() {
     <div className="flex min-h-screen bg-background">
       <Sidebar />
       <div className="flex-1 flex flex-col">
-        <Header />
+        <Header onInviteClick={() => {}} />
         <main className="p-8">
           <header className="mb-10">
             <h1 className="text-4xl font-black text-on-secondary-fixed tracking-tight mb-2">Voice & STT Quality</h1>
