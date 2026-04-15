@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     logger.info({ requestId, sessionId: session.id }, "Invite session created");
 
     const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
-    const inviteUrl = `${baseUrl}/?invite=${token}`;
+    const inviteUrl = `${baseUrl}/interview/${token}`;
 
     // Send the email
     const emailSent = await sendInviteEmail({

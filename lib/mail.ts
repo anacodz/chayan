@@ -1,9 +1,12 @@
 import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { logger } from "./logger";
+
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 /**
  * Mail Service configuration.
- * Uses environment variables for SMTP settings.
+ * Uses environment variables for SMTP settings as a fallback for local dev.
  */
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.ethereal.email",
@@ -22,43 +25,75 @@ interface SendInviteEmailParams {
 }
 
 /**
- * Sends an invitation email to a candidate.
+ * Sends an invitation email to a candidate using Resend (Production) or Nodemailer (Dev fallback).
  */
 export async function sendInviteEmail({ to, name, inviteUrl }: SendInviteEmailParams) {
-  const mailOptions = {
-    from: `"Cuemath Hiring" <${process.env.SMTP_FROM || "hiring@cuemath.com"}>`,
-    to,
-    subject: "Invitation: Cuemath AI Tutor Screening",
-    html: `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-        <h2 style="color: #002e6e;">Welcome to Cuemath!</h2>
-        <p>Hello ${name},</p>
-        <p>We are excited to invite you to the first stage of our tutor screening process. This is an AI-driven voice interview designed to understand your teaching style and pedagogy.</p>
-        
-        <div style="margin: 30px 0; text-align: center;">
-          <a href="${inviteUrl}" style="background-color: #0070ff; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-            Start Interview
-          </a>
-        </div>
-        
-        <p style="color: #666; font-size: 14px;">
-          <strong>Important Instructions:</strong><br/>
-          • Ensure you are in a quiet room.<br/>
-          • Use a browser with microphone access (Chrome/Safari recommended).<br/>
-          • The link expires in 7 days.
-        </p>
-        
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;"/>
-        <p style="color: #999; font-size: 12px; text-align: center;">
-          Powered by Chayan • Cuemath Engineering
-        </p>
+  const subject = "Invitation: Cuemath AI Tutor Screening";
+  const from = process.env.RESEND_FROM || process.env.SMTP_FROM || "hiring@cuemath.com";
+  
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #1d1d1f; line-height: 1.5;">
+      <div style="text-align: left; margin-bottom: 32px;">
+        <span style="font-size: 24px; font-weight: 900; color: #0070ff; letter-spacing: -1px; text-transform: uppercase;">Cuemath</span>
       </div>
-    `,
-  };
+      
+      <div style="background-color: #f5f5f7; border-radius: 24px; padding: 40px; margin-bottom: 32px;">
+        <h2 style="font-size: 28px; font-weight: 800; margin: 0 0 16px 0; letter-spacing: -0.5px; color: #000;">Ready for your next challenge, ${name}?</h2>
+        <p style="font-size: 17px; margin: 0 0 32px 0; color: #424245;">We're excited to invite you to our AI-driven voice screening for the elite educator role. Show us your teaching style and conceptual clarity.</p>
+        
+        <a href="${inviteUrl}" style="background-color: #0070ff; color: #fff; padding: 16px 32px; text-decoration: none; border-radius: 14px; font-weight: 700; display: inline-block; font-size: 16px;">
+          Launch Interview Portal
+        </a>
+      </div>
+      
+      <div style="padding: 0 8px;">
+        <h3 style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #86868b; margin-bottom: 16px;">What to expect</h3>
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          <li style="margin-bottom: 12px; display: flex; align-items: center;">
+            <div style="font-size: 15px;">• 10-15 minute voice-first interview</div>
+          </li>
+          <li style="margin-bottom: 12px; display: flex; align-items: center;">
+            <div style="font-size: 15px;">• Scenarios focused on pedagogy and student engagement</div>
+          </li>
+          <li style="margin-bottom: 12px; display: flex; align-items: center;">
+            <div style="font-size: 15px;">• AI-driven assessment for fair evaluation</div>
+          </li>
+        </ul>
+      </div>
+      
+      <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid #d2d2d7; text-align: center;">
+        <p style="font-size: 12px; color: #86868b; margin: 0;">This invitation is intended for ${to}. The link is unique to your application and should not be shared.</p>
+        <p style="font-size: 12px; color: #86868b; margin: 8px 0 0 0;">© 2026 Cuemath Engineering • Powered by Chayan</p>
+      </div>
+    </div>
+  `;
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    logger.info({ messageId: info.messageId, to }, "Invite email sent successfully");
+    if (resend) {
+      const { data, error } = await resend.emails.send({
+        from: `Cuemath Hiring <${from}>`,
+        to: [to],
+        subject,
+        html,
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      logger.info({ id: data?.id, to }, "Invite email sent successfully via Resend");
+      return true;
+    }
+
+    // Fallback to Nodemailer for dev
+    const info = await transporter.sendMail({
+      from: `"Cuemath Hiring" <${from}>`,
+      to,
+      subject,
+      html,
+    });
+
+    logger.info({ messageId: info.messageId, to }, "Invite email sent successfully via Nodemailer fallback");
     
     // Log preview URL for Ethereal
     const previewUrl = nodemailer.getTestMessageUrl(info);
