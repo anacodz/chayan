@@ -30,7 +30,7 @@ test.describe('Recruiter Review Flow', () => {
     });
 
     // 2. Mock the interviews list API
-    await page.route(/\/api\/recruiter\/interviews(\?.*)?$/, async (route) => {
+    await page.route(/\/api\/recruiter\/interviews\?.*$/, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -136,9 +136,14 @@ test.describe('Recruiter Review Flow', () => {
     // 1. Visit Dashboard
     await page.goto('/recruiter');
     console.log(`CURRENT URL: ${page.url()}`);
-    // Use attached instead of visible if glassmorphism/animations are tricky
-    await expect(page.getByRole('heading', { name: /Recruitment Overview/i })).toBeAttached({ timeout: 30000 });
-    await expect(page.getByText(/John Doe/i)).toBeAttached();
+    
+    // Wait for the h1 to appear in the DOM
+    await page.waitForSelector('h1', { timeout: 30000 });
+    const h1Text = await page.innerText('h1');
+    console.log(`H1 TEXT FOUND: ${h1Text}`);
+    
+    await expect(page.locator('h1')).toContainText(/Welcome back/i);
+    await expect(page.getByText(/John Doe/i)).toBeVisible();
     
     // 2. Navigate to Detail via Visibility Icon
     await page.getByRole('link').filter({ hasText: 'visibility' }).click();
