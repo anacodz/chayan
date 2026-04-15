@@ -21,7 +21,9 @@ test.describe('Candidate Interview Flow', () => {
             id: mockSessionId,
             status: 'INVITED',
             candidate: { name: 'Alice Smith', subject: 'Mathematics' },
-            questionSetId: 'default'
+            questionSetId: 'default',
+            consentAcceptedAt: null,
+            activeSecondsSpent: 0
           }
         }),
       });
