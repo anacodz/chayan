@@ -3,7 +3,7 @@ import html2canvas from "html2canvas";
 
 export async function exportToPDF(elementId: string, filename: string) {
   const element = document.getElementById(elementId);
-  if (!element) return;
+  if (!element) return false;
 
   // Temporarily hide elements with "no-print" class
   const noPrintElements = element.querySelectorAll(".no-print");
@@ -40,8 +40,10 @@ export async function exportToPDF(elementId: string, filename: string) {
     }
 
     pdf.save(filename);
+    return true;
   } catch (error) {
     console.error("PDF export failed:", error);
+    return false;
   } finally {
     // Restore "no-print" elements
     noPrintElements.forEach((el) => ((el as HTMLElement).style.display = ""));
