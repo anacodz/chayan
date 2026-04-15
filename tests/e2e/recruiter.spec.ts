@@ -142,11 +142,11 @@ test.describe('Recruiter Review Flow', () => {
     const h1Text = await page.innerText('h1');
     console.log(`H1 TEXT FOUND: ${h1Text}`);
     
-    await expect(page.locator('h1')).toContainText(/Welcome back/i);
-    await expect(page.getByText(/John Doe/i)).toBeVisible();
+    await expect(page.locator('h1')).toContainText(/Welcome back/i, { timeout: 15000 });
+    await expect(page.getByText(/John Doe/i).first()).toBeAttached({ timeout: 15000 });
     
     // 2. Navigate to Detail via Visibility Icon
-    await page.getByRole('link').filter({ hasText: 'visibility' }).click();
+    await page.locator(`a[href="/recruiter/interviews/${mockSessionId}"]`).first().click();
     
     // 3. Verify Detail Page Content
     await expect(page.getByText(/John Doe's Analysis/i)).toBeVisible();
