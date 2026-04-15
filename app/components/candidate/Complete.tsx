@@ -13,7 +13,7 @@ export default function Complete({ answersCount }: CompleteProps) {
 
       <div className="w-full max-w-[1040px] relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
         <section className="lg:col-span-7 space-y-5">
-          <p className="text-xs font-bold tracking-[0.18em] text-primary uppercase">Assessment Complete</p>
+          <p className="text-xs font-bold tracking-[0.18em] text-primary uppercase">Assessment Complete • 100%</p>
           <h1 className="text-5xl leading-[1.08] font-black tracking-tight text-on-secondary-fixed">
             You&rsquo;re all set.
             <br />

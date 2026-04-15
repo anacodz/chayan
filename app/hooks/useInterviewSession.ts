@@ -265,7 +265,9 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
       form.append("question", currentQuestion.prompt);
       form.append("competencyTags", JSON.stringify("competencyTags" in currentQuestion ? currentQuestion.competencyTags : []));
 
-      const uploadData = await apiClient.answers.upload(form);
+      const uploadData = await apiClient.answers.upload(form, (pct) => {
+        setProcessingProgress(pct);
+      });
       const answerId = uploadData.answerId;
 
       setPendingAnswerIds(prev => [...prev, answerId]);

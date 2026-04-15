@@ -89,7 +89,7 @@ export default function InterviewPage({ params }: { params: Promise<{ token: str
   };
 
   const progress = (questions && questions.length > 0) 
-    ? Math.round(((questionIndex) / questions.length) * 100) 
+    ? Math.round(((questionIndex + 1) / questions.length) * 100) 
     : 0;
 
   if (phase === "loading") {

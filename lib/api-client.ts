@@ -56,18 +56,40 @@ export const apiClient = {
   },
   
   answers: {
-    upload: async (formData: FormData) => {
-      const response = await fetch("/api/answers/upload", {
-        method: "POST",
-        body: formData,
+    upload: async (formData: FormData, onProgress?: (pct: number) => void) => {
+      return new Promise<{ answerId: string }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/api/answers/upload");
+        
+        if (onProgress) {
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const pct = Math.round((e.loaded / e.total) * 100);
+              onProgress(pct);
+            }
+          };
+        }
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              resolve(JSON.parse(xhr.responseText));
+            } catch (e) {
+              reject(new ApiError(xhr.status, "Invalid response from server"));
+            }
+          } else {
+            let message = "Upload failed";
+            try {
+              const data = JSON.parse(xhr.responseText);
+              message = data.message || message;
+            } catch (e) {}
+            reject(new ApiError(xhr.status, message));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Network error during upload"));
+        xhr.send(formData);
       });
-      
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new ApiError(response.status, data.message || "Upload failed", data);
-      }
-      
-      return response.json() as Promise<{ answerId: string }>;
     },
     
     getStatus: (answerId: string) =>

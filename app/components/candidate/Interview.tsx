@@ -79,7 +79,7 @@ export default function Interview({
 
       <main className="flex-1 flex flex-col items-center justify-start px-4 md:px-8 pt-8 md:pt-16 pb-28 md:pb-20 relative z-10">
         <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-8">
-          Question {questionIndex + 1} of {totalQuestions}
+          Question {questionIndex + 1} of {totalQuestions} • {progress}%
         </p>
         
         <div className="w-full max-w-[1120px] grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8">
