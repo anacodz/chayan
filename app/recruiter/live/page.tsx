@@ -22,7 +22,7 @@ export default function LiveSessionsPage() {
         const data = await res.json();
         // Filter for active statuses
         const active = data.sessions.filter((s: any) => 
-          ["IN_PROGRESS", "CONSENTED", "READY_FOR_NEXT_QUESTION", "NEEDS_CANDIDATE_RETRY"].includes(s.status)
+          ["IN_PROGRESS", "CONSENTED", "READY_FOR_NEXT_QUESTION", "NEEDS_CANDIDATE_RETRY", "ANSWER_UPLOADED", "TRANSCRIBING", "EVALUATING", "FINALIZING"].includes(s.status)
         );
         setSessions(active);
       } catch (e) {
