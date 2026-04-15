@@ -14,6 +14,17 @@ type DashboardMetrics = {
   avgTimeToReportMs: number;
   sttFallbackRate: number;
   avgConfidence: number;
+  llmVoiceResponses?: {
+    total: number;
+    evaluated: number;
+    avgDurationSeconds: number;
+    recent: Array<{
+      answerId: string;
+      candidateName: string;
+      confidence: number;
+      transcript: string;
+    }>;
+  };
 };
 
 type Session = {
@@ -71,14 +82,26 @@ export default function RecruiterDashboard() {
         ]);
 
         if (sessionsRes.ok) {
-          const data = await sessionsRes.json();
-          setSessions(data.sessions);
-          setTotalSessions(data.total);
+          const contentType = sessionsRes.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const data = await sessionsRes.json();
+            setSessions(data.sessions);
+            setTotalSessions(data.total);
+          } else {
+            console.error("Recruiter API returned non-JSON response:", await sessionsRes.text());
+            throw new Error("Invalid response from interviews API");
+          }
         }
         
         if (metricsRes.ok) {
-          const data = await metricsRes.json();
-          setMetrics(data);
+          const contentType = metricsRes.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const data = await metricsRes.json();
+            setMetrics(data);
+          } else {
+            console.error("Metrics API returned non-JSON response:", await metricsRes.text());
+            // Don't throw for metrics, just log it
+          }
         }
       } catch (err) {
         setError("Failed to load dashboard data");
@@ -172,7 +195,7 @@ export default function RecruiterDashboard() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-10">
                 <div className="bg-surface-container-lowest p-6 md:p-8 rounded-3xl flex flex-col gap-4 group hover:bg-white hover:shadow-xl transition-all duration-500 border border-transparent hover:border-outline-variant/10">
                   <div className="flex justify-between items-start">
                     <div className="p-3 bg-primary/10 rounded-2xl text-primary"><span className="material-symbols-outlined">send</span></div>
@@ -210,6 +233,22 @@ export default function RecruiterDashboard() {
                     <p className="text-4xl font-black mt-1">{Math.round((metrics?.avgConfidence || 0) * 100)}%</p>
                   </div>
                   <p className="text-white/40 text-xs mt-auto italic">AI alignment across evaluations</p>
+                </div>
+
+                <div className="bg-surface-container-lowest p-6 md:p-8 rounded-3xl flex flex-col gap-4 group hover:bg-white hover:shadow-xl transition-all duration-500 border border-transparent hover:border-outline-variant/10">
+                  <div className="flex justify-between items-start">
+                    <div className="p-3 bg-secondary/10 rounded-2xl text-secondary"><span className="material-symbols-outlined">mic</span></div>
+                    <span className="text-secondary text-xs font-bold">
+                      Eval {metrics?.llmVoiceResponses?.evaluated || 0}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-on-surface-variant font-bold text-xs uppercase tracking-widest">LLM Voice Responses</p>
+                    <p className="text-4xl font-black text-on-surface mt-1">{metrics?.llmVoiceResponses?.total || 0}</p>
+                  </div>
+                  <p className="text-xs text-on-surface-variant font-medium">
+                    Avg duration: {Math.round(metrics?.llmVoiceResponses?.avgDurationSeconds || 0)}s
+                  </p>
                 </div>
               </div>
 
