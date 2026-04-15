@@ -21,12 +21,59 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
   const [processingStep, setProcessingStep] = useState("");
   const [processingProgress, setProcessingProgress] = useState(0);
   const [error, setError] = useState("");
+  const [pendingAnswerIds, setPendingAnswerIds] = useState<string[]>([]);
   
   const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(null);
   const [hasAskedFollowUp, setHasAskedFollowUp] = useState(false);
   const [totalTimeLeft, setTotalTimeLeft] = useState(0);
   
   const globalTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Background poller for pending answers
+  useEffect(() => {
+    if (pendingAnswerIds.length === 0) return;
+
+    const interval = setInterval(async () => {
+      const currentPending = [...pendingAnswerIds];
+      const newlyFinished: string[] = [];
+
+      await Promise.all(currentPending.map(async (answerId) => {
+        try {
+          const statusData = await apiClient.answers.getStatus(answerId);
+          if (statusData.status === "EVALUATED") {
+            newlyFinished.push(answerId);
+            
+            // Add to completed answers if not already there
+            setAnswers(prev => {
+              const alreadyExists = prev.some(a => (a as any).answerId === answerId);
+              if (alreadyExists) return prev;
+              
+              // Find the original question for this answer
+              // In a real app we might need to store more metadata when uploading
+              return [...prev, {
+                answerId,
+                questionId: (statusData as any).questionId,
+                question: (statusData as any).questionPrompt,
+                transcript: statusData.transcript || "",
+                evaluation: statusData.evaluation
+              }];
+            });
+          } else if (statusData.status === "FAILED") {
+            newlyFinished.push(answerId);
+            console.error(`Processing failed for answer ${answerId}`);
+          }
+        } catch (e) {
+          // Silent retry
+        }
+      }));
+
+      if (newlyFinished.length > 0) {
+        setPendingAnswerIds(prev => prev.filter(id => !newlyFinished.includes(id)));
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [pendingAnswerIds]);
 
   const startGlobalTimer = useCallback((initialTime: number, sessionId?: string) => {
     if (globalTimerRef.current) clearInterval(globalTimerRef.current);
@@ -206,8 +253,8 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
     if (!currentQuestion || !session?.id) return;
     
     setStatus("processing");
-    setProcessingStep("Preparing upload...");
-    setProcessingProgress(5);
+    setProcessingStep("Uploading...");
+    setProcessingProgress(20);
     setError("");
 
     try {
@@ -218,88 +265,30 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
       form.append("question", currentQuestion.prompt);
       form.append("competencyTags", JSON.stringify("competencyTags" in currentQuestion ? currentQuestion.competencyTags : []));
 
-      setProcessingStep("Uploading voice recording...");
-      setProcessingProgress(25);
-      
       const uploadData = await apiClient.answers.upload(form);
       const answerId = uploadData.answerId;
 
-      let evaluation: AnswerEvaluation | null = null;
-      let transcript = "";
+      setPendingAnswerIds(prev => [...prev, answerId]);
       
-      setProcessingStep("Voice uploaded. Transcribing...");
-      setProcessingProgress(50);
+      // We also add a optimistic answer entry so we can keep track of count
+      setAnswers(prev => [...prev, {
+        answerId,
+        questionId: currentQuestion.id,
+        question: currentQuestion.prompt,
+        transcript: "",
+        evaluation: null as any
+      }]);
 
-      // Robust polling for evaluation
-      const maxRetries = 45; // Increased timeout
-      for (let i = 0; i < maxRetries; i++) {
-        await new Promise(r => setTimeout(r, 2000));
-        
-        try {
-          const statusData = await apiClient.answers.getStatus(answerId);
-          
-          if (statusData.status === "TRANSCRIBED") {
-            setProcessingStep("Evaluation in progress...");
-            setProcessingProgress(75);
-          } else if (statusData.status === "EVALUATED") {
-            setProcessingStep("Finished.");
-            setProcessingProgress(100);
-            evaluation = statusData.evaluation;
-            transcript = statusData.transcript || "";
-            break;
-          } else if (statusData.status === "NEEDS_RETRY") {
-            setStatus("needs_retry");
-            setError("Your response was too short or unclear. Please provide a more detailed explanation.");
-            return;
-          } else if (statusData.status === "FAILED") {
-            throw new Error("AI processing failed. Please try again.");
-          }
-          
-          // Minor incremental updates
-          if (statusData.status === "UPLOADED" && i > 5) {
-            const fakeProgress = Math.min(50 + (i * 0.8), 74);
-            setProcessingProgress(fakeProgress);
-            setProcessingStep("Transcribing voice...");
-          } else if (statusData.status === "TRANSCRIBED" && i > 5) {
-            const fakeProgress = Math.min(75 + (i * 0.4), 98);
-            setProcessingProgress(fakeProgress);
-            setProcessingStep("Running AI evaluation...");
-          }
-        } catch (e) {
-          // Silent retry on polling error
-        }
-      }
+      setProcessingProgress(100);
+      setProcessingStep("Uploaded.");
 
-      if (!evaluation) {
-        setStatus("error");
-        setError("Evaluation timed out. Please try again.");
-        return;
-      }
-
-      const nextAnswers = [...answers, { 
-        questionId: currentQuestion.id, 
-        question: currentQuestion.prompt, 
-        transcript, 
-        evaluation 
-      }];
-      setAnswers(nextAnswers);
-
-      if (evaluation.followUpQuestion && !hasAskedFollowUp) {
-        setFollowUpQuestion(evaluation.followUpQuestion);
-        setHasAskedFollowUp(true);
-        setStatus("idle");
-        return;
-      }
-
+      // Reset follow-up state (we can't do follow-ups synchronously anymore 
+      // without blocking, so we either skip or handle them differently)
       setFollowUpQuestion(null);
       setHasAskedFollowUp(false);
 
       if (questionIndex === questions.length - 1) {
-        setProcessingStep("Finalizing report...");
-        setProcessingProgress(90);
-        
-        await apiClient.reports.summarize(session.id, nextAnswers);
-
+        // Even if some are pending, we allow the candidate to finish
         if (session.id) {
           apiClient.interviews.postComplete(session.id).catch(console.error);
         }
@@ -311,11 +300,11 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
         setStatus("idle");
       }
     } catch (err) {
-      console.error("Answer submission failed:", err);
-      setError(err instanceof ApiError ? err.message : "Failed to process answer.");
+      console.error("Answer upload failed:", err);
+      setError(err instanceof ApiError ? err.message : "Failed to upload answer.");
       setStatus("error");
     }
-  }, [currentQuestion, session, answers, hasAskedFollowUp, questionIndex, questions.length, startGlobalTimer]);
+  }, [currentQuestion, session, questionIndex, questions.length]);
 
   useEffect(() => {
     return () => {

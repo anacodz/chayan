@@ -51,7 +51,7 @@ export default function Complete({ answersCount }: CompleteProps) {
               </li>
               <li className="flex gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                You can expect an update within 2–3 business days.
+                You will receive an update from our team soon.
               </li>
             </ul>
 
