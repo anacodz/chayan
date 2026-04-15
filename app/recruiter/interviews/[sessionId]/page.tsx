@@ -290,7 +290,7 @@ export default function RecruiterReportDetail() {
             <div className="hidden print:block mb-4">
               <span className="text-xl font-black text-primary tracking-tighter">Cuemath AI Assessment</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-on-secondary-fixed mb-2 print:text-3xl print:text-black">{CANDIDATE_DATA.name}&apos;s Analysis</h1>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-on-secondary-fixed mb-2 print:text-3xl print:text-black">{CANDIDATE_DATA.name}&apos;s Analysis</h1>
             <p className="text-on-surface-variant text-base md:text-lg max-w-xl print:text-sm print:text-gray-600">AI-generated evaluation report for screening.</p>
           </div>
           <div className="flex gap-3 flex-shrink-0 print:hidden">
@@ -318,14 +318,14 @@ export default function RecruiterReportDetail() {
           <div className="lg:col-span-4 bg-surface-container-lowest p-6 md:p-8 rounded-xl shadow-[0_4px_20px_rgba(73,95,132,0.04)] flex flex-col justify-between items-center text-center print:shadow-none print:border print:p-6 print:mb-6">
             <div className="mb-6 w-full">
               <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant block mb-6 md:mb-8 print:mb-4">Overall Match Score</span>
-              <div className="relative w-36 h-36 md:w-48 md:h-48 flex items-center justify-center mx-auto print:w-32 print:h-32">
+              <div className="relative w-32 h-32 sm:w-36 sm:h-36 md:w-48 md:h-48 flex items-center justify-center mx-auto print:w-32 print:h-32">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 192 192">
                   <circle cx="96" cy="96" r="88" fill="transparent" stroke="currentColor" strokeWidth="12" className="text-surface-container-low print:text-gray-100" />
                   <circle cx="96" cy="96" r="88" fill="transparent" stroke="currentColor" strokeWidth="12" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="text-primary-container transition-all duration-1000 print:text-primary" />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl md:text-5xl font-black text-on-secondary-fixed print:text-3xl">{CANDIDATE_DATA.matchScore}%</span>
-                  <span className={`text-[10px] md:text-xs font-bold ${CANDIDATE_DATA.matchScore >= 80 ? 'text-tertiary' : CANDIDATE_DATA.matchScore >= 60 ? 'text-secondary' : 'text-error'}`}>
+                  <span className="text-2xl sm:text-3xl md:text-5xl font-black text-on-secondary-fixed print:text-3xl">{CANDIDATE_DATA.matchScore}%</span>
+                  <span className={`text-[8px] sm:text-[10px] md:text-xs font-bold ${CANDIDATE_DATA.matchScore >= 80 ? 'text-tertiary' : CANDIDATE_DATA.matchScore >= 60 ? 'text-secondary' : 'text-error'}`}>
                     {CANDIDATE_DATA.matchScore >= 80 ? 'EXCEPTIONAL' : CANDIDATE_DATA.matchScore >= 60 ? 'STRONG' : 'NEEDS REVIEW'}
                   </span>
                 </div>
