@@ -17,14 +17,6 @@ export default function Header({ onInviteClick }: { onInviteClick: () => void })
           </Link>
         </div>
         <div className="flex items-center gap-3 md:gap-4">
-          <button 
-            onClick={onInviteClick}
-            className="premium-gradient text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg active:scale-95 transition-all hidden sm:flex items-center gap-2"
-          >
-            <span className="material-symbols-outlined text-[18px]">add_circle</span>
-            Invite Candidate
-          </button>
-          
           <div className="flex items-center gap-3 ml-2 border-l border-outline-variant/15 pl-4 relative group">
             <div className="text-right hidden sm:block">
               <p className="text-xs font-black text-on-surface leading-none">{session?.user?.name || "Recruiter"}</p>
