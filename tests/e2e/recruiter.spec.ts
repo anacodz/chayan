@@ -140,7 +140,7 @@ test.describe('Recruiter Review Flow', () => {
     // 3. Verify Detail Page Content
     await expect(page.getByText(/John Doe's Analysis/i)).toBeVisible();
     await expect(page.getByText(/Interview Evidence/i)).toBeVisible();
-    await expect(page.getByText(/extensive experience/i)).toBeVisible();
+    await expect(page.getByText(/extensive experience/i).first()).toBeVisible();
 
     // 4. Record Hiring Decision
     // The panel should have a "Move Forward" button selected by default or clickable
