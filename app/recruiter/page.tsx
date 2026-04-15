@@ -139,14 +139,18 @@ export default function RecruiterDashboard() {
     }
   };
 
-  const handleInviteSuccess = (url: string) => {
-    alert(`Invitation email sent! \n\nFallback Link: ${url}`);
+  const handleInviteSuccess = (url: string, emailSent: boolean) => {
+    if (emailSent) {
+      alert("Invitation email sent successfully via Resend!");
+    } else {
+      alert(`Invite created, but email failed to send. \n\nPlease share this link manually: \n${url}`);
+    }
     window.location.reload();
   };
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <Sidebar onInviteClick={() => setIsInviteModalOpen(true)} />
 
       <div className="flex-1 flex flex-col relative">
         <Header onInviteClick={() => setIsInviteModalOpen(true)} />
