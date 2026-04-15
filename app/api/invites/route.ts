@@ -53,8 +53,21 @@ export async function POST(request: Request) {
       inviteUrl,
     });
 
-    if (!emailSent) {
-      logger.warn({ requestId, email }, "Invite created but email failed to send");
+    const emailErrorHint = emailSent.ok
+      ? undefined
+      : `Email delivery failed (${emailSent.failureCode || "UNKNOWN"}). ${emailSent.failureReason || "Verify RESEND_API_KEY and set RESEND_FROM to a verified sender/domain in Resend."}`;
+
+    if (!emailSent.ok) {
+      logger.warn(
+        {
+          requestId,
+          email,
+          emailErrorHint,
+          failureCode: emailSent.failureCode,
+          failureReason: emailSent.failureReason,
+        },
+        "Invite created but email failed to send"
+      );
     }
 
     return NextResponse.json({
@@ -65,7 +78,8 @@ export async function POST(request: Request) {
       },
       token,
       url: inviteUrl,
-      emailSent,
+      emailSent: emailSent.ok,
+      ...(emailErrorHint ? { emailErrorHint } : {}),
     });
   } catch (error) {
     logger.error({ requestId, error: error instanceof Error ? error.message : "Unknown error" }, "Invite creation failed");

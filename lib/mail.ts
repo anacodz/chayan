@@ -8,30 +8,58 @@ interface SendInviteEmailParams {
   inviteUrl: string;
 }
 
+export type InviteEmailFailureCode =
+  | "MISSING_API_KEY"
+  | "INVALID_INVITE_URL"
+  | "RESEND_API_ERROR"
+  | "SEND_EXCEPTION";
+
+export interface SendInviteEmailResult {
+  ok: boolean;
+  failureCode?: InviteEmailFailureCode;
+  failureReason?: string;
+}
+
 /**
  * Sends an invitation email using the Resend API.
  */
 export async function sendInviteEmail({ to, name, inviteUrl }: SendInviteEmailParams) {
   const apiKey = env.RESEND_API_KEY;
+  const fallbackFrom = "onboarding@resend.dev";
+  const from = env.RESEND_FROM?.trim() || fallbackFrom;
   
   if (!apiKey || apiKey === "re_xxxxxxxxx") {
     logger.error("RESEND_API_KEY is missing or using placeholder. Please set a real key in .env");
-    return false;
+    return {
+      ok: false,
+      failureCode: "MISSING_API_KEY",
+      failureReason: "RESEND_API_KEY is missing or placeholder",
+    } satisfies SendInviteEmailResult;
+  }
+
+  if (env.NODE_ENV === "production" && !env.RESEND_FROM) {
+    logger.warn(
+      { from, fallbackFrom },
+      "RESEND_FROM is not set in production. Using fallback sender; set RESEND_FROM to a verified domain identity in Resend."
+    );
   }
 
   if (!inviteUrl.startsWith("http://") && !inviteUrl.startsWith("https://")) {
     logger.error({ inviteUrl }, "Invite email skipped: invite URL must be absolute");
-    return false;
+    return {
+      ok: false,
+      failureCode: "INVALID_INVITE_URL",
+      failureReason: "Invite URL must be absolute (http/https)",
+    } satisfies SendInviteEmailResult;
   }
 
   logger.info({ 
     to, 
-    from: env.RESEND_FROM || "onboarding@resend.dev",
+    from,
     keyPrefix: apiKey.substring(0, 5) 
   }, "Attempting to send email via Resend");
 
   const resend = new Resend(apiKey);
-  const from = env.RESEND_FROM || "onboarding@resend.dev";
   const subject = "Invitation: Cuemath AI Tutor Screening";
 
   const html = `
@@ -65,14 +93,25 @@ export async function sendInviteEmail({ to, name, inviteUrl }: SendInviteEmailPa
     });
 
     if (error) {
-      logger.error({ error, to }, "Resend API error");
-      return false;
+      logger.error({ error, to, from }, "Resend API error");
+      return {
+        ok: false,
+        failureCode: "RESEND_API_ERROR",
+        failureReason: typeof error === "object" && error !== null && "message" in error
+          ? String((error as { message?: string }).message || "Resend API error")
+          : "Resend API error",
+      } satisfies SendInviteEmailResult;
     }
 
     logger.info({ id: data?.id, to }, "Invite email sent successfully via Resend");
-    return true;
+    return { ok: true } satisfies SendInviteEmailResult;
   } catch (error) {
-    logger.error({ error: error instanceof Error ? error.message : "Unknown error", to }, "Failed to send email");
-    return false;
+    const message = error instanceof Error ? error.message : "Unknown error";
+    logger.error({ error: message, to, from }, "Failed to send email");
+    return {
+      ok: false,
+      failureCode: "SEND_EXCEPTION",
+      failureReason: message,
+    } satisfies SendInviteEmailResult;
   }
 }
