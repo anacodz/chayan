@@ -20,6 +20,7 @@ const envSchema = z.object({
   // Email
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM: z.string().email().optional(),
+  TESTMAIL_API_KEY: z.string().optional(),
 
   // App
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
