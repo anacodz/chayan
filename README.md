@@ -1,5 +1,7 @@
 # Chayan
 
+[About Chayan](https://docs.google.com/document/d/1dJwj0CnH_dNpeIUbuOqodggrha0CdS1OdftBl63gs_M/edit?usp=sharing)
+
 Chayan is an AI tutor screening platform for Cuemath. It replaces slow manual screening calls with a voice-first interview flow that records candidate answers, transcribes them, and generates a structured assessment report.
 
 ## Problem
