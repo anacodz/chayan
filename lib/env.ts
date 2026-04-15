@@ -7,7 +7,7 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().optional(),
 
   // Database
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.string().url().optional(),
 
   // Storage
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
@@ -16,6 +16,10 @@ const envSchema = z.object({
   NEXTAUTH_SECRET: z.string().optional(),
   NEXTAUTH_URL: z.string().url().optional().default("http://localhost:3000"),
   INVITE_TOKEN_SECRET: z.string().min(32).default("development_secret_only_for_build_time_123"),
+
+  // Email
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM: z.string().email().optional().default("hiring@cuemath.com"),
 
   // App
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
