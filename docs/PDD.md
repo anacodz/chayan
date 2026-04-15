@@ -32,8 +32,8 @@ The current repo captures the intended stack and an STT proof of concept. This d
 | Final synthesis | Google Gemini Pro-class model for final report |
 | Database | Postgres via Prisma or Drizzle |
 | Object storage | S3-compatible bucket or Vercel Blob |
-| Background jobs | Vercel Queue, Inngest, Trigger.dev, or managed queue |
-| Auth | Signed candidate invite links; recruiter/admin SSO |
+| Background jobs | Inngest (Implemented) |
+| Auth | NextAuth.js (Credentials & Google) for recruiters; Signed candidate invite links |
 | Hosting | Vercel |
 | Observability | Structured logs, metrics, traces, provider latency dashboards |
 

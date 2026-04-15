@@ -1,74 +1,72 @@
 # Chayan
 
-[About Chayan](https://docs.google.com/document/d/1dJwj0CnH_dNpeIUbuOqodggrha0CdS1OdftBl63gs_M/edit?usp=sharing)
+AI-driven candidate screening platform for Cuemath. Replaces manual human-led screening calls with a high-fidelity, voice-first assessment flow.
 
-Chayan is an AI tutor screening platform for Cuemath. It replaces slow manual screening calls with a voice-first interview flow that records candidate answers, transcribes them, and generates a structured assessment report.
+[About Chayan (Project Doc)](https://docs.google.com/document/d/1dJwj0CnH_dNpeIUbuOqodggrha0CdS1OdftBl63gs_M/edit?usp=sharing)
 
-## Problem
+## Overview
 
-Cuemath screens a large number of tutor candidates every month. Human-led 10-minute screening calls are expensive, slow, and hard to scale consistently.
+Chayan automates the first pass of tutor screening by evaluating:
+- **Communication Clarity**: Can the tutor speak clearly and concisely?
+- **Concept Explanation**: Can they simplify complex math concepts for kids?
+- **Patience & Empathy**: Do they have the right temperament for teaching?
+- **Professionalism**: Are they prepared and confident?
 
-Chayan automates the first pass by checking whether a tutor can:
+## End-to-End Flow
 
-- communicate clearly
-- explain simply
-- show patience and empathy
-- demonstrate the right temperament for teaching kids
-
-## What It Does
-
-1. Candidate opens an interview link
-2. Candidate completes a microphone check and records answers in the browser
-3. Audio is transcribed server-side with Sarvam AI
-4. Gemini evaluates each answer using a tutor-focused rubric
-5. The app generates a structured final recommendation for recruiters
+1.  **Recruiter Dashboard**: Recruiters create and send interview invitations to candidates.
+2.  **Candidate Interview**: Candidates record voice responses to a sequence of teaching-focused questions.
+3.  **Real-time Processing**: Audio is uploaded, transcribed (Sarvam AI / Whisper), and evaluated (Gemini 1.5) asynchronously.
+4.  **Final Report**: AI synthesizes all answers into a structured assessment with a "Move Forward," "Hold," or "Decline" recommendation.
+5.  **Review**: Recruiters review the transcripts, AI signals, and final reports to make hiring decisions.
 
 ## Tech Stack
 
 | Layer | Choice |
-| --- | --- |
-| Framework | Next.js 15 |
-| Language | TypeScript |
-| Styling | Plain CSS |
-| Recording | Browser MediaRecorder API |
-| Transcription | Sarvam AI |
-| Evaluation | Google Gemini |
-| Deployment | Vercel |
-
-## Local Setup
-
-```bash
-npm install
-cp .env.example .env.local
-npm run dev
-```
-
-Add these environment variables to `.env.local` as needed:
-
-- `SARVAM_API_KEY`
-- `GEMINI_API_KEY`
-
-The app can still run in a local fallback mode when AI keys are missing.
+| :--- | :--- |
+| **Framework** | Next.js 15 (App Router) |
+| **Database** | PostgreSQL + Prisma ORM |
+| **Auth** | NextAuth.js (Credentials & Google) |
+| **Async Jobs** | Inngest (Serverless Queues) |
+| **AI (STT)** | Sarvam AI (Primary) / OpenAI Whisper (Fallback) |
+| **AI (LLM)** | Google Gemini 1.5 Pro |
+| **Storage** | Vercel Blob / AWS S3 Compatible |
+| **Email** | Resend |
+| **Styling** | Vanilla CSS + Tailwind (Utility) |
 
 ## Project Structure
 
 ```text
-app/
-  api/
-    transcribe/
-    evaluate/
-    summarize/
-  layout.tsx
-  page.tsx
-  styles.css
-lib/
-  evaluation.ts
-  json.ts
-  questions.ts
-  types.ts
-docs/
-  PRD.md
-  PDD.md
-  stack.md
-  TODO.md
-``₹
+├── app/                  # Next.js App Router
+│   ├── admin/            # Admin-only dashboards (metrics, calibration)
+│   ├── api/              # API endpoints (Auth, Inngest, AI, Invites)
+│   ├── components/       # UI components (Candidate & Recruiter)
+│   ├── hooks/            # Custom React hooks (MediaRecorder, Session)
+│   ├── interview/        # Candidate-facing interview flow
+│   └── recruiter/        # Recruiter dashboard and session review
+├── docs/                 # Detailed documentation (PRD, PDD, Roadmap)
+├── lib/                  # Shared utilities and services
+│   ├── services/         # Business logic (AI, Metrics, Calibration)
+│   ├── prisma.ts         # Database client
+│   └── auth.ts           # Auth configuration
+└── prisma/               # Database schema and migrations
+```
+
+## Key Features
+
+- **Resilient AI Pipeline**: Background processing with Inngest ensures interviews complete even if AI providers are slow or fail temporarily.
+- **Metrics Dashboard**: Real-time tracking of invite conversion, completion rates, and AI alignment.
+- **Calibration Engine**: Audit AI evaluation accuracy against human-graded samples.
+- **Security**: Built-in assessment security (tab switching, focus loss detection) and authenticated recruiter access.
+
+## Getting Started
+
+1.  **Install dependencies**: `bun install` or `npm install`
+2.  **Setup environment**: Copy `.env.example` to `.env` and fill in required keys (Gemini, Sarvam, Resend, DATABASE_URL).
+3.  **Database**: `npx prisma generate && npx prisma db push`
+4.  **Run locally**: `npm run dev`
+5.  **Inngest Dev Server**: `npx inngest-cli@latest dev` (Required for local background jobs)
+
+## License
+
+Private - Cuemath Internal

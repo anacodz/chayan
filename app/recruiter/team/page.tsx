@@ -4,6 +4,7 @@ import Sidebar from "../../components/recruiter/Sidebar";
 import Header from "../../components/recruiter/Header";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { safeFetch } from "@/lib/api-client";
 
 type TeamMember = {
   id: string;
@@ -23,13 +24,12 @@ export default function TeamPage() {
   useEffect(() => {
     async function fetchTeam() {
       try {
-        const res = await fetch("/api/recruiter/team");
-        if (res.ok) {
-          const data = await res.json();
-          setTeam(data.team);
-        } else {
-          setError("Failed to load team data");
-        }
+        const data = await safeFetch<{ team: TeamMember[] }>(
+          "/api/recruiter/team",
+          {},
+          { team: [] }
+        );
+        setTeam(data.team);
       } catch {
         setError("Failed to load team data");
       } finally {

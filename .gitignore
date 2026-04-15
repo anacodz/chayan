@@ -43,9 +43,9 @@ __pycache__/
 # Figma assets
 Figma/
 
-# Ignore all markdown files except README
-*.md
-!README.md
+# Ignore all markdown files except README (Removed to allow docs/)
+# *.md
+# !README.md
 
 /lib/generated/prisma
 DEV_SERVER_LOG.txt\ncuemath_source.html\nplaywright-report/\ntest-results/
