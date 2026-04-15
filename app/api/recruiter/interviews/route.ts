@@ -51,6 +51,7 @@ export async function GET(req: Request) {
           candidate: true,
           finalReport: true,
           recruiterDecision: true,
+          inviteTokenHash: true,
         },
         orderBy: {
           createdAt: "desc",

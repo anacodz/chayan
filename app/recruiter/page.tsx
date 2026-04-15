@@ -37,6 +37,7 @@ type Session = {
     name: string;
     email: string;
   };
+  inviteTokenHash?: string;
   finalReport?: {
     recommendation: string;
     overallScore: number;
@@ -70,6 +71,17 @@ export default function RecruiterDashboard() {
     if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
     
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
+
+  const copyInviteLink = async (token?: string) => {
+    if (!token) return;
+    const url = `${window.location.origin}/interview/${token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      alert("Invite link copied to clipboard!");
+    } catch (err) {
+      alert("Failed to copy link");
+    }
   };
 
   useEffect(() => {
@@ -327,6 +339,15 @@ export default function RecruiterDashboard() {
                           </td>
                           <td className="px-6 md:px-8 py-5 text-right">
                             <div className="flex items-center justify-end gap-2">
+                              {s.inviteTokenHash && (s.status === "INVITED" || s.status === "IN_PROGRESS") && (
+                                <button 
+                                  onClick={() => copyInviteLink(s.inviteTokenHash)}
+                                  className="p-2 text-secondary hover:text-primary transition-colors"
+                                  title="Copy Invite Link"
+                                >
+                                  <span className="material-symbols-outlined text-[20px]">content_copy</span>
+                                </button>
+                              )}
                               {(s.status === "INVITED" || s.status === "IN_PROGRESS") && (
                                 <button 
                                   onClick={() => handleInvalidate(s.id)}
