@@ -47,6 +47,7 @@ export default function InterviewPage({ params }: { params: Promise<{ token: str
   });
 
   const { isTtsLoading, playTTS } = useInterviewAudio();
+  const [playedQuestions, setPlayedQuestions] = useState<Set<number>>(new Set());
 
   /* Security Logic */
   const { enterFullscreen } = useAssessmentSecurity({
@@ -67,15 +68,20 @@ export default function InterviewPage({ params }: { params: Promise<{ token: str
     startRecording();
   };
 
-  /* Auto-play question on change */
+  /* Auto-play question on change - Only once */
   useEffect(() => {
-    if (phase === "interview" && currentQuestion?.prompt) {
+    if (phase === "interview" && currentQuestion?.prompt && !playedQuestions.has(questionIndex)) {
       const timer = setTimeout(() => {
         playTTS(currentQuestion.prompt);
+        setPlayedQuestions(prev => {
+          const next = new Set(prev);
+          next.add(questionIndex);
+          return next;
+        });
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [phase, currentQuestion?.prompt, playTTS]);
+  }, [phase, currentQuestion?.prompt, questionIndex, playTTS, playedQuestions]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
