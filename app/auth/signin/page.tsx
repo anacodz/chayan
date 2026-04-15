@@ -39,8 +39,15 @@ function SignInForm() {
 
       if (res?.error) {
         setError("Invalid email or password");
+      } else if (res?.url) {
+        // Use window.location.href for a full page reload to ensure session is picked up
+        // and handle potential absolute URL mismatches from NEXTAUTH_URL
+        const targetUrl = res.url.startsWith("http") && !res.url.includes(window.location.host)
+          ? "/recruiter"
+          : res.url;
+        window.location.href = targetUrl;
       } else {
-        router.push(res?.url || "/recruiter");
+        window.location.href = "/recruiter";
       }
     } catch {
       setError("An unexpected error occurred");
