@@ -40,7 +40,14 @@ export async function GET(req: Request) {
         where,
         skip,
         take,
-        include: {
+        select: {
+          id: true,
+          status: true,
+          questionSetId: true,
+          activeSecondsSpent: true,
+          createdAt: true,
+          updatedAt: true,
+          completedAt: true,
           candidate: true,
           finalReport: true,
           recruiterDecision: true,
