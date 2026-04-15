@@ -63,6 +63,7 @@ export async function POST(request: Request) {
           requestId,
           email,
           emailErrorHint,
+          emailAttempts: emailSent.attempts,
           failureCode: emailSent.failureCode,
           failureReason: emailSent.failureReason,
         },
@@ -79,6 +80,7 @@ export async function POST(request: Request) {
       token,
       url: inviteUrl,
       emailSent: emailSent.ok,
+      emailAttempts: emailSent.attempts,
       ...(emailErrorHint ? { emailErrorHint } : {}),
     });
   } catch (error) {

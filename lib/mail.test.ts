@@ -17,6 +17,7 @@ vi.mock("./env", () => ({
   env: {
     RESEND_API_KEY: "re_test_key",
     RESEND_FROM: "onboarding@resend.dev",
+    NODE_ENV: "test",
   },
 }));
 
@@ -35,6 +36,7 @@ describe("sendInviteEmail", () => {
     });
 
     expect(result.ok).toBe(true);
+    expect(result.attempts).toBe(1);
     expect(sendMock).toHaveBeenCalledTimes(1);
   });
 
@@ -46,6 +48,7 @@ describe("sendInviteEmail", () => {
     });
 
     expect(result.ok).toBe(false);
+    expect(result.attempts).toBe(0);
     expect(result.failureCode).toBe("INVALID_INVITE_URL");
     expect(sendMock).not.toHaveBeenCalled();
   });
@@ -62,5 +65,22 @@ describe("sendInviteEmail", () => {
     expect(result.ok).toBe(false);
     expect(result.failureCode).toBe("RESEND_API_ERROR");
     expect(result.failureReason).toContain("bad request");
+    expect(result.attempts).toBe(1);
+  });
+
+  it("retries transient resend API errors and succeeds", async () => {
+    sendMock
+      .mockResolvedValueOnce({ data: null, error: { message: "429 rate limit" } })
+      .mockResolvedValueOnce({ data: { id: "email_456" }, error: null });
+
+    const result = await sendInviteEmail({
+      to: "candidate@example.com",
+      name: "Candidate",
+      inviteUrl: "https://example.com/interview/token-123",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.attempts).toBe(2);
+    expect(sendMock).toHaveBeenCalledTimes(2);
   });
 });
