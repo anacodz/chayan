@@ -10,7 +10,19 @@ export default withAuth({
       if (sessionToken === "mock-token") {
         return true;
       }
-      return !!token;
+
+      if (!token) return false;
+
+      // Restrict /admin, /api/admin, and /recruiter/team to ADMIN role
+      const isAdminRoute = req.nextUrl.pathname.startsWith("/admin") || 
+                          req.nextUrl.pathname.startsWith("/api/admin") ||
+                          req.nextUrl.pathname === "/recruiter/team";
+      
+      if (isAdminRoute) {
+        return token.role === "ADMIN";
+      }
+
+      return true;
     },
   },
   pages: {

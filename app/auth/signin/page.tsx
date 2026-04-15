@@ -2,16 +2,27 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    const callbackUrl = searchParams.get("callbackUrl");
+    const isAdminOnlyRoute = callbackUrl && (callbackUrl.includes("/admin") || callbackUrl.includes("/recruiter/team"));
+    if (isAdminOnlyRoute && status === "authenticated") {
+      setError("Admin access needed. Please login as an admin.");
+    }
+  }, [searchParams, status]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,12 +34,13 @@ export default function SignIn() {
         email,
         password,
         redirect: false,
+        callbackUrl: searchParams.get("callbackUrl") || "/recruiter",
       });
 
       if (res?.error) {
         setError("Invalid email or password");
       } else {
-        router.push("/recruiter");
+        router.push(res?.url || "/recruiter");
       }
     } catch {
       setError("An unexpected error occurred");
@@ -79,21 +91,32 @@ export default function SignIn() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full h-12 bg-surface-container-low rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  placeholder="admin@cuemath.com"
+                  placeholder="@cuemath.com"
                   required
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-12 bg-surface-container-low rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full h-12 bg-surface-container-low rounded-xl px-4 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">
+                      {showPassword ? "visibility_off" : "visibility"}
+                    </span>
+                  </button>
+                </div>
               </div>
 
               {error && (
@@ -110,7 +133,7 @@ export default function SignIn() {
             </form>
 
             <p className="text-center text-xs text-on-surface-variant mt-7">
-              Dev Mode: <span className="font-semibold">admin@cuemath.com / admin123</span>
+              Demo Email / Password <br /> <span className="font-semibold">admin@cuemath.com / admin123 <br />recruiter@cuemath.com / recruiter123</span>
             </p>
           </div>
         </section>
