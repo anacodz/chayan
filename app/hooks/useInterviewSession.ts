@@ -137,7 +137,6 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
             }
           }
         } catch (e) {
-          console.warn("Invite token invalid or session not found", e);
           setPhase("invalid");
           return;
         }
@@ -267,7 +266,7 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
             setProcessingStep("Running AI evaluation...");
           }
         } catch (e) {
-          console.error("Polling status error", e);
+          // Silent retry on polling error
         }
       }
 
