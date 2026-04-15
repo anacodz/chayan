@@ -71,8 +71,4 @@ docs/
   PDD.md
   stack.md
   TODO.md
-```
-
-## Challenge Context
-
-Built for the Cuemath Build Challenge, Problem 3: AI Tutor Screener.
+``₹
