@@ -11,7 +11,7 @@ interface QuestionSet {
 interface InviteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (url: string) => void;
+  onSuccess: (url: string, emailSent: boolean) => void;
 }
 
 export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalProps) {
