@@ -421,7 +421,7 @@ export const cleanupOldData = inngest.createFunction(
     const abandonmentLimit = new Date();
     abandonmentLimit.setHours(abandonmentLimit.getHours() - 24);
 
-    await step.run("mark-abandoned-sessions", async () => {
+    const abandonedCount = await step.run("mark-abandoned-sessions", async () => {
       const result = await prisma.interviewSession.updateMany({
         where: {
           status: { in: ["INVITED", "CONSENTED", "IN_PROGRESS"] },
@@ -429,11 +429,13 @@ export const cleanupOldData = inngest.createFunction(
         },
         data: { status: "ABANDONED" },
       });
-      return { markedAbandoned: result.count };
+      logger.info({ count: result.count }, "Marked abandoned sessions");
+      return result.count;
     });
 
     return { 
       audioDeleted: oldAnswers.length,
+      sessionsAbandoned: abandonedCount
     };
   }
 );
