@@ -55,7 +55,7 @@ export default function InviteModal({ isOpen, onClose, onSuccess }: InviteModalP
 
       if (!res.ok) throw new Error(data.error || "Failed to create invite");
 
-      onSuccess(data.url);
+      onSuccess(data.url, data.emailSent);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
