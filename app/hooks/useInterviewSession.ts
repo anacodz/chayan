@@ -32,8 +32,10 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
     if (globalTimerRef.current) clearInterval(globalTimerRef.current);
     setTotalTimeLeft(initialTime);
     
-    let tickCount = 0;
+    let lastHeartbeatTime = Date.now();
     globalTimerRef.current = setInterval(() => {
+      const now = Date.now();
+      
       setTotalTimeLeft((prev) => {
         if (prev <= 1) {
           if (globalTimerRef.current) clearInterval(globalTimerRef.current);
@@ -41,11 +43,12 @@ export function useInterviewSession({ token }: UseInterviewSessionOptions) {
           return 0;
         }
 
-        // Heartbeat every 10 seconds
-        tickCount++;
-        if (tickCount >= 10 && sessionId) {
-          apiClient.interviews.postHeartbeat(sessionId, 10).catch(console.error);
-          tickCount = 0;
+        // Heartbeat every 10 seconds of wall-clock time
+        if (now - lastHeartbeatTime >= 10000 && sessionId) {
+          apiClient.interviews.postHeartbeat(sessionId, 10).catch(() => {
+            /* Silent fail for heartbeat */
+          });
+          lastHeartbeatTime = now;
         }
 
         return prev - 1;
