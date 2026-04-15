@@ -56,6 +56,8 @@ export default function MetricsDashboard() {
 
   useEffect(() => {
     fetchMetrics();
+    const interval = setInterval(fetchMetrics, 10000); // Poll every 10s for real-time updates
+    return () => clearInterval(interval);
   }, []);
 
   const formatDuration = (ms: number) => {

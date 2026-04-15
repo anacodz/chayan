@@ -73,7 +73,9 @@ export default function RecruiterDashboard() {
 
   useEffect(() => {
     async function fetchData() {
-      setLoading(true);
+      // Only show loading spinner on initial load
+      if (sessions.length === 0) setLoading(true);
+      
       const skip = (currentPage - 1) * itemsPerPage;
       try {
         const [sessionsRes, metricsRes] = await Promise.all([
@@ -87,9 +89,6 @@ export default function RecruiterDashboard() {
             const data = await sessionsRes.json();
             setSessions(data.sessions);
             setTotalSessions(data.total);
-          } else {
-            console.error("Recruiter API returned non-JSON response:", await sessionsRes.text());
-            throw new Error("Invalid response from interviews API");
           }
         }
         
@@ -98,18 +97,19 @@ export default function RecruiterDashboard() {
           if (contentType && contentType.includes("application/json")) {
             const data = await metricsRes.json();
             setMetrics(data);
-          } else {
-            console.error("Metrics API returned non-JSON response:", await metricsRes.text());
-            // Don't throw for metrics, just log it
           }
         }
       } catch (err) {
-        setError("Failed to load dashboard data");
+        console.error("Dashboard poll failed:", err);
       } finally {
         setLoading(false);
       }
     }
+
     fetchData();
+    const interval = setInterval(fetchData, 10000); // Poll every 10s for real-time updates
+    
+    return () => clearInterval(interval);
   }, [currentPage]);
 
   const handleInvalidate = async (sessionId: string) => {
