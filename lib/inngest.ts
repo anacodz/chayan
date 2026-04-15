@@ -65,10 +65,17 @@ export const transcribeAndEvaluateAnswer = inngest.createFunction(
             data: { status: "NEEDS_RETRY" }
           });
           
-          await prisma.interviewSession.update({
+          const currentSession = await prisma.interviewSession.findUnique({
             where: { id: sessionId },
-            data: { status: "NEEDS_CANDIDATE_RETRY" }
+            select: { status: true }
           });
+
+          if (currentSession?.status !== "FINALIZING" && currentSession?.status !== "COMPLETED") {
+            await prisma.interviewSession.update({
+              where: { id: sessionId },
+              data: { status: "NEEDS_CANDIDATE_RETRY" }
+            });
+          }
           
           return false;
         }
@@ -116,14 +123,22 @@ export const transcribeAndEvaluateAnswer = inngest.createFunction(
           data: { status: "EVALUATED" },
         });
 
-        await prisma.interviewSession.update({
+        // 5. Update session status only if not finalizing/completed
+        // Note: We skip setting NEEDS_CANDIDATE_RETRY for follow-ups because 
+        // the UI now handles interview flow synchronously without blocking.
+        const currentSession = await prisma.interviewSession.findUnique({
           where: { id: sessionId },
-          data: {
-            status: evaluation.followUpQuestion
-              ? "NEEDS_CANDIDATE_RETRY"
-              : "READY_FOR_NEXT_QUESTION",
-          },
+          select: { status: true }
         });
+
+        if (currentSession?.status !== "FINALIZING" && currentSession?.status !== "COMPLETED") {
+          await prisma.interviewSession.update({
+            where: { id: sessionId },
+            data: {
+              status: "READY_FOR_NEXT_QUESTION",
+            },
+          });
+        }
       } catch (error) {
         monitoring.captureException(error, { answerId, sessionId, step: "save-evaluation" });
         throw error;
@@ -147,6 +162,27 @@ export const finalizeInterviewReport = inngest.createFunction(
     const { sessionId } = event.data;
     
     logger.info({ sessionId }, "Starting background report generation");
+
+    // Wait for all pending answers to be evaluated before generating the report
+    let allDone = false;
+    let attempts = 0;
+    while (!allDone && attempts < 12) {
+      const pendingCount = await step.run(`check-pending-answers-${attempts}`, async () => {
+        return await prisma.answer.count({
+          where: {
+            sessionId,
+            status: { in: ["UPLOADED", "TRANSCRIBING", "EVALUATING"] }
+          }
+        });
+      });
+      
+      if (pendingCount === 0) {
+        allDone = true;
+      } else {
+        await step.sleep(`wait-for-answers-${attempts}`, "5s");
+        attempts++;
+      }
+    }
 
     const answers = await step.run("fetch-all-answers", async () => {
       logger.info({ sessionId }, "Fetching all answers for final report");

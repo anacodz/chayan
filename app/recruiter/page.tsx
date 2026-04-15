@@ -7,6 +7,7 @@ import InviteModal from "../components/InviteModal";
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { safeFetch } from "@/lib/api-client";
 
 type DashboardMetrics = {
   totalInvites: number;
@@ -78,26 +79,26 @@ export default function RecruiterDashboard() {
       
       const skip = (currentPage - 1) * itemsPerPage;
       try {
-        const [sessionsRes, metricsRes] = await Promise.all([
-          fetch(`/api/recruiter/interviews?skip=${skip}&take=${itemsPerPage}`),
-          fetch("/api/admin/metrics")
+        const [sessionsData, metricsData] = await Promise.all([
+          safeFetch<{ sessions: Session[], total: number }>(
+            `/api/recruiter/interviews?skip=${skip}&take=${itemsPerPage}`,
+            {},
+            { sessions: [], total: 0 }
+          ),
+          safeFetch<DashboardMetrics | null>(
+            "/api/admin/metrics",
+            {},
+            null
+          )
         ]);
 
-        if (sessionsRes.ok) {
-          const contentType = sessionsRes.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            const data = await sessionsRes.json();
-            setSessions(data.sessions);
-            setTotalSessions(data.total);
-          }
+        if (sessionsData) {
+          setSessions(sessionsData.sessions);
+          setTotalSessions(sessionsData.total);
         }
         
-        if (metricsRes.ok) {
-          const contentType = metricsRes.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            const data = await metricsRes.json();
-            setMetrics(data);
-          }
+        if (metricsData) {
+          setMetrics(metricsData);
         }
       } catch (err) {
         console.error("Dashboard poll failed:", err);
@@ -110,7 +111,7 @@ export default function RecruiterDashboard() {
     const interval = setInterval(fetchData, 10000); // Poll every 10s for real-time updates
     
     return () => clearInterval(interval);
-  }, [currentPage]);
+  }, [currentPage, sessions.length]);
 
   const handleInvalidate = async (sessionId: string) => {
     if (!confirm("Are you sure you want to invalidate this link? The candidate will no longer be able to use it.")) return;

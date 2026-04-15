@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { safeFetch } from "@/lib/api-client";
 
 type DashboardMetrics = {
   totalInvites: number;
@@ -40,9 +41,12 @@ export default function MetricsDashboard() {
 
   const fetchMetrics = async () => {
     try {
-      const res = await fetch("/api/admin/metrics");
-      if (res.ok) {
-        const data = await res.json();
+      const data = await safeFetch<DashboardMetrics | null>(
+        "/api/admin/metrics",
+        {},
+        null
+      );
+      if (data) {
         setMetrics(data);
       } else {
         throw new Error("Failed to load metrics");

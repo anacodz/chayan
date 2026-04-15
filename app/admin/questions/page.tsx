@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { safeFetch } from "@/lib/api-client";
 
 type Question = {
   id: string;
@@ -42,11 +43,12 @@ export default function QuestionSetManager() {
 
   const fetchSets = async () => {
     try {
-      const res = await fetch("/api/admin/question-sets");
-      if (res.ok) {
-        const data = await res.json();
-        setQuestionSets(data.sets);
-      }
+      const data = await safeFetch<{ sets: { id: string; count: number }[] }>(
+        "/api/admin/question-sets",
+        {},
+        { sets: [] }
+      );
+      setQuestionSets(data.sets);
     } catch (err) {
       console.error("Failed to fetch sets:", err);
     }
@@ -55,13 +57,12 @@ export default function QuestionSetManager() {
   const fetchQuestions = async (setId: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/questions?questionSetId=${setId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setQuestions(data.questions);
-      } else {
-        throw new Error("Failed to load questions");
-      }
+      const data = await safeFetch<{ questions: Question[] }>(
+        `/api/admin/questions?questionSetId=${setId}`,
+        {},
+        { questions: [] }
+      );
+      setQuestions(data.questions);
     } catch (err) {
       setError("Failed to load questions");
     } finally {
@@ -94,9 +95,8 @@ export default function QuestionSetManager() {
     const tags = newTags.split(",").map(t => t.trim()).filter(Boolean);
 
     try {
-      const res = await fetch("/api/admin/questions", {
+      const data = await safeFetch<any>("/api/admin/questions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           prompt: newPrompt, 
           competencyTags: tags,
@@ -105,13 +105,11 @@ export default function QuestionSetManager() {
         }),
       });
 
-      if (res.ok) {
+      if (data) {
         setNewPrompt("");
         setNewTags("");
         fetchQuestions(currentSetId);
         fetchSets();
-      } else {
-        setError("Failed to add question");
       }
     } catch (err) {
       setError("Failed to add question");
@@ -133,9 +131,8 @@ export default function QuestionSetManager() {
     const tags = editTags.split(",").map(t => t.trim()).filter(Boolean);
 
     try {
-      const res = await fetch(`/api/admin/questions/${id}`, {
+      const data = await safeFetch<any>(`/api/admin/questions/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           prompt: editPrompt, 
           competencyTags: tags,
@@ -143,12 +140,10 @@ export default function QuestionSetManager() {
         }),
       });
 
-      if (res.ok) {
+      if (data) {
         setEditingId(null);
         fetchQuestions(currentSetId);
         fetchSets();
-      } else {
-        setError("Failed to update question");
       }
     } catch (err) {
       setError("Failed to update question");
@@ -159,15 +154,13 @@ export default function QuestionSetManager() {
     if (!confirm("Are you sure you want to deactivate this question?")) return;
 
     try {
-      const res = await fetch(`/api/admin/questions/${id}`, {
+      const data = await safeFetch<any>(`/api/admin/questions/${id}`, {
         method: "DELETE",
       });
 
-      if (res.ok) {
+      if (data) {
         fetchQuestions(currentSetId);
         fetchSets();
-      } else {
-        setError("Failed to delete question");
       }
     } catch (err) {
       setError("Failed to delete question");

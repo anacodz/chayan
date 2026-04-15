@@ -10,26 +10,69 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(path, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+/**
+ * A resilient fetch wrapper that checks content type, handles auth errors,
+ * and provides an optional fallback strategy to minimize client-side crashes.
+ */
+export async function safeFetch<T>(
+  path: string, 
+  options: RequestInit = {}, 
+  fallback?: T
+): Promise<T> {
+  try {
+    const response = await fetch(path, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
 
-  if (!response.ok) {
-    let data;
-    try {
-      data = await response.json();
-    } catch (e) {
-      data = null;
+    const contentType = response.headers.get("content-type");
+    const isJson = contentType && contentType.includes("application/json");
+
+    if (!response.ok) {
+      // Handle Unauthorized or Forbidden
+      if (response.status === 401 || response.status === 403) {
+        if (typeof window !== "undefined" && !window.location.pathname.startsWith("/auth/signin")) {
+          const signInUrl = `/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
+          window.location.href = signInUrl;
+        }
+      }
+      
+      let errorData;
+      if (isJson) {
+        errorData = await response.json();
+      } else {
+        const text = await response.text();
+        errorData = { message: text.slice(0, 100) }; // Log only first 100 chars
+      }
+      throw new ApiError(response.status, errorData?.message || "An unexpected error occurred", errorData);
     }
-    throw new ApiError(response.status, data?.message || "An unexpected error occurred", data);
-  }
 
-  return response.json() as Promise<T>;
+    // Success response but not JSON (unexpected for API)
+    if (!isJson) {
+      throw new ApiError(response.status, "Expected JSON response but received different content type.");
+    }
+
+    return await response.json() as T;
+  } catch (error) {
+    console.error(`API Error on ${path}:`, error);
+    
+    // Backup Strategy: Return fallback if provided to succeed the task gracefully
+    if (fallback !== undefined) {
+      return fallback;
+    }
+    
+    throw error;
+  }
+}
+
+/**
+ * Legacy request function for compatibility, now using safeFetch internally.
+ */
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  return safeFetch<T>(path, options);
 }
 
 export const apiClient = {
@@ -71,18 +114,31 @@ export const apiClient = {
         }
 
         xhr.onload = () => {
+          const contentType = xhr.getResponseHeader("content-type");
+          const isJson = contentType && contentType.includes("application/json");
+
           if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-              resolve(JSON.parse(xhr.responseText));
-            } catch (e) {
-              reject(new ApiError(xhr.status, "Invalid response from server"));
+            if (isJson) {
+              try {
+                resolve(JSON.parse(xhr.responseText));
+              } catch (e) {
+                reject(new ApiError(xhr.status, "Invalid JSON response from server"));
+              }
+            } else {
+              reject(new ApiError(xhr.status, "Expected JSON response but received different content type."));
             }
           } else {
+            if (xhr.status === 401 || xhr.status === 403) {
+              if (typeof window !== "undefined") window.location.href = "/auth/signin";
+            }
+            
             let message = "Upload failed";
-            try {
-              const data = JSON.parse(xhr.responseText);
-              message = data.message || message;
-            } catch (e) {}
+            if (isJson) {
+              try {
+                const data = JSON.parse(xhr.responseText);
+                message = data.message || message;
+              } catch (e) {}
+            }
             reject(new ApiError(xhr.status, message));
           }
         };

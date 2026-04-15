@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../../components/recruiter/Sidebar";
 import Header from "../../components/recruiter/Header";
+import { safeFetch } from "@/lib/api-client";
 
 type QualityMetrics = {
   sttFallbackRate: number;
@@ -16,11 +17,14 @@ export default function VoiceQualityPage() {
   useEffect(() => {
     async function fetchQuality() {
       try {
-        const res = await fetch("/api/admin/metrics");
-        const data = await res.json();
-        setMetrics(data);
+        const data = await safeFetch<QualityMetrics | null>(
+          "/api/admin/metrics",
+          {},
+          null
+        );
+        if (data) setMetrics(data);
       } catch (e) {
-        console.error(e);
+        console.error("Failed to fetch quality metrics:", e);
       }
     }
     fetchQuality();

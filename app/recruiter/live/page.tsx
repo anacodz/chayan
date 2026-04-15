@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../../components/recruiter/Sidebar";
 import Header from "../../components/recruiter/Header";
+import { safeFetch } from "@/lib/api-client";
 
 type LiveSession = {
   id: string;
@@ -18,15 +19,21 @@ export default function LiveSessionsPage() {
   useEffect(() => {
     async function fetchLive() {
       try {
-        const res = await fetch("/api/recruiter/interviews?take=50");
-        const data = await res.json();
-        // Filter for active statuses
-        const active = data.sessions.filter((s: any) => 
-          ["IN_PROGRESS", "CONSENTED", "READY_FOR_NEXT_QUESTION", "NEEDS_CANDIDATE_RETRY", "ANSWER_UPLOADED", "TRANSCRIBING", "EVALUATING", "FINALIZING"].includes(s.status)
+        const data = await safeFetch<{ sessions: LiveSession[] }>(
+          "/api/recruiter/interviews?take=50",
+          {},
+          { sessions: [] }
         );
-        setSessions(active);
+        
+        if (data) {
+          // Filter for active statuses
+          const active = data.sessions.filter((s: any) => 
+            ["IN_PROGRESS", "CONSENTED", "READY_FOR_NEXT_QUESTION", "NEEDS_CANDIDATE_RETRY", "ANSWER_UPLOADED", "TRANSCRIBING", "EVALUATING", "FINALIZING"].includes(s.status)
+          );
+          setSessions(active);
+        }
       } catch (e) {
-        console.error(e);
+        console.error("Failed to fetch live sessions:", e);
       } finally {
         setLoading(false);
       }

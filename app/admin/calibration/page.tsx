@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { safeFetch } from "@/lib/api-client";
 
 type Question = {
   id: string;
@@ -66,14 +67,20 @@ export default function CalibrationDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [samplesRes, questionsRes] = await Promise.all([
-        fetch("/api/admin/calibration"),
-        fetch("/api/admin/questions"),
+      const [samplesData, questionsData] = await Promise.all([
+        safeFetch<{ samples: CalibrationSample[] }>(
+          "/api/admin/calibration",
+          {},
+          { samples: [] }
+        ),
+        safeFetch<{ questions: Question[] }>(
+          "/api/admin/questions",
+          {},
+          { questions: [] }
+        ),
       ]);
 
-      if (samplesRes.ok && questionsRes.ok) {
-        const samplesData = await samplesRes.json();
-        const questionsData = await questionsRes.json();
+      if (samplesData && questionsData) {
         setSamples(samplesData.samples);
         setQuestions(questionsData.questions);
         if (questionsData.questions.length > 0) {
@@ -94,13 +101,12 @@ export default function CalibrationDashboard() {
   const handleAddSample = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch("/api/admin/calibration", {
+      const data = await safeFetch<any>("/api/admin/calibration", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newSample),
       });
 
-      if (res.ok) {
+      if (data) {
         fetchData();
         setNewSample({
           questionId: questions[0]?.id || "",
@@ -122,26 +128,27 @@ export default function CalibrationDashboard() {
   const runTest = async (sample: CalibrationSample) => {
     setTestingId(sample.id);
     try {
-      const res = await fetch("/api/admin/calibration/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: sample.question.prompt,
-          transcript: sample.transcript,
-          competencyTags: sample.question.competencyTags,
-          groundTruth: {
-            communicationClarity: sample.communicationClarity,
-            conceptExplanation: sample.conceptExplanation,
-            empathyAndPatience: sample.empathyAndPatience,
-            adaptability: sample.adaptability,
-            professionalism: sample.professionalism,
-            englishFluency: sample.englishFluency,
-          }
-        }),
-      });
+      const data = await safeFetch<TestResult>(
+        "/api/admin/calibration/test", 
+        {
+          method: "POST",
+          body: JSON.stringify({
+            question: sample.question.prompt,
+            transcript: sample.transcript,
+            competencyTags: sample.question.competencyTags,
+            groundTruth: {
+              communicationClarity: sample.communicationClarity,
+              conceptExplanation: sample.conceptExplanation,
+              empathyAndPatience: sample.empathyAndPatience,
+              adaptability: sample.adaptability,
+              professionalism: sample.professionalism,
+              englishFluency: sample.englishFluency,
+            }
+          }),
+        }
+      );
 
-      if (res.ok) {
-        const data = await res.json();
+      if (data) {
         setTestResults(prev => ({ ...prev, [sample.id]: data }));
       }
     } catch (err) {

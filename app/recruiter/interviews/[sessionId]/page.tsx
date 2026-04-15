@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Header from "../../../components/recruiter/Header";
 import Waveform from "../../../components/recruiter/Waveform";
 import { exportToPDF } from "@/lib/pdf";
+import { safeFetch } from "@/lib/api-client";
 
 type Decision = "Move Forward" | "Hold" | "Decline" | "Needs Review" | null;
 
@@ -93,25 +94,30 @@ export default function RecruiterReportDetail() {
   useEffect(() => {
     async function fetchSession() {
       try {
-        const res = await fetch(`/api/recruiter/interviews/${sessionId}`);
-        if (!res.ok) throw new Error("Failed to fetch");
-        const data = await res.json();
-        setSession(data.session);
+        const data = await safeFetch<{ session: any }>(
+          `/api/recruiter/interviews/${sessionId}`,
+          {},
+          null
+        );
         
-        // Load existing decision if any
-        if (data.session.recruiterDecision) {
-          const d = data.session.recruiterDecision.decision;
-          setDecision(
-            d === "MOVE_FORWARD" ? "Move Forward" : 
-            d === "HOLD" ? "Hold" : 
-            d === "DECLINE" ? "Decline" : 
-            d === "NEEDS_REVIEW" ? "Needs Review" : 
-            null
-          );
-          setNotes(data.session.recruiterDecision.notes || "");
+        if (data) {
+          setSession(data.session);
+          
+          // Load existing decision if any
+          if (data.session.recruiterDecision) {
+            const d = data.session.recruiterDecision.decision;
+            setDecision(
+              d === "MOVE_FORWARD" ? "Move Forward" : 
+              d === "HOLD" ? "Hold" : 
+              d === "DECLINE" ? "Decline" : 
+              d === "NEEDS_REVIEW" ? "Needs Review" : 
+              null
+            );
+            setNotes(data.session.recruiterDecision.notes || "");
+          }
         }
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load interview session:", err);
       } finally {
         setLoading(false);
       }
@@ -122,15 +128,12 @@ export default function RecruiterReportDetail() {
   const handleSaveDecision = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`/api/recruiter/interviews/${sessionId}`, {
+      const data = await safeFetch<any>(`/api/recruiter/interviews/${sessionId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ decision, notes, reviewerId: "recruiter-1" }),
       });
-      if (res.ok) {
+      if (data) {
         alert("Decision saved successfully!");
-      } else {
-        alert("Failed to save decision.");
       }
     } catch (error) {
       console.error(error);
@@ -144,17 +147,14 @@ export default function RecruiterReportDetail() {
     if (!confirm("Are you sure you want to request a retry for this answer? This will re-open the candidate session.")) return;
 
     try {
-      const res = await fetch(`/api/recruiter/interviews/${sessionId}/retry-question`, {
+      const data = await safeFetch<any>(`/api/recruiter/interviews/${sessionId}/retry-question`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ questionId }),
       });
-      if (res.ok) {
+      if (data) {
         alert("Retry requested! Candidate can now re-record this answer.");
         // Refresh local state to show updated status if needed
         window.location.reload();
-      } else {
-        alert("Failed to request retry.");
       }
     } catch (error) {
       console.error(error);
@@ -166,9 +166,8 @@ export default function RecruiterReportDetail() {
     if (!confirm("Flag this answer for calibration review? This will send the transcript and current AI scores to the quality dashboard.")) return;
 
     try {
-      const res = await fetch("/api/admin/calibration", {
+      const data = await safeFetch<any>("/api/admin/calibration", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           questionId: answer.questionId,
           transcript: answer.transcript.text,
@@ -182,10 +181,8 @@ export default function RecruiterReportDetail() {
         }),
       });
 
-      if (res.ok) {
+      if (data) {
         alert("Successfully flagged for calibration!");
-      } else {
-        alert("Failed to flag for calibration.");
       }
     } catch (error) {
       console.error(error);
@@ -195,13 +192,12 @@ export default function RecruiterReportDetail() {
 
   const handleUpdateTranscript = async (transcriptId: string, text: string) => {
     try {
-      const res = await fetch(`/api/transcripts/${transcriptId}`, {
+      const data = await safeFetch<any>(`/api/transcripts/${transcriptId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
       
-      if (res.ok) {
+      if (data) {
         // Update local state
         setSession((prev: any) => ({
           ...prev,
@@ -212,9 +208,8 @@ export default function RecruiterReportDetail() {
           )
         }));
         return true;
-      } else {
-        return false;
       }
+      return false;
     } catch (err) {
       console.error(err);
       return false;
