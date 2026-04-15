@@ -50,9 +50,15 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
 export async function DELETE(_req: Request, context: { params: Promise<{ id: string }> }) {
   const requestId = uuidv4();
-  const session = await auth();
   
-  if (!session?.user || (session.user as { role?: string }).role !== "ADMIN") {
+  const requiredAdminToken = process.env.ADMIN_API_TOKEN;
+  const providedAdminToken = _req.headers.get("x-admin-token");
+  const session = await auth();
+
+  const isTokenValid = requiredAdminToken && providedAdminToken === requiredAdminToken;
+  const isSessionValid = !!(session?.user && (session.user as { role?: string }).role === "ADMIN");
+
+  if (!isTokenValid && !isSessionValid) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
