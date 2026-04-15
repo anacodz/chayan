@@ -26,6 +26,18 @@ export async function POST(request: Request) {
     if (!candidate) {
       candidate = await prisma.candidate.create({ data: { name, email } });
       logger.info({ requestId, candidateId: candidate.id }, "New candidate created");
+    } else {
+      // Invalidate existing active sessions for this candidate
+      await prisma.interviewSession.updateMany({
+        where: {
+          candidateId: candidate.id,
+          status: { in: ["INVITED", "CONSENTED", "IN_PROGRESS"] },
+        },
+        data: {
+          status: "EXPIRED",
+        }
+      });
+      logger.info({ requestId, candidateId: candidate.id }, "Previous active sessions invalidated");
     }
 
     const { session, token } = await createInvite(candidate.id, questionSetId);
