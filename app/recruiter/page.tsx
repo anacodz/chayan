@@ -3,8 +3,10 @@
 import Link from "next/link";
 import Sidebar from "../components/recruiter/Sidebar";
 import Header from "../components/recruiter/Header";
+import InviteModal from "../components/InviteModal";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 
 type DashboardMetrics = {
   totalInvites: number;
@@ -18,6 +20,7 @@ type Session = {
   id: string;
   status: string;
   createdAt: string;
+  updatedAt: string;
   candidate: {
     name: string;
     email: string;
@@ -33,19 +36,29 @@ type Session = {
 };
 
 export default function RecruiterDashboard() {
+  const { data: session } = useSession();
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [totalSessions, setTotalSessions] = useState(0);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
   
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
+  const formatLastActive = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return "Just now";
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -53,7 +66,7 @@ export default function RecruiterDashboard() {
       const skip = (currentPage - 1) * itemsPerPage;
       try {
         const [sessionsRes, metricsRes] = await Promise.all([
-          fetch(`/api/recruiter/interviews?skip=${skip}&take=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}`),
+          fetch(`/api/recruiter/interviews?skip=${skip}&take=${itemsPerPage}`),
           fetch("/api/admin/metrics")
         ]);
 
@@ -74,7 +87,7 @@ export default function RecruiterDashboard() {
       }
     }
     fetchData();
-  }, [currentPage, searchQuery]);
+  }, [currentPage]);
 
   const totalPages = Math.ceil(totalSessions / itemsPerPage);
 
@@ -119,7 +132,9 @@ export default function RecruiterDashboard() {
 
         <main className="flex-1 p-4 md:p-8 overflow-y-auto">
           <header className="mb-8 md:mb-10">
-            <h1 className="text-3xl md:text-4xl font-extrabold text-on-secondary-fixed tracking-tight mb-1">Recruitment Overview</h1>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-on-secondary-fixed tracking-tight mb-1">
+              Welcome back, {session?.user?.name?.split(' ')[0] || "Recruiter"}
+            </h1>
             <p className="text-on-surface-variant font-medium text-sm md:text-base">Monitoring AI-driven candidate assessment performance.</p>
           </header>
 
@@ -176,25 +191,14 @@ export default function RecruiterDashboard() {
               <div className="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm border border-outline-variant/5">
                 <div className="p-6 md:p-8 border-b border-surface-container flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white">
                   <h3 className="text-xl font-bold text-on-surface">Recent Candidates</h3>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:w-64">
-                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
-                      <input 
-                        type="text" 
-                        placeholder="Search candidates..." 
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-surface-container-low rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                      />
-                    </div>
-                  </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left min-w-[640px]">
                     <thead className="bg-surface-container-low/50">
                       <tr>
                         <th className="px-6 md:px-8 py-5 text-xs font-bold text-on-surface-variant uppercase tracking-widest">Candidate</th>
-                        <th className="px-6 md:px-8 py-5 text-xs font-bold text-on-surface-variant uppercase tracking-widest">Date</th>
+                        <th className="px-6 md:px-8 py-5 text-xs font-bold text-on-surface-variant uppercase tracking-widest">Invited</th>
+                        <th className="px-6 md:px-8 py-5 text-xs font-bold text-on-surface-variant uppercase tracking-widest text-center">Last Active</th>
                         <th className="px-6 md:px-8 py-5 text-xs font-bold text-on-surface-variant uppercase tracking-widest">Status</th>
                         <th className="px-6 md:px-8 py-5 text-xs font-bold text-on-surface-variant uppercase tracking-widest">Match Score</th>
                         <th className="px-6 md:px-8 py-5 text-xs font-bold text-on-surface-variant uppercase tracking-widest"></th>
@@ -214,12 +218,17 @@ export default function RecruiterDashboard() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 md:px-8 py-5">
+                          <td className="px-6 md:px-8 py-5 whitespace-nowrap">
                             <span className="text-sm font-medium text-on-surface">
-                              {new Date(s.createdAt).toLocaleDateString()}
+                              {new Date(s.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                             </span>
                           </td>
-                          <td className="px-6 md:px-8 py-5">
+                          <td className="px-6 md:px-8 py-5 whitespace-nowrap text-center">
+                            <span className="text-xs font-black text-primary/70 bg-primary/5 px-2 py-1 rounded-md">
+                              {formatLastActive(s.updatedAt)}
+                            </span>
+                          </td>
+                          <td className="px-6 md:px-8 py-5 whitespace-nowrap">
                             {s.recruiterDecision ? (
                               <span className={`px-2 py-0.5 text-[9px] font-black rounded uppercase tracking-widest ${getDecisionBadge(s.recruiterDecision.decision)}`}>
                                 {s.recruiterDecision.decision.replace(/_/g, " ")}
@@ -260,7 +269,7 @@ export default function RecruiterDashboard() {
                       ))}
                       {sessions.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="px-6 md:px-8 py-10 text-center text-on-surface-variant italic">
+                          <td colSpan={6} className="px-6 md:px-8 py-10 text-center text-on-surface-variant italic">
                             No candidates found.
                           </td>
                         </tr>
