@@ -13,23 +13,8 @@ export default function Header({ onInviteClick }: { onInviteClick: () => void })
       <div className="flex justify-between items-center w-full px-6 md:px-8 py-4 max-w-[1920px] mx-auto">
         <div className="flex items-center gap-8">
           <Link href="/recruiter" className="flex items-center gap-2 group">
+            <span className="text-xl font-black text-primary tracking-tighter uppercase">Chayan</span>
           </Link>
-          <nav className="hidden lg:flex gap-8 items-center">
-            <Link 
-              href="/recruiter" 
-              className={`text-sm font-bold transition-all ${pathname === "/recruiter" ? "text-primary border-b-2 border-primary pb-0.5" : "text-on-surface-variant hover:text-primary"}`}
-            >
-              Dashboard
-            </Link>
-            <Link 
-              href="#" 
-              className={`text-sm font-bold transition-all ${pathname.startsWith("/recruiter/interviews") ? "text-primary border-b-2 border-primary pb-0.5" : "text-on-surface-variant hover:text-primary"}`}
-            >
-              Candidates
-            </Link>
-            <Link href="#" className="text-sm font-bold text-on-surface-variant hover:text-primary transition-colors">Assessments</Link>
-            <Link href="#" className="text-sm font-bold text-on-surface-variant hover:text-primary transition-colors">Analytics</Link>
-          </nav>
         </div>
         <div className="flex items-center gap-3 md:gap-4">
           <button 
