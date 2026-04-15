@@ -27,7 +27,8 @@ export async function POST(request: Request) {
       candidate = await prisma.candidate.create({ data: { name, email } });
       logger.info({ requestId, candidateId: candidate.id }, "New candidate created");
     } else {
-      // Invalidate existing active sessions for this candidate
+      // Keep previous sessions active to allow multiple invite attempts if needed
+      /*
       await prisma.interviewSession.updateMany({
         where: {
           candidateId: candidate.id,
@@ -37,7 +38,8 @@ export async function POST(request: Request) {
           status: "EXPIRED",
         }
       });
-      logger.info({ requestId, candidateId: candidate.id }, "Previous active sessions invalidated");
+      */
+      logger.info({ requestId, candidateId: candidate.id }, "Candidate already exists, keeping existing sessions");
     }
 
     const { session, token } = await createInvite(candidate.id, questionSetId);
