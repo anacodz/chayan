@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LogoutButton from "../components/LogoutButton";
 
 export default function AdminLayout({
   children,
@@ -45,13 +46,6 @@ export default function AdminLayout({
             <span className="material-symbols-outlined">tune</span>
             <span className="font-medium text-sm">Model Calibration</span>
           </Link>
-          <Link
-            href="/admin/deletion"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:translate-x-1 text-secondary hover:bg-surface-container-high"
-          >
-            <span className="material-symbols-outlined">delete_forever</span>
-            <span className="font-medium text-sm">Data Privacy</span>
-          </Link>
           </nav>
 
         <div className="pt-6 border-t border-outline-variant/10 flex flex-col gap-1">
@@ -62,6 +56,7 @@ export default function AdminLayout({
             <span className="material-symbols-outlined">switch_account</span>
             Recruiter Portal
           </Link>
+          <LogoutButton className="flex items-center gap-3 px-4 py-3 text-error hover:bg-error/5 rounded-xl transition-all text-sm font-bold w-full mt-1" />
         </div>
       </aside>
 
