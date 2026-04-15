@@ -1,5 +1,5 @@
 import { Inngest } from "inngest";
-import { transcribeAudioService, evaluateAnswerService } from "./services/ai";
+import { transcribeAudioService, orchestrateEvaluation, evaluateAnswerService } from "./services/ai";
 import prisma from "./prisma";
 import { logger } from "./logger";
 import { monitoring } from "./monitoring";
@@ -88,55 +88,27 @@ export const transcribeAndEvaluateAnswer = inngest.createFunction(
       return { answerId, status: "needs_retry", quality: transcriptionResult.quality };
     }
 
-    // 3. Evaluate transcript
-    const evaluation = await step.run("evaluate-answer", async () => {
-      logger.info({ answerId }, "Evaluating transcript");
+    // 3. Evaluate transcript and orchestrate DB payload
+    const evaluationData = await step.run("evaluate-answer", async () => {
+      logger.info({ answerId }, "Evaluating transcript and orchestrating payload");
       try {
-        return await evaluateAnswerService(question, transcriptionResult.text, competencyTags);
+        return await orchestrateEvaluation(question, transcriptionResult.text, competencyTags, answerId);
       } catch (error) {
         monitoring.captureException(error, { answerId, sessionId, step: "evaluate-answer" });
         throw error;
       }
     });
 
+    const { evaluation, dbPayload } = evaluationData;
+
     // 4. Save evaluation and update answer status
     await step.run("save-evaluation", async () => {
-      logger.info({ answerId }, "Saving evaluation");
+      logger.info({ answerId }, "Saving evaluation to database");
       try {
-        const transcriptHash = createHash("sha256")
-          .update(transcriptionResult.text)
-          .digest("hex");
-
-        const data = {
-          answerId,
-          modelProvider: "google",
-          model: evaluation.model,
-          promptVersion: evaluation.promptVersion,
-          schemaVersion: evaluation.schemaVersion,
-          transcriptHash,
-          communicationClarity: Math.round(evaluation.dimensionScores.communicationClarity),
-          conceptExplanation: Math.round(evaluation.dimensionScores.conceptExplanation),
-          empathyAndPatience: Math.round(evaluation.dimensionScores.empathyAndPatience),
-          adaptability: Math.round(evaluation.dimensionScores.adaptability),
-          professionalism: Math.round(evaluation.dimensionScores.professionalism),
-          englishFluency: Math.round(evaluation.dimensionScores.englishFluency),
-          confidence: evaluation.confidence,
-          evidence: evaluation.signals,
-          concerns: evaluation.redFlags,
-          followUpQuestion: evaluation.followUpQuestion ?? null,
-          requiresHumanReview: false,
-          inputTokens: evaluation.usage?.inputTokens,
-          outputTokens: evaluation.usage?.outputTokens,
-          // Estimate cost: Gemini 2.0 Flash is $0.10 / 1M input tokens, $0.40 / 1M output tokens
-          costUSD: evaluation.usage 
-            ? (evaluation.usage.inputTokens * 0.10 + evaluation.usage.outputTokens * 0.40) / 1_000_000
-            : null,
-        };
-
         await prisma.answerEvaluation.upsert({
           where: { answerId },
-          create: data,
-          update: data,
+          create: dbPayload,
+          update: dbPayload,
         });
 
         await prisma.answer.update({
@@ -177,50 +149,59 @@ export const finalizeInterviewReport = inngest.createFunction(
     logger.info({ sessionId }, "Starting background report generation");
 
     const answers = await step.run("fetch-all-answers", async () => {
-      const answersData = await prisma.answer.findMany({
-        where: { sessionId },
-        include: {
-          transcript: true,
-          evaluation: true,
-          question: true,
-        },
-        orderBy: { createdAt: "asc" },
-      });
-      
-      return answersData.map(a => ({
-        questionId: a.questionId,
-        question: a.question.prompt,
-        transcript: a.transcript?.text || "",
-        evaluation: a.evaluation ? {
-          reasoning: a.evaluation.evidence.join(". "),
-          dimensionScores: {
-            communicationClarity: a.evaluation.communicationClarity,
-            conceptExplanation: a.evaluation.conceptExplanation,
-            empathyAndPatience: a.evaluation.empathyAndPatience,
-            adaptability: a.evaluation.adaptability,
-            professionalism: a.evaluation.professionalism,
-            englishFluency: a.evaluation.englishFluency,
-          }
-        } : null
-      }));
+      logger.info({ sessionId }, "Fetching all answers for final report");
+      try {
+        const answersData = await prisma.answer.findMany({
+          where: { sessionId },
+          include: {
+            transcript: true,
+            evaluation: true,
+            question: true,
+          },
+          orderBy: { createdAt: "asc" },
+        });
+        
+        return answersData.map(a => ({
+          questionId: a.questionId,
+          question: a.question.prompt,
+          transcript: a.transcript?.text || "",
+          evaluation: a.evaluation ? {
+            reasoning: a.evaluation.evidence.join(". "),
+            dimensionScores: {
+              communicationClarity: a.evaluation.communicationClarity,
+              conceptExplanation: a.evaluation.conceptExplanation,
+              empathyAndPatience: a.evaluation.empathyAndPatience,
+              adaptability: a.evaluation.adaptability,
+              professionalism: a.evaluation.professionalism,
+              englishFluency: a.evaluation.englishFluency,
+            }
+          } : null
+        }));
+      } catch (error) {
+        monitoring.captureException(error, { sessionId, step: "fetch-all-answers" });
+        throw error;
+      }
     });
 
     const reportData = await step.run("generate-final-report", async () => {
-      const { GoogleGenAI } = await import("@google/genai");
-      const { FinalReportSchema } = await import("./schemas");
-      const { extractJsonObject } = await import("./json");
-      const { fallbackSummarize } = await import("./evaluation");
-      const { withRetry } = await import("./retry");
+      logger.info({ sessionId }, "Generating final report using AI");
+      try {
+        const { GoogleGenAI } = await import("@google/genai");
+        const { FinalReportSchema } = await import("./schemas");
+        const { extractJsonObject } = await import("./json");
+        const { fallbackSummarize } = await import("./evaluation");
+        const { withRetry } = await import("./retry");
 
-      if (!env.GEMINI_API_KEY) {
-        return { report: fallbackSummarize(answers as any), usage: undefined };
-      }
+        if (!env.GEMINI_API_KEY) {
+          logger.warn({ sessionId }, "GEMINI_API_KEY not found, using fallback summarization");
+          return { report: fallbackSummarize(answers as any), usage: undefined };
+        }
 
-      const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
-      const modelName = "gemini-1.5-pro"; 
-      const model = ai.getGenerativeModel({ model: modelName });
+        const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+        const modelName = "gemini-1.5-pro"; 
+        const model = ai.getGenerativeModel({ model: modelName });
 
-      const prompt = `Create a high-fidelity final tutor screening report from these structured answers.
+        const prompt = `Create a high-fidelity final tutor screening report from these structured answers.
 
 Candidate Data: ${JSON.stringify(answers, null, 2)}
 
@@ -244,65 +225,75 @@ Return JSON only with this shape:
 
 Use only evidence from the transcripts. Scores should be 1-5. Confidence 0-1. Be critical but fair.`;
 
-      const result = await withRetry(async () => {
-        return await model.generateContent(prompt);
-      });
+        const result = await withRetry(async () => {
+          return await model.generateContent(prompt);
+        });
 
-      const response = await result.response;
-      const text = response.text() || "";
-      const rawJson = extractJsonObject<any>(text);
-      const report = FinalReportSchema.parse(rawJson);
-      
-      return {
-        report,
-        usage: response.usageMetadata ? {
-          inputTokens: response.usageMetadata.promptTokenCount,
-          outputTokens: response.usageMetadata.candidatesTokenCount
-        } : undefined
-      };
+        const response = await result.response;
+        const text = response.text() || "";
+        const rawJson = extractJsonObject<any>(text);
+        const report = FinalReportSchema.parse(rawJson);
+        
+        return {
+          report,
+          usage: response.usageMetadata ? {
+            inputTokens: response.usageMetadata.promptTokenCount,
+            outputTokens: response.usageMetadata.candidatesTokenCount
+          } : undefined
+        };
+      } catch (error) {
+        monitoring.captureException(error, { sessionId, step: "generate-final-report" });
+        throw error;
+      }
     });
 
     await step.run("save-final-report", async () => {
-      const { report, usage } = reportData;
-      const averageScore = (scores: any) => {
-        const vals = Object.values(scores) as number[];
-        return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
-      };
+      logger.info({ sessionId }, "Saving final report to database");
+      try {
+        const { report, usage } = reportData;
+        const averageScore = (scores: any) => {
+          const vals = Object.values(scores) as number[];
+          return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
+        };
 
-      const data = {
-        sessionId,
-        recommendation: report.recommendation as any,
-        overallScore: averageScore(report.dimensionScores),
-        confidence: report.confidence || 0.8,
-        strengths: report.strengths,
-        risks: report.concerns,
-        suggestedFollowUps: [report.nextStep],
-        evidenceByQuestion: answers.map(a => ({
-          questionId: a.questionId,
-          transcriptExcerpt: a.transcript.slice(0, 100),
-          rationale: "Evaluated in context of whole interview."
-        })),
-        model: "gemini-1.5-pro",
-        promptVersion: "v1",
-        schemaVersion: "v1",
-        inputTokens: usage?.inputTokens,
-        outputTokens: usage?.outputTokens,
-        // Gemini 1.5 Pro: $1.25 / 1M input, $5.00 / 1M output (rough estimate for under 128k context)
-        costUSD: usage 
-          ? (usage.inputTokens * 1.25 + usage.outputTokens * 5.00) / 1_000_000
-          : null,
-      };
+        const data = {
+          sessionId,
+          recommendation: report.recommendation as any,
+          overallScore: averageScore(report.dimensionScores),
+          confidence: report.confidence || 0.8,
+          strengths: report.strengths,
+          risks: report.concerns,
+          suggestedFollowUps: [report.nextStep],
+          evidenceByQuestion: answers.map(a => ({
+            questionId: a.questionId,
+            transcriptExcerpt: a.transcript.slice(0, 100),
+            rationale: "Evaluated in context of whole interview."
+          })),
+          model: "gemini-1.5-pro",
+          promptVersion: "v1",
+          schemaVersion: "v1",
+          inputTokens: usage?.inputTokens,
+          outputTokens: usage?.outputTokens,
+          // Gemini 1.5 Pro: $1.25 / 1M input, $5.00 / 1M output (rough estimate for under 128k context)
+          costUSD: usage 
+            ? (usage.inputTokens * 1.25 + usage.outputTokens * 5.00) / 1_000_000
+            : null,
+        };
 
-      await prisma.finalReport.upsert({
-        where: { sessionId },
-        create: data,
-        update: data
-      });
+        await prisma.finalReport.upsert({
+          where: { sessionId },
+          create: data,
+          update: data
+        });
 
-      await prisma.interviewSession.update({
-        where: { id: sessionId },
-        data: { status: "COMPLETED", completedAt: new Date() }
-      });
+        await prisma.interviewSession.update({
+          where: { id: sessionId },
+          data: { status: "COMPLETED", completedAt: new Date() }
+        });
+      } catch (error) {
+        monitoring.captureException(error, { sessionId, step: "save-final-report" });
+        throw error;
+      }
     });
 
     return { sessionId, status: "completed" };

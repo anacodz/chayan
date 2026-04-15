@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { createHash } from "node:crypto";
 import { SarvamAIClient } from "sarvamai";
 import { GoogleGenAI } from "@google/genai";
 import { env } from "@/lib/env";
@@ -210,3 +211,41 @@ function readTranscript(response: unknown): string {
   }
   return "";
 }
+
+export async function orchestrateEvaluation(
+  question: string,
+  transcript: string,
+  competencyTags: string[],
+  answerId?: string
+) {
+  const evaluation = await evaluateAnswerService(question, transcript, competencyTags);
+  const transcriptHash = createHash("sha256").update(transcript).digest("hex");
+
+  const dbPayload = {
+    ...(answerId ? { answerId } : {}),
+    modelProvider: "google",
+    model: evaluation.model,
+    promptVersion: evaluation.promptVersion,
+    schemaVersion: evaluation.schemaVersion,
+    transcriptHash,
+    communicationClarity: Math.round(evaluation.dimensionScores.communicationClarity),
+    conceptExplanation: Math.round(evaluation.dimensionScores.conceptExplanation),
+    empathyAndPatience: Math.round(evaluation.dimensionScores.empathyAndPatience),
+    adaptability: Math.round(evaluation.dimensionScores.adaptability),
+    professionalism: Math.round(evaluation.dimensionScores.professionalism),
+    englishFluency: Math.round(evaluation.dimensionScores.englishFluency),
+    confidence: evaluation.confidence,
+    evidence: evaluation.signals,
+    concerns: evaluation.redFlags,
+    followUpQuestion: evaluation.followUpQuestion ?? null,
+    requiresHumanReview: false,
+    inputTokens: evaluation.usage?.inputTokens,
+    outputTokens: evaluation.usage?.outputTokens,
+    costUSD: evaluation.usage 
+      ? (evaluation.usage.inputTokens * 0.10 + evaluation.usage.outputTokens * 0.40) / 1_000_000
+      : null,
+  };
+
+  return { evaluation, dbPayload: dbPayload as any };
+}
+

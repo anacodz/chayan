@@ -25,7 +25,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run start',
+    command: 'NEXTAUTH_SECRET=test-secret npm run start',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
   },
