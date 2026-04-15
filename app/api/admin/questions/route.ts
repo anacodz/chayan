@@ -6,9 +6,15 @@ import { v4 as uuidv4 } from "uuid";
 
 export async function GET(req: Request) {
   const requestId = uuidv4();
-  const session = await auth();
   
-  if (!session?.user || (session.user as { role?: string }).role !== "ADMIN") {
+  const requiredAdminToken = process.env.ADMIN_API_TOKEN;
+  const providedAdminToken = req.headers.get("x-admin-token");
+  const session = await auth();
+
+  const isTokenValid = requiredAdminToken && providedAdminToken === requiredAdminToken;
+  const isSessionValid = !!(session?.user && (session.user as { role?: string }).role === "ADMIN");
+
+  if (!isTokenValid && !isSessionValid) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -29,9 +35,15 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const requestId = uuidv4();
+  
+  const requiredAdminToken = process.env.ADMIN_API_TOKEN;
+  const providedAdminToken = req.headers.get("x-admin-token");
   const session = await auth();
 
-  if (!session?.user || (session.user as { role?: string }).role !== "ADMIN") {
+  const isTokenValid = requiredAdminToken && providedAdminToken === requiredAdminToken;
+  const isSessionValid = !!(session?.user && (session.user as { role?: string }).role === "ADMIN");
+
+  if (!isTokenValid && !isSessionValid) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
