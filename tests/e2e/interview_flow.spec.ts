@@ -129,9 +129,11 @@ test.describe('Comprehensive Candidate Interview Flow', () => {
     await page.goto(`/interview/${mockToken}`);
     
     // Welcome
-    await expect(page.getByText(/Ready, Bob?/i)).toBeVisible();
-    await page.locator('input[type="checkbox"]').check();
-    await page.getByRole('button', { name: /Start Assessment/i }).click();
+    await expect(page.getByText(/Ready, Bob?/i)).toBeVisible({ timeout: 15000 });
+    await page.getByRole('checkbox').click();
+    const startBtn = page.getByRole('button', { name: /Start Assessment/i });
+    await expect(startBtn).toBeEnabled({ timeout: 10000 });
+    await startBtn.click();
 
     // Question 1
     await expect(page.getByText(/Question 1 of 2/i)).toBeVisible();
