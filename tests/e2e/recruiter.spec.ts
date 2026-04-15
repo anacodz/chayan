@@ -132,6 +132,10 @@ test.describe('Recruiter Review Flow', () => {
     // Log all browser console messages
     page.on('console', msg => console.log(`BROWSER CONSOLE: ${msg.type()}: ${msg.text()}`));
     page.on('pageerror', err => console.log(`BROWSER ERROR: ${err.message}`));
+    page.on('request', request => console.log(`>> REQUEST: ${request.method()} ${request.url()}`));
+    page.on('response', response => {
+      if (!response.ok()) console.log(`<< RESPONSE ERROR: ${response.status()} ${response.url()}`);
+    });
 
     // 1. Visit Dashboard
     await page.goto('/recruiter');
