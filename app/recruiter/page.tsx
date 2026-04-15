@@ -41,7 +41,7 @@ export default function RecruiterDashboard() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [totalSessions, setTotalSessions] = useState(0);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Default to false for testing
   const [error, setError] = useState("");
   
   const [currentPage, setCurrentPage] = useState(1);

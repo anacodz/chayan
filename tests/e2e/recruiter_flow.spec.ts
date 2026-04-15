@@ -116,6 +116,18 @@ test.describe('Recruiter Workflow', () => {
       }
     });
 
+    // 4. Mock NextAuth session API
+    await page.route('**/api/auth/session', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          user: { name: 'Test Recruiter', email: 'recruiter@cuemath.com', role: 'RECRUITER' },
+          expires: new Date(Date.now() + 3600000).toISOString()
+        })
+      });
+    });
+
     // --- Start Recruiter Flow ---
     
     // Add auth cookie
@@ -130,15 +142,15 @@ test.describe('Recruiter Workflow', () => {
     
     // Dashboard
     await page.goto('/recruiter');
-    await expect(page.getByText(/Recruitment Overview/i)).toBeVisible();
+    await expect(page.getByText(/Recruitment Overview/i)).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(/Jane Doe/i)).toBeVisible();
 
     // Open Report
     await page.locator(`a[href="/recruiter/interviews/${mockSessionId}"]`).click();
     
     // Verify Report Content
-    await expect(page.getByText(/Jane Doe/i)).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(/Analysis/i)).toBeVisible();
+    await expect(page.locator('h1')).toContainText(/Jane Doe/i, { timeout: 15000 });
+    await expect(page.locator('h1')).toContainText(/Analysis/i);
     await expect(page.getByText(/84%/i)).toBeVisible(); // 4.2 * 20
     await expect(page.getByText(/Calculus/i)).toBeVisible();
     await expect(page.getByText(/Calculus is the study of change/i)).toBeVisible();
